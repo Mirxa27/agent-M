@@ -274,6 +274,9 @@ export default function AiModelsPanel() {
   const onCreateSubmit = (values: ModelFormValues) => {
     const modelData = {
       ...values,
+      contextWindow: values.contextLength || null,
+      costInputPerK: values.pricePer1000Tokens?.toString() || null,
+      costOutputPerK: values.pricePer1000Tokens?.toString() || null,
       capabilities: Array.from(selectedCapabilities)
     };
     createModelMutation.mutate(modelData);
@@ -284,6 +287,9 @@ export default function AiModelsPanel() {
     if (selectedModel) {
       const modelData = {
         ...values,
+        contextWindow: values.contextLength || null,
+        costInputPerK: values.pricePer1000Tokens?.toString() || null,
+        costOutputPerK: values.pricePer1000Tokens?.toString() || null,
         capabilities: Array.from(selectedCapabilities)
       };
       updateModelMutation.mutate({ 
@@ -304,20 +310,25 @@ export default function AiModelsPanel() {
   const handleEdit = (model: AiModel) => {
     setSelectedModel(model);
     setSelectedCapabilities(new Set(model.capabilities as string[]));
+    
+    // Map DB fields to form fields
+    const costInput = model.costInputPerK ? parseFloat(model.costInputPerK) : 0;
+    
     editForm.reset({
       name: model.name,
       providerId: model.providerId,
       modelId: model.modelId,
       description: model.description || "",
-      contextLength: model.contextLength,
+      contextLength: model.contextWindow || undefined,
       maxOutputTokens: model.maxOutputTokens,
       isActive: model.isActive,
       capabilities: model.capabilities as string[],
-      pricePer1000Tokens: model.pricePer1000Tokens,
-      currency: model.currency || "SAR",
-      isChatModel: model.isChatModel,
-      isVisionModel: model.isVisionModel,
-      isEmbeddingModel: model.isEmbeddingModel,
+      pricePer1000Tokens: costInput,
+      currency: "SAR", // Default to SAR if not provided
+      // These are stored in capabilities but we expose them as separate fields for UX
+      isChatModel: ((model.capabilities as string[]) || []).includes('chat'),
+      isVisionModel: ((model.capabilities as string[]) || []).includes('vision'),
+      isEmbeddingModel: ((model.capabilities as string[]) || []).includes('embeddings'),
     });
     setIsEditDialogOpen(true);
   };
@@ -431,7 +442,7 @@ export default function AiModelsPanel() {
                             {model.modelId}
                           </code>
                         </TableCell>
-                        <TableCell>{model.contextLength.toLocaleString()} tokens</TableCell>
+                        <TableCell>{model.contextWindow ? model.contextWindow.toLocaleString() : 'N/A'} tokens</TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {model.capabilities && (model.capabilities as string[]).slice(0, 3).map((capability, index) => (
@@ -462,7 +473,7 @@ export default function AiModelsPanel() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {model.pricePer1000Tokens} {model.currency || "SAR"}/1K tokens
+                          {model.costInputPerK || 'N/A'} {model.currency || "SAR"}/1K tokens
                         </TableCell>
                         <TableCell>
                           <Badge variant={model.isActive ? "success" : "outline"}>
