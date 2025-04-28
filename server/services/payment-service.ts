@@ -8,7 +8,8 @@ if (!process.env.MYFATOORAH_API_KEY) {
 }
 
 // MyFatoorah API configuration
-const MYFATOORAH_BASE_URL = "https://apitest.myfatoorah.com"; // Use test URL for now, replace with live URL in production
+// For production, change this to "https://api.myfatoorah.com"
+const MYFATOORAH_BASE_URL = "https://apitest.myfatoorah.com"; 
 const MYFATOORAH_API_KEY = process.env.MYFATOORAH_API_KEY;
 
 // Create axios instance for MyFatoorah API
@@ -73,11 +74,14 @@ export class PaymentService {
     
     // Make request to MyFatoorah API
     try {
+      console.log('Creating MyFatoorah payment session for user:', userId, 'plan:', planId);
       const response = await myfatoorahClient.post('/v2/InitiatePayment', payload);
       
       if (!response.data || !response.data.Data) {
         throw new Error("Invalid response from payment gateway");
       }
+      
+      console.log('MyFatoorah payment session created successfully:', response.data.Data.InvoiceId);
       
       // Return the payment session details
       return {
@@ -108,6 +112,8 @@ export class PaymentService {
     amount?: number;
   }> {
     try {
+      console.log('Verifying MyFatoorah payment:', paymentId);
+      
       // Get payment status from MyFatoorah API using the Key-Value pair endpoint
       const response = await myfatoorahClient.post('/v2/GetPaymentStatus', {
         Key: paymentId,
@@ -115,12 +121,15 @@ export class PaymentService {
       });
       
       if (!response.data || !response.data.Data) {
+        console.log('MyFatoorah payment verification failed: No data returned');
         return { isValid: false };
       }
       
       const paymentData = response.data.Data;
+      console.log('MyFatoorah payment status:', paymentData.InvoiceStatus);
       
       if (paymentData.InvoiceStatus === "Paid") {
+        console.log('MyFatoorah payment successful:', paymentData.InvoiceId);
         return {
           isValid: true,
           invoiceId: paymentData.InvoiceId,
@@ -130,6 +139,7 @@ export class PaymentService {
           amount: paymentData.InvoiceValue
         };
       } else {
+        console.log('MyFatoorah payment not completed. Status:', paymentData.InvoiceStatus);
         return {
           isValid: false
         };
@@ -161,14 +171,18 @@ export class PaymentService {
       paymentMethod: string;
     }
   ): Promise<User> {
+    console.log('Updating user subscription:', userId, 'plan:', planId, 'payment:', paymentDetails.invoiceId);
+    
     // Get user and plan 
     const user = await storage.getUser(userId);
     if (!user) {
+      console.error('User not found for subscription update:', userId);
       throw new Error("User not found");
     }
     
     const plan = await storage.getPlan(planId);
     if (!plan) {
+      console.error('Plan not found for subscription update:', planId);
       throw new Error("Plan not found");
     }
     
@@ -187,6 +201,8 @@ export class PaymentService {
         expirationDate = new Date(now.setMonth(now.getMonth() + 1));
     }
     
+    console.log('Subscription expiration date calculated:', expirationDate);
+    
     // Update user subscription information
     const updatedUser = await storage.updateUser(userId, {
       plan: plan.name.toLowerCase(),
@@ -195,9 +211,11 @@ export class PaymentService {
     });
     
     if (!updatedUser) {
+      console.error('Failed to update user subscription:', userId);
       throw new Error("Failed to update user subscription");
     }
     
+    console.log('User subscription updated successfully:', updatedUser.id, 'plan:', updatedUser.plan);
     return updatedUser;
   }
 }
