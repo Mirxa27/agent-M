@@ -938,6 +938,76 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
 
+  // Agent Tool operations
+  async getAgentTool(id: number): Promise<AgentTool | undefined> {
+    const [tool] = await db.select().from(agentTools).where(eq(agentTools.id, id));
+    return tool;
+  }
+  
+  async getAllAgentTools(): Promise<AgentTool[]> {
+    return await db.select().from(agentTools);
+  }
+  
+  async getAgentToolsByCategory(category: string): Promise<AgentTool[]> {
+    return await db.select().from(agentTools).where(eq(agentTools.category, category));
+  }
+  
+  async createAgentTool(tool: InsertAgentTool): Promise<AgentTool> {
+    const now = new Date();
+    const toolWithDefaults = {
+      ...tool,
+      isSystem: false, // Default to false, only system can set to true
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    const [newTool] = await db.insert(agentTools)
+      .values(toolWithDefaults)
+      .returning();
+    
+    return newTool;
+  }
+  
+  async updateAgentTool(id: number, updates: Partial<Omit<AgentTool, 'id'>>): Promise<AgentTool | undefined> {
+    // Check if tool exists and if it's a system tool
+    const tool = await this.getAgentTool(id);
+    if (!tool) return undefined;
+    
+    // Don't allow changing isSystem status if it's a system tool
+    if (tool.isSystem && updates.isSystem === false) {
+      throw new Error("Cannot change system status of a system tool");
+    }
+    
+    // Set the updated timestamp
+    const updatesWithTimestamp = {
+      ...updates,
+      updatedAt: new Date()
+    };
+    
+    const [updatedTool] = await db.update(agentTools)
+      .set(updatesWithTimestamp)
+      .where(eq(agentTools.id, id))
+      .returning();
+    
+    return updatedTool;
+  }
+  
+  async deleteAgentTool(id: number): Promise<boolean> {
+    // Check if tool exists and if it's a system tool
+    const tool = await this.getAgentTool(id);
+    if (!tool) return false;
+    
+    // Cannot delete system tools
+    if (tool.isSystem) {
+      throw new Error("Cannot delete a system tool");
+    }
+    
+    const result = await db.delete(agentTools)
+      .where(eq(agentTools.id, id));
+    
+    return result.rowCount > 0;
+  }
+
   // Agent operations
   async getAgent(id: number): Promise<Agent | undefined> {
     const [agent] = await db.select().from(agents).where(eq(agents.id, id));
