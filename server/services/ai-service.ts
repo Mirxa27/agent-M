@@ -29,9 +29,15 @@ export abstract class AIService {
     this.model = model;
   }
 
-  abstract generateText(prompt: string, options?: any): Promise<AIServiceResponse>;
+  abstract generateText(
+    prompt: string,
+    options?: any,
+  ): Promise<AIServiceResponse>;
   abstract generateImage?(prompt: string, options?: any): Promise<string>;
-  abstract processFile?(fileData: Buffer, options?: any): Promise<AIServiceResponse>;
+  abstract processFile?(
+    fileData: Buffer,
+    options?: any,
+  ): Promise<AIServiceResponse>;
 }
 
 // OpenAI Service Implementation
@@ -45,17 +51,21 @@ export class OpenAIService extends AIService {
     }
     this.client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-      baseURL: provider.baseUrl || undefined
+      baseURL: provider.baseUrl || undefined,
     });
   }
 
-  async generateText(prompt: string, options?: any): Promise<AIServiceResponse> {
+  async generateText(
+    prompt: string,
+    options?: any,
+  ): Promise<AIServiceResponse> {
     try {
       const response = await this.client.chat.completions.create({
         model: this.model.modelId,
         messages: [{ role: "user", content: prompt }],
         temperature: options?.temperature || 0.7,
-        max_tokens: options?.maxTokens || this.model.maxOutputTokens || undefined,
+        max_tokens:
+          options?.maxTokens || this.model.maxOutputTokens || undefined,
       });
 
       return {
@@ -63,11 +73,11 @@ export class OpenAIService extends AIService {
         usage: {
           promptTokens: response.usage?.prompt_tokens || 0,
           completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0
+          totalTokens: response.usage?.total_tokens || 0,
         },
         model: this.model.name,
         id: response.id,
-        provider: "openai"
+        provider: "openai",
       };
     } catch (error: any) {
       console.error("OpenAI error:", error);
@@ -104,11 +114,14 @@ export class AnthropicService extends AIService {
     }
     this.client = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
-      baseURL: provider.baseUrl || undefined
+      baseURL: provider.baseUrl || undefined,
     });
   }
 
-  async generateText(prompt: string, options?: any): Promise<AIServiceResponse> {
+  async generateText(
+    prompt: string,
+    options?: any,
+  ): Promise<AIServiceResponse> {
     try {
       const response = await this.client.messages.create({
         model: this.model.modelId,
@@ -122,11 +135,11 @@ export class AnthropicService extends AIService {
         usage: {
           promptTokens: 0, // Anthropic doesn't provide token counts in the same way
           completionTokens: 0,
-          totalTokens: 0
+          totalTokens: 0,
         },
         model: this.model.name,
         id: response.id,
-        provider: "anthropic"
+        provider: "anthropic",
       };
     } catch (error: any) {
       console.error("Anthropic error:", error);
@@ -146,17 +159,21 @@ export class PerplexityService extends AIService {
     }
     this.client = new OpenAI({
       apiKey: process.env.PERPLEXITY_API_KEY,
-      baseURL: provider.baseUrl || "https://api.perplexity.ai"
+      baseURL: provider.baseUrl || "https://api.perplexity.ai",
     });
   }
 
-  async generateText(prompt: string, options?: any): Promise<AIServiceResponse> {
+  async generateText(
+    prompt: string,
+    options?: any,
+  ): Promise<AIServiceResponse> {
     try {
       const response = await this.client.chat.completions.create({
         model: this.model.modelId,
         messages: [{ role: "user", content: prompt }],
         temperature: options?.temperature || 0.7,
-        max_tokens: options?.maxTokens || this.model.maxOutputTokens || undefined,
+        max_tokens:
+          options?.maxTokens || this.model.maxOutputTokens || undefined,
       });
 
       return {
@@ -164,11 +181,11 @@ export class PerplexityService extends AIService {
         usage: {
           promptTokens: response.usage?.prompt_tokens || 0,
           completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0
+          totalTokens: response.usage?.total_tokens || 0,
         },
         model: this.model.name,
         id: response.id,
-        provider: "perplexity"
+        provider: "perplexity",
       };
     } catch (error: any) {
       console.error("Perplexity error:", error);
@@ -188,17 +205,21 @@ export class XAIService extends AIService {
     }
     this.client = new OpenAI({
       apiKey: process.env.XAI_API_KEY,
-      baseURL: provider.baseUrl || "https://api.x.ai/v1"
+      baseURL: provider.baseUrl || "https://api.x.ai/v1",
     });
   }
 
-  async generateText(prompt: string, options?: any): Promise<AIServiceResponse> {
+  async generateText(
+    prompt: string,
+    options?: any,
+  ): Promise<AIServiceResponse> {
     try {
       const response = await this.client.chat.completions.create({
         model: this.model.modelId,
         messages: [{ role: "user", content: prompt }],
         temperature: options?.temperature || 0.7,
-        max_tokens: options?.maxTokens || this.model.maxOutputTokens || undefined,
+        max_tokens:
+          options?.maxTokens || this.model.maxOutputTokens || undefined,
       });
 
       return {
@@ -206,11 +227,11 @@ export class XAIService extends AIService {
         usage: {
           promptTokens: response.usage?.prompt_tokens || 0,
           completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0
+          totalTokens: response.usage?.total_tokens || 0,
         },
         model: this.model.name,
         id: response.id,
-        provider: "xai"
+        provider: "xai",
       };
     } catch (error: any) {
       console.error("xAI error:", error);
@@ -220,7 +241,10 @@ export class XAIService extends AIService {
 }
 
 // Factory method to create the appropriate AI service based on provider
-export function createAIService(provider: AiProvider, model: AiModel): AIService {
+export function createAIService(
+  provider: AiProvider,
+  model: AiModel,
+): AIService {
   switch (provider.provider.toLowerCase()) {
     case "openai":
       return new OpenAIService(provider, model);

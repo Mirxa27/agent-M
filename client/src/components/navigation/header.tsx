@@ -58,11 +58,31 @@ export function Header() {
   }, [scrolled]);
 
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: <Home className="w-4 h-4 mr-2" /> },
-    { href: "/agents", label: "Agents", icon: <Bot className="w-4 h-4 mr-2" /> },
-    { href: "/credentials", label: "Credentials", icon: <Key className="w-4 h-4 mr-2" /> },
-    { href: "/files", label: "Files", icon: <FileText className="w-4 h-4 mr-2" /> },
-    { href: "/task-history", label: "Tasks", icon: <Clock1 className="w-4 h-4 mr-2" /> },
+    {
+      href: "/dashboard",
+      label: "Dashboard",
+      icon: <Home className="w-4 h-4 mr-2" />,
+    },
+    {
+      href: "/agents",
+      label: "Agents",
+      icon: <Bot className="w-4 h-4 mr-2" />,
+    },
+    {
+      href: "/credentials",
+      label: "Credentials",
+      icon: <Key className="w-4 h-4 mr-2" />,
+    },
+    {
+      href: "/files",
+      label: "Files",
+      icon: <FileText className="w-4 h-4 mr-2" />,
+    },
+    {
+      href: "/task-history",
+      label: "Tasks",
+      icon: <Clock1 className="w-4 h-4 mr-2" />,
+    },
   ];
 
   const handleLogout = () => {
@@ -87,14 +107,16 @@ export function Header() {
       <header
         className={cn(
           "sticky top-0 z-30 w-full bg-white dark:bg-gray-900 transition-all duration-200",
-          scrolled ? "shadow-md" : "border-b border-gray-200 dark:border-gray-800"
+          scrolled
+            ? "shadow-md"
+            : "border-b border-gray-200 dark:border-gray-800",
         )}
       >
         <div className="container flex h-16 items-center justify-between px-4">
           {/* Logo */}
           <div className="flex items-center">
-            <div 
-              onClick={() => window.location.href = user ? "/dashboard" : "/"}
+            <div
+              onClick={() => (window.location.href = user ? "/dashboard" : "/")}
               className="flex items-center space-x-2 cursor-pointer"
             >
               <AnimatedLogo size="sm" />
@@ -112,13 +134,13 @@ export function Header() {
                   {navItems.map((item) => (
                     <NavigationMenuItem key={item.href}>
                       <div
-                        onClick={() => window.location.href = item.href}
+                        onClick={() => (window.location.href = item.href)}
                         className={cn(
                           navigationMenuTriggerStyle(),
                           "cursor-pointer",
                           location === item.href
                             ? "bg-primary/10 text-primary"
-                            : ""
+                            : "",
                         )}
                       >
                         {item.icon}
@@ -133,11 +155,15 @@ export function Header() {
                       <NavigationMenuContent>
                         <ul className="grid w-[200px] p-2 gap-2">
                           <li>
-                            <div 
-                              onClick={() => window.location.href = "/admin/dashboard"}
+                            <div
+                              onClick={() =>
+                                (window.location.href = "/admin/dashboard")
+                              }
                               className={cn(
                                 "flex items-center select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
-                                location === "/admin/dashboard" ? "bg-primary/10 text-primary" : ""
+                                location === "/admin/dashboard"
+                                  ? "bg-primary/10 text-primary"
+                                  : "",
                               )}
                             >
                               <div className="flex items-center">
@@ -158,12 +184,12 @@ export function Header() {
           {/* Right Section (User Actions, Language) */}
           <div className="flex items-center space-x-2">
             <LanguageSwitcher />
-            
+
             {!user ? (
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 className="hidden md:flex"
-                onClick={() => window.location.href = "/auth"}
+                onClick={() => (window.location.href = "/auth")}
               >
                 {t("auth.login")}
               </Button>
@@ -179,37 +205,49 @@ export function Header() {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{user?.fullName || user?.username}</p>
-                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                      <p className="text-sm font-medium">
+                        {user?.fullName || user?.username}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {user?.email}
+                      </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => window.location.href = "/dashboard"}>
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = "/dashboard")}
+                  >
                     <div className="flex items-center cursor-pointer">
                       <Home className="mr-2 h-4 w-4" />
                       <span>{t("nav.dashboard")}</span>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = "/agents"}>
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = "/agents")}
+                  >
                     <div className="flex items-center cursor-pointer">
                       <Bot className="mr-2 h-4 w-4" />
                       <span>{t("nav.agents")}</span>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.location.href = "/subscription"}>
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = "/subscription")}
+                  >
                     <div className="flex items-center cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       <span>{t("nav.subscription")}</span>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={handleLogout}
                     disabled={logoutMutation.isPending}
                     className="text-red-600 cursor-pointer"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>{logoutMutation.isPending ? "Logging out..." : "Logout"}</span>
+                    <span>
+                      {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                    </span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -232,7 +270,10 @@ export function Header() {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-40 md:hidden bg-black bg-opacity-50" onClick={() => setMobileMenuOpen(false)}>
+        <div
+          className="fixed inset-0 z-40 md:hidden bg-black bg-opacity-50"
+          onClick={() => setMobileMenuOpen(false)}
+        >
           <div
             className="absolute top-0 right-0 w-64 h-full bg-white dark:bg-gray-900 shadow-lg"
             onClick={(e) => e.stopPropagation()}
@@ -252,7 +293,7 @@ export function Header() {
             <div className="p-4">
               <div className="space-y-1">
                 {navItems.map((item) => (
-                  <div 
+                  <div
                     key={item.href}
                     onClick={() => {
                       window.location.href = item.href;
@@ -262,10 +303,12 @@ export function Header() {
                       "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
                       location === item.href
                         ? "bg-primary/10 text-primary"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
                     )}
                   >
-                    {React.cloneElement(item.icon, { className: "h-5 w-5 mr-3" })}
+                    {React.cloneElement(item.icon, {
+                      className: "h-5 w-5 mr-3",
+                    })}
                     {item.label}
                   </div>
                 ))}
@@ -286,7 +329,7 @@ export function Header() {
                         "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
                         location === "/admin/dashboard"
                           ? "bg-primary/10 text-primary"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
                       )}
                     >
                       <User className="h-5 w-5 mr-3" />

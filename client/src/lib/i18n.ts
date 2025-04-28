@@ -1,10 +1,10 @@
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+import LanguageDetector from "i18next-browser-languagedetector";
 
 // Import translation files
-import enTranslation from '../locales/en.json';
-import arTranslation from '../locales/ar.json';
+import enTranslation from "../locales/en.json";
+import arTranslation from "../locales/ar.json";
 
 // Initialize i18next
 i18n
@@ -16,27 +16,27 @@ i18n
   .init({
     resources: {
       en: {
-        translation: enTranslation
+        translation: enTranslation,
       },
       ar: {
-        translation: arTranslation
-      }
+        translation: arTranslation,
+      },
     },
-    fallbackLng: 'en',
+    fallbackLng: "en",
     debug: true,
     interpolation: {
-      escapeValue: false // not needed for react as it escapes by default
+      escapeValue: false, // not needed for react as it escapes by default
     },
     detection: {
       // order and from where user language should be detected
-      order: ['querystring', 'cookie', 'localStorage', 'navigator', 'htmlTag'],
+      order: ["querystring", "cookie", "localStorage", "navigator", "htmlTag"],
       // keys or params to lookup language from
-      lookupQuerystring: 'lng',
-      lookupCookie: 'i18next',
-      lookupLocalStorage: 'i18nextLng',
+      lookupQuerystring: "lng",
+      lookupCookie: "i18next",
+      lookupLocalStorage: "i18nextLng",
       // cache user language on
-      caches: ['localStorage', 'cookie'],
-    }
+      caches: ["localStorage", "cookie"],
+    },
   });
 
 export default i18n;

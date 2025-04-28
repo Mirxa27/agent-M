@@ -24,7 +24,12 @@ interface TaskTableProps {
   onRerunTask?: (taskId: number) => void;
 }
 
-export default function TaskTable({ tasks, isLoading, onViewTask, onRerunTask }: TaskTableProps) {
+export default function TaskTable({
+  tasks,
+  isLoading,
+  onViewTask,
+  onRerunTask,
+}: TaskTableProps) {
   const { user } = useAuth();
 
   if (isLoading) {
@@ -94,10 +99,15 @@ export default function TaskTable({ tasks, isLoading, onViewTask, onRerunTask }:
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <h3 className="font-medium">Recent Tasks</h3>
-          <a href="/tasks" className="text-primary text-sm font-medium hover:text-primary-600">View All</a>
+          <a
+            href="/tasks"
+            className="text-primary text-sm font-medium hover:text-primary-600"
+          >
+            View All
+          </a>
         </div>
       </div>
-      
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -114,20 +124,30 @@ export default function TaskTable({ tasks, isLoading, onViewTask, onRerunTask }:
               <TableRow key={task.id}>
                 <TableCell>
                   <div className="font-medium text-gray-900">{task.title}</div>
-                  <div className="text-xs text-gray-500">{task.description}</div>
+                  <div className="text-xs text-gray-500">
+                    {task.description}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-6 w-6 bg-blue-500 rounded-md flex items-center justify-center text-white">
-                      <i className={`fa-${task.agentId === 2 ? 'brands' : 'solid'} fa-${getAgentIcon(task.agentId === 1 ? 'email' : task.agentId === 2 ? 'wordpress' : 'google')} text-xs`}></i>
+                      <i
+                        className={`fa-${task.agentId === 2 ? "brands" : "solid"} fa-${getAgentIcon(task.agentId === 1 ? "email" : task.agentId === 2 ? "wordpress" : "google")} text-xs`}
+                      ></i>
                     </div>
                     <div className="ml-2 text-sm text-gray-900">
-                      {task.agentId === 1 ? 'Email Assistant' : task.agentId === 2 ? 'WordPress Manager' : 'Google Workspace'}
+                      {task.agentId === 1
+                        ? "Email Assistant"
+                        : task.agentId === 2
+                          ? "WordPress Manager"
+                          : "Google Workspace"}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(task.status)}`}>
+                  <span
+                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(task.status)}`}
+                  >
                     {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
                   </span>
                 </TableCell>
@@ -153,7 +173,7 @@ export default function TaskTable({ tasks, isLoading, onViewTask, onRerunTask }:
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                    
+
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>

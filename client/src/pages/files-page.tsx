@@ -3,36 +3,66 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { File } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Plus, FileText, Trash2, Download, Upload, Copy, FileUp, MoreHorizontal, AlertCircle } from "lucide-react";
-import { 
-  Dialog, 
-  DialogTrigger, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import {
+  Plus,
+  FileText,
+  Trash2,
+  Download,
+  Upload,
+  Copy,
+  FileUp,
+  MoreHorizontal,
+  AlertCircle,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import { useState, useCallback } from "react";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatDistanceToNow } from "date-fns";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { bytesToSize } from "@/lib/utils";
@@ -46,7 +76,7 @@ const ACCEPTED_FILE_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // docx
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // xlsx
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation" // pptx
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation", // pptx
 ];
 
 const fileSchema = z.object({
@@ -56,15 +86,14 @@ const fileSchema = z.object({
     .refine((files) => files.length > 0, "File is required")
     .refine(
       (files) => files[0] && files[0].size <= MAX_FILE_SIZE,
-      "File size should be less than 5MB"
+      "File size should be less than 5MB",
     )
     .refine(
-      (files) => 
-        files[0] && ACCEPTED_FILE_TYPES.includes(files[0].type),
-      "Unsupported file format. Please upload a JSON, TXT, MD, CSV, PDF, DOCX, XLSX, or PPTX file."
+      (files) => files[0] && ACCEPTED_FILE_TYPES.includes(files[0].type),
+      "Unsupported file format. Please upload a JSON, TXT, MD, CSV, PDF, DOCX, XLSX, or PPTX file.",
     ),
   isTemplate: z.boolean().default(false),
-  templateType: z.string().optional()
+  templateType: z.string().optional(),
 });
 
 export default function FilesPage() {
@@ -76,16 +105,13 @@ export default function FilesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Fetch files
-  const { 
-    data: files,
-    isLoading
-  } = useQuery({
+  const { data: files, isLoading } = useQuery({
     queryKey: ["/api/files"],
     queryFn: async () => {
       const res = await fetch("/api/files");
       if (!res.ok) throw new Error("Failed to fetch files");
       return res.json() as Promise<File[]>;
-    }
+    },
   });
 
   // Upload file mutation
@@ -98,17 +124,17 @@ export default function FilesPage() {
       if (data.templateType) {
         formData.append("templateType", data.templateType);
       }
-      
+
       const res = await fetch("/api/files", {
         method: "POST",
         body: formData,
       });
-      
+
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Failed to upload file");
       }
-      
+
       return res.json();
     },
     onSuccess: () => {
@@ -126,7 +152,7 @@ export default function FilesPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete file mutation
@@ -149,7 +175,7 @@ export default function FilesPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Form setup
@@ -158,8 +184,8 @@ export default function FilesPage() {
     defaultValues: {
       name: "",
       isTemplate: false,
-      templateType: ""
-    }
+      templateType: "",
+    },
   });
 
   const watchIsTemplate = form.watch("isTemplate");
@@ -180,11 +206,12 @@ export default function FilesPage() {
   };
 
   // Filter files based on active tab
-  const filteredFiles = activeTab === "all" 
-    ? files 
-    : activeTab === "templates" 
-      ? files?.filter(file => file.isTemplate)
-      : files?.filter(file => !file.isTemplate);
+  const filteredFiles =
+    activeTab === "all"
+      ? files
+      : activeTab === "templates"
+        ? files?.filter((file) => file.isTemplate)
+        : files?.filter((file) => !file.isTemplate);
 
   const downloadFile = async (file: File) => {
     try {
@@ -192,7 +219,7 @@ export default function FilesPage() {
       if (!res.ok) {
         throw new Error("Failed to download file");
       }
-      
+
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -228,13 +255,15 @@ export default function FilesPage() {
     <div className="container py-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Files &amp; Templates</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Files &amp; Templates
+          </h1>
           <p className="text-muted-foreground">
             Manage your files and reusable templates for AI agents
           </p>
         </div>
-        <Button 
-          onClick={() => setIsUploadDialogOpen(true)} 
+        <Button
+          onClick={() => setIsUploadDialogOpen(true)}
           className="mt-4 md:mt-0"
         >
           <Upload className="mr-2 h-4 w-4" /> Upload File
@@ -269,20 +298,25 @@ export default function FilesPage() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredFiles.map(file => (
+                {filteredFiles.map((file) => (
                   <Card key={file.id} className="flex flex-col">
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 flex items-center justify-center rounded-md border ${file.isTemplate ? 'bg-blue-100 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' : 'bg-muted border-border'}`}>
-                            <FileText className={`h-4 w-4 ${file.isTemplate ? 'text-blue-600 dark:text-blue-400' : 'text-foreground'}`} />
+                          <div
+                            className={`w-8 h-8 flex items-center justify-center rounded-md border ${file.isTemplate ? "bg-blue-100 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800" : "bg-muted border-border"}`}
+                          >
+                            <FileText
+                              className={`h-4 w-4 ${file.isTemplate ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
+                            />
                           </div>
                           <div>
                             <CardTitle className="text-md font-semibold truncate max-w-[180px]">
                               {file.name}
                             </CardTitle>
                             <CardDescription>
-                              {file.isTemplate ? "Template" : "File"} • {getFileIcon(file.contentType).toUpperCase()}
+                              {file.isTemplate ? "Template" : "File"} •{" "}
+                              {getFileIcon(file.contentType).toUpperCase()}
                             </CardDescription>
                           </div>
                         </div>
@@ -295,11 +329,16 @@ export default function FilesPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => downloadFile(file)}>
+                            <DropdownMenuItem
+                              onClick={() => downloadFile(file)}
+                            >
                               <Download className="mr-2 h-4 w-4" />
                               Download
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteClick(file)} className="text-destructive">
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteClick(file)}
+                              className="text-destructive"
+                            >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete
                             </DropdownMenuItem>
@@ -311,26 +350,32 @@ export default function FilesPage() {
                       <div className="space-y-2 text-sm text-muted-foreground">
                         <div className="flex justify-between">
                           <span>Size:</span>
-                          <span className="font-medium">{bytesToSize(file.size)}</span>
+                          <span className="font-medium">
+                            {bytesToSize(file.size)}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span>Uploaded:</span>
                           <span className="font-medium">
-                            {formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })}
+                            {formatDistanceToNow(new Date(file.createdAt), {
+                              addSuffix: true,
+                            })}
                           </span>
                         </div>
                         {file.isTemplate && file.templateType && (
                           <div className="flex justify-between">
                             <span>Template Type:</span>
-                            <span className="font-medium capitalize">{file.templateType}</span>
+                            <span className="font-medium capitalize">
+                              {file.templateType}
+                            </span>
                           </div>
                         )}
                       </div>
                     </CardContent>
                     <CardFooter className="pt-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="w-full"
                         onClick={() => downloadFile(file)}
                       >
@@ -355,9 +400,12 @@ export default function FilesPage() {
               Add files or templates for use with your AI agents.
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleUploadSubmit)} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit(handleUploadSubmit)}
+              className="space-y-4"
+            >
               <FormField
                 control={form.control}
                 name="name"
@@ -371,7 +419,7 @@ export default function FilesPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="file"
@@ -379,21 +427,22 @@ export default function FilesPage() {
                   <FormItem>
                     <FormLabel>File</FormLabel>
                     <FormControl>
-                      <Input 
+                      <Input
                         type="file"
                         accept={ACCEPTED_FILE_TYPES.join(",")}
-                        onChange={(e) => onChange(e.target.files)} 
+                        onChange={(e) => onChange(e.target.files)}
                         {...fieldProps}
                       />
                     </FormControl>
                     <FormMessage />
                     <p className="text-xs text-muted-foreground">
-                      Supported formats: JSON, TXT, MD, CSV, PDF, DOCX, XLSX, PPTX. Max size: 5MB.
+                      Supported formats: JSON, TXT, MD, CSV, PDF, DOCX, XLSX,
+                      PPTX. Max size: 5MB.
                     </p>
                   </FormItem>
                 )}
               />
-              
+
               <div className="flex items-center space-x-2">
                 <FormField
                   control={form.control}
@@ -411,7 +460,7 @@ export default function FilesPage() {
                   )}
                 />
               </div>
-              
+
               {watchIsTemplate && (
                 <FormField
                   control={form.control}
@@ -419,8 +468,8 @@ export default function FilesPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Template Type</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -443,19 +492,16 @@ export default function FilesPage() {
                   )}
                 />
               )}
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsUploadDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={uploadFileMutation.isPending}
-                >
+                <Button type="submit" disabled={uploadFileMutation.isPending}>
                   {uploadFileMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
@@ -473,18 +519,19 @@ export default function FilesPage() {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{selectedFile?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{selectedFile?.name}"? This
+              action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleDeleteConfirm}
               disabled={deleteFileMutation.isPending}
             >

@@ -35,34 +35,40 @@ Mirxa is a next-generation AI Agent platform designed to streamline task automat
 ### Installation
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/yourusername/mirxa-ai.git
    cd mirxa-ai
    ```
 
 2. Install dependencies:
+
    ```
    npm install
    ```
 
 3. Set up environment variables:
    Create a `.env` file in the root directory with the following:
+
    ```
    DATABASE_URL=postgresql://username:password@localhost:5432/mirxa
    SESSION_SECRET=your_session_secret
    ```
 
 4. Initialize the database:
+
    ```
    npm run db:push
    ```
 
 5. Create an admin user:
+
    ```
    node create-admin.js
    ```
 
 6. Start the development server:
+
    ```
    npm run dev
    ```

@@ -6,7 +6,14 @@ import { z } from "zod";
 import { toast } from "@/hooks/use-toast";
 import { User } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import { EditIcon, PlusIcon, SearchIcon, TrashIcon, ShieldIcon, UserIcon } from "lucide-react";
+import {
+  EditIcon,
+  PlusIcon,
+  SearchIcon,
+  TrashIcon,
+  ShieldIcon,
+  UserIcon,
+} from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -68,9 +75,12 @@ const userFormSchema = z.object({
   email: z.string().email("Invalid email address"),
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
   role: z.enum(["user", "admin"]).default("user"),
-  password: z.string().min(8, "Password must be at least 8 characters").optional(),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .optional(),
   isActive: z.boolean().default(true),
-  planId: z.coerce.number().optional()
+  planId: z.coerce.number().optional(),
 });
 
 type UserFormValues = z.infer<typeof userFormSchema>;
@@ -80,25 +90,25 @@ export default function UsersPanel() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<Omit<User, "password"> | null>(null);
-  
+  const [selectedUser, setSelectedUser] = useState<Omit<
+    User,
+    "password"
+  > | null>(null);
+
   const queryClient = useQueryClient();
 
   // Fetch all users
-  const { 
-    data: users = [], 
+  const {
+    data: users = [],
     isLoading,
-    error 
+    error,
   } = useQuery({
-    queryKey: ["/api/admin/users"]
+    queryKey: ["/api/admin/users"],
   });
 
   // Fetch all plans for the dropdown
-  const { 
-    data: plans = [], 
-    isLoading: isLoadingPlans,
-  } = useQuery({
-    queryKey: ["/api/admin/plans"]
+  const { data: plans = [], isLoading: isLoadingPlans } = useQuery({
+    queryKey: ["/api/admin/plans"],
   });
 
   // Create user mutation
@@ -126,12 +136,18 @@ export default function UsersPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Update user mutation
   const updateUserMutation = useMutation({
-    mutationFn: async ({ id, user }: { id: number, user: Partial<UserFormValues> }) => {
+    mutationFn: async ({
+      id,
+      user,
+    }: {
+      id: number;
+      user: Partial<UserFormValues>;
+    }) => {
       const res = await apiRequest("PATCH", `/api/admin/users/${id}`, user);
       if (!res.ok) {
         const error = await res.json();
@@ -153,7 +169,7 @@ export default function UsersPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete user mutation
@@ -180,7 +196,7 @@ export default function UsersPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Create form
@@ -192,15 +208,21 @@ export default function UsersPanel() {
       fullName: "",
       role: "user",
       isActive: true,
-      planId: undefined
-    }
+      planId: undefined,
+    },
   });
 
   // Edit form
   const editForm = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema.omit({ password: true }).extend({
-      password: z.string().min(8, "Password must be at least 8 characters").optional().or(z.literal(''))
-    })),
+    resolver: zodResolver(
+      userFormSchema.omit({ password: true }).extend({
+        password: z
+          .string()
+          .min(8, "Password must be at least 8 characters")
+          .optional()
+          .or(z.literal("")),
+      }),
+    ),
     defaultValues: {
       username: "",
       email: "",
@@ -208,8 +230,8 @@ export default function UsersPanel() {
       role: "user",
       password: "",
       isActive: true,
-      planId: undefined
-    }
+      planId: undefined,
+    },
   });
 
   // Reset form to default values
@@ -221,7 +243,7 @@ export default function UsersPanel() {
       role: "user",
       password: "",
       isActive: true,
-      planId: undefined
+      planId: undefined,
     });
   };
 
@@ -231,42 +253,44 @@ export default function UsersPanel() {
   };
 
   // Handle edit submission
-  const onEditSubmit = (values: Omit<UserFormValues, 'password'> & { password?: string }) => {
+  const onEditSubmit = (
+    values: Omit<UserFormValues, "password"> & { password?: string },
+  ) => {
     if (selectedUser) {
       // Only include non-empty values
       const updateData: any = {};
-      
+
       if (values.username && values.username !== selectedUser.username) {
         updateData.username = values.username;
       }
-      
+
       if (values.email && values.email !== selectedUser.email) {
         updateData.email = values.email;
       }
-      
+
       if (values.fullName && values.fullName !== selectedUser.fullName) {
         updateData.fullName = values.fullName;
       }
-      
+
       if (values.role !== selectedUser.role) {
         updateData.role = values.role;
       }
-      
+
       // Use plan property instead of planId
       if (values.plan !== selectedUser.plan) {
         updateData.plan = values.plan;
       }
-      
+
       // Only include password if it's not empty
       if (values.password) {
         updateData.password = values.password;
       }
-      
+
       // Only update if there are changes
       if (Object.keys(updateData).length > 0) {
-        updateUserMutation.mutate({ 
-          id: selectedUser.id, 
-          user: updateData
+        updateUserMutation.mutate({
+          id: selectedUser.id,
+          user: updateData,
         });
       } else {
         toast({
@@ -294,7 +318,7 @@ export default function UsersPanel() {
       fullName: user.fullName || "",
       role: user.role as "user" | "admin",
       password: "",
-      plan: user.plan
+      plan: user.plan,
     });
     setIsEditDialogOpen(true);
   };
@@ -306,10 +330,12 @@ export default function UsersPanel() {
   };
 
   // Filter users by search query
-  const filteredUsers = users.filter(user => 
-    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (user.fullName && user.fullName.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredUsers = users.filter(
+    (user) =>
+      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.fullName &&
+        user.fullName.toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
   // No need for getPlanName as we directly display plan
@@ -322,7 +348,8 @@ export default function UsersPanel() {
         </CardHeader>
         <CardContent>
           <div className="text-red-500">
-            Error loading users: {error instanceof Error ? error.message : "Unknown error"}
+            Error loading users:{" "}
+            {error instanceof Error ? error.message : "Unknown error"}
           </div>
         </CardContent>
       </Card>
@@ -345,7 +372,7 @@ export default function UsersPanel() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button 
+            <Button
               onClick={() => setIsCreateDialogOpen(true)}
               className="w-full sm:w-auto"
             >
@@ -371,49 +398,76 @@ export default function UsersPanel() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[120px]">Username</TableHead>
-                    <TableHead className="hidden sm:table-cell">Email</TableHead>
-                    <TableHead className="hidden md:table-cell">Full Name</TableHead>
+                    <TableHead className="hidden sm:table-cell">
+                      Email
+                    </TableHead>
+                    <TableHead className="hidden md:table-cell">
+                      Full Name
+                    </TableHead>
                     <TableHead className="w-[80px]">Role</TableHead>
                     <TableHead className="hidden sm:table-cell">Plan</TableHead>
-                    <TableHead className="hidden md:table-cell">Status</TableHead>
-                    <TableHead className="hidden lg:table-cell">Created</TableHead>
+                    <TableHead className="hidden md:table-cell">
+                      Status
+                    </TableHead>
+                    <TableHead className="hidden lg:table-cell">
+                      Created
+                    </TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
-                        {searchQuery ? "No users match your search" : "No users found"}
+                      <TableCell
+                        colSpan={8}
+                        className="text-center py-6 text-muted-foreground"
+                      >
+                        {searchQuery
+                          ? "No users match your search"
+                          : "No users found"}
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredUsers.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.username}</TableCell>
-                        <TableCell className="hidden sm:table-cell">{user.email}</TableCell>
-                        <TableCell className="hidden md:table-cell">{user.fullName || "-"}</TableCell>
+                        <TableCell className="font-medium">
+                          {user.username}
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          {user.email}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {user.fullName || "-"}
+                        </TableCell>
                         <TableCell>
                           {user.role === "admin" ? (
-                            <Badge variant="secondary" className="flex items-center space-x-1 w-fit">
+                            <Badge
+                              variant="secondary"
+                              className="flex items-center space-x-1 w-fit"
+                            >
                               <ShieldIcon className="h-3 w-3 mr-1" />
                               Admin
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="flex items-center space-x-1 w-fit">
+                            <Badge
+                              variant="outline"
+                              className="flex items-center space-x-1 w-fit"
+                            >
                               <UserIcon className="h-3 w-3 mr-1" />
                               User
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">{user.plan || "No Plan"}</TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          {user.plan || "No Plan"}
+                        </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          <Badge variant="success">
-                            Active
-                          </Badge>
+                          <Badge variant="success">Active</Badge>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                          {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "N/A"}
+                          {user.createdAt
+                            ? format(new Date(user.createdAt), "MMM d, yyyy")
+                            : "N/A"}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -426,7 +480,9 @@ export default function UsersPanel() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleEdit(user)}>
+                              <DropdownMenuItem
+                                onClick={() => handleEdit(user)}
+                              >
                                 <EditIcon className="mr-2 h-4 w-4" />
                                 <span>Edit user</span>
                               </DropdownMenuItem>
@@ -460,7 +516,10 @@ export default function UsersPanel() {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onCreateSubmit)} className="space-y-6">
+            <form
+              onSubmit={form.handleSubmit(onCreateSubmit)}
+              className="space-y-6"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -475,7 +534,7 @@ export default function UsersPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="fullName"
@@ -498,17 +557,17 @@ export default function UsersPanel() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="email" 
-                        placeholder="user@example.com" 
-                        {...field} 
+                      <Input
+                        type="email"
+                        placeholder="user@example.com"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="password"
@@ -516,10 +575,10 @@ export default function UsersPanel() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="••••••••" 
-                        {...field} 
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        {...field}
                       />
                     </FormControl>
                     <FormDescription>
@@ -529,7 +588,7 @@ export default function UsersPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -537,8 +596,8 @@ export default function UsersPanel() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>User Role</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -555,15 +614,15 @@ export default function UsersPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="plan"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Subscription Plan</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         value={field.value}
                       >
                         <FormControl>
@@ -583,7 +642,7 @@ export default function UsersPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="isActive"
@@ -604,19 +663,16 @@ export default function UsersPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsCreateDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={createUserMutation.isPending}
-                >
+                <Button type="submit" disabled={createUserMutation.isPending}>
                   {createUserMutation.isPending && (
                     <span className="mr-2 h-4 w-4 animate-spin">◌</span>
                   )}
@@ -638,7 +694,10 @@ export default function UsersPanel() {
             </DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
+            <form
+              onSubmit={editForm.handleSubmit(onEditSubmit)}
+              className="space-y-6"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={editForm.control}
@@ -653,7 +712,7 @@ export default function UsersPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="fullName"
@@ -676,17 +735,17 @@ export default function UsersPanel() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="email" 
-                        placeholder="user@example.com" 
-                        {...field} 
+                      <Input
+                        type="email"
+                        placeholder="user@example.com"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={editForm.control}
                 name="password"
@@ -694,10 +753,10 @@ export default function UsersPanel() {
                   <FormItem>
                     <FormLabel>New Password (Optional)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="Leave blank to keep current password" 
-                        {...field} 
+                      <Input
+                        type="password"
+                        placeholder="Leave blank to keep current password"
+                        {...field}
                       />
                     </FormControl>
                     <FormDescription>
@@ -707,7 +766,7 @@ export default function UsersPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={editForm.control}
@@ -715,8 +774,8 @@ export default function UsersPanel() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>User Role</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -733,15 +792,17 @@ export default function UsersPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="planId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Subscription Plan</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
+                      <Select
+                        onValueChange={(value) =>
+                          field.onChange(value ? parseInt(value) : undefined)
+                        }
                         value={field.value?.toString() || ""}
                       >
                         <FormControl>
@@ -757,10 +818,10 @@ export default function UsersPanel() {
                             </div>
                           ) : (
                             plans
-                              .filter(plan => plan.isActive)
+                              .filter((plan) => plan.isActive)
                               .map((plan) => (
-                                <SelectItem 
-                                  key={plan.id} 
+                                <SelectItem
+                                  key={plan.id}
                                   value={plan.id.toString()}
                                 >
                                   {plan.name}
@@ -774,7 +835,7 @@ export default function UsersPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={editForm.control}
                 name="isActive"
@@ -795,19 +856,16 @@ export default function UsersPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsEditDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={updateUserMutation.isPending}
-                >
+                <Button type="submit" disabled={updateUserMutation.isPending}>
                   {updateUserMutation.isPending && (
                     <span className="mr-2 h-4 w-4 animate-spin">◌</span>
                   )}
@@ -825,8 +883,9 @@ export default function UsersPanel() {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the user "{selectedUser?.username}"? 
-              This action cannot be undone and will remove all associated agents, credentials, and files.
+              Are you sure you want to delete the user "{selectedUser?.username}
+              "? This action cannot be undone and will remove all associated
+              agents, credentials, and files.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">

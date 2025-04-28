@@ -7,10 +7,10 @@ interface RobotVisualizationProps {
   onCustomize?: () => void;
 }
 
-export default function RobotVisualization({ 
-  message = "How can I help you today?", 
+export default function RobotVisualization({
+  message = "How can I help you today?",
   subMessage = "I'm powered by advanced AI to automate your tasks",
-  onCustomize
+  onCustomize,
 }: RobotVisualizationProps) {
   const robotRef = useRef<HTMLDivElement>(null);
 
@@ -20,22 +20,22 @@ export default function RobotVisualization({
     if (!robot) return;
 
     let startTime: number;
-    
+
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
-      
+
       // Simple floating animation
       const translateY = Math.sin(elapsed / 1000) * 5;
       const rotateY = Math.sin(elapsed / 2000) * 5;
-      
+
       robot.style.transform = `translateY(${translateY}px) rotateY(${rotateY}deg)`;
-      
+
       animationFrameId = requestAnimationFrame(animate);
     };
-    
+
     let animationFrameId = requestAnimationFrame(animate);
-    
+
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
@@ -44,9 +44,12 @@ export default function RobotVisualization({
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <h3 className="font-medium mb-4">Mirxa Assistant</h3>
-      
+
       <div className="robot-container flex justify-center mb-4 perspective-800">
-        <div ref={robotRef} className="robot w-40 h-40 bg-primary-50 rounded-full flex items-center justify-center">
+        <div
+          ref={robotRef}
+          className="robot w-40 h-40 bg-primary-50 rounded-full flex items-center justify-center"
+        >
           {/* Simple 3D-like Robot Visualization */}
           <div className="relative w-24 h-28">
             <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-16 h-16 bg-primary-400 rounded-xl flex items-center justify-center shadow-md">
@@ -59,12 +62,12 @@ export default function RobotVisualization({
           </div>
         </div>
       </div>
-      
+
       <div className="text-center">
         <p className="font-medium">{message}</p>
         <p className="text-xs text-gray-500 mt-1">{subMessage}</p>
       </div>
-      
+
       {onCustomize && (
         <div className="mt-4">
           <Button

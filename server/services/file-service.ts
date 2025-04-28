@@ -1,16 +1,16 @@
-import { promises as fsPromises } from 'fs';
-import path from 'path';
-import { File as FileModel } from '@shared/schema';
-import { storage } from '../storage';
+import { promises as fsPromises } from "fs";
+import path from "path";
+import { File as FileModel } from "@shared/schema";
+import { storage } from "../storage";
 
-const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
+const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 
 // Ensure uploads directory exists
 async function ensureUploadsDir() {
   try {
     await fsPromises.mkdir(UPLOADS_DIR, { recursive: true });
   } catch (error) {
-    console.error('Error creating uploads directory:', error);
+    console.error("Error creating uploads directory:", error);
     throw error;
   }
 }
@@ -28,41 +28,41 @@ export async function loadAndProcessFile(file: FileModel): Promise<FileData> {
   try {
     // Get file path
     const filePath = path.join(UPLOADS_DIR, file.path);
-    
+
     // Read file buffer
     const buffer = await fsPromises.readFile(filePath);
-    
+
     // Process file based on content type
-    let textContent = '';
-    
+    let textContent = "";
+
     // Extract text content based on file type
-    if (file.contentType.startsWith('text/')) {
+    if (file.contentType.startsWith("text/")) {
       // Text files
-      textContent = buffer.toString('utf8');
-    } else if (file.contentType === 'application/json') {
+      textContent = buffer.toString("utf8");
+    } else if (file.contentType === "application/json") {
       // JSON files
-      textContent = buffer.toString('utf8');
+      textContent = buffer.toString("utf8");
     } else if (
-      file.contentType === 'application/pdf' ||
-      file.contentType.includes('spreadsheet') ||
-      file.contentType.includes('document') ||
-      file.contentType.includes('presentation')
+      file.contentType === "application/pdf" ||
+      file.contentType.includes("spreadsheet") ||
+      file.contentType.includes("document") ||
+      file.contentType.includes("presentation")
     ) {
       // For documents that need special processing
       textContent = `[${file.contentType} file content extraction not implemented yet]`;
-    } else if (file.contentType.startsWith('image/')) {
+    } else if (file.contentType.startsWith("image/")) {
       // Image files
       textContent = `[Image file: ${file.name}]`;
     } else {
       // Other binary files
       textContent = `[Binary file: ${file.name} (${file.contentType})]`;
     }
-    
+
     return {
       buffer,
       textContent,
       contentType: file.contentType,
-      type: file.type
+      type: file.type,
     };
   } catch (error: any) {
     console.error(`Error loading file ${file.id}:`, error);
@@ -77,35 +77,38 @@ export async function saveFile(
   fileName: string,
   contentType: string,
   isTemplate: boolean = false,
-  templateType: string | null = null
+  templateType: string | null = null,
 ): Promise<FileModel> {
   try {
     await ensureUploadsDir();
-    
+
     // Generate unique file path
-    const uniqueId = Date.now().toString(36) + Math.random().toString(36).substring(2);
-    const filePath = `${uniqueId}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const uniqueId =
+      Date.now().toString(36) + Math.random().toString(36).substring(2);
+    const filePath = `${uniqueId}_${fileName.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
     const fullPath = path.join(UPLOADS_DIR, filePath);
-    
+
     // Write file to disk
     await fsPromises.writeFile(fullPath, fileBuffer);
-    
+
     // Determine file type
     const fileExtension = path.extname(fileName).toLowerCase();
-    let fileType = 'document';
-    
-    if (['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp'].includes(fileExtension)) {
-      fileType = 'image';
-    } else if (['.pdf'].includes(fileExtension)) {
-      fileType = 'pdf';
-    } else if (['.csv', '.xlsx', '.xls'].includes(fileExtension)) {
-      fileType = 'spreadsheet';
-    } else if (['.docx', '.doc', '.txt', '.rtf'].includes(fileExtension)) {
-      fileType = 'document';
-    } else if (['.json', '.xml', '.yaml', '.yml'].includes(fileExtension)) {
-      fileType = 'data';
+    let fileType = "document";
+
+    if (
+      [".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp"].includes(fileExtension)
+    ) {
+      fileType = "image";
+    } else if ([".pdf"].includes(fileExtension)) {
+      fileType = "pdf";
+    } else if ([".csv", ".xlsx", ".xls"].includes(fileExtension)) {
+      fileType = "spreadsheet";
+    } else if ([".docx", ".doc", ".txt", ".rtf"].includes(fileExtension)) {
+      fileType = "document";
+    } else if ([".json", ".xml", ".yaml", ".yml"].includes(fileExtension)) {
+      fileType = "data";
     }
-    
+
     // Create file record in database
     const file = await storage.createFile({
       userId,
@@ -117,12 +120,12 @@ export async function saveFile(
       isTemplate,
       templateType,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     });
-    
+
     return file;
   } catch (error: any) {
-    console.error('Error saving file:', error);
+    console.error("Error saving file:", error);
     throw new Error(`Failed to save file: ${error.message}`);
   }
 }
@@ -133,12 +136,18 @@ export async function getFilesByTaskId(taskId: number): Promise<FileModel[]> {
 }
 
 // Associate a file with a task
-export async function linkFileToTask(taskId: number, fileId: number): Promise<void> {
+export async function linkFileToTask(
+  taskId: number,
+  fileId: number,
+): Promise<void> {
   await storage.linkFileToTask(taskId, fileId);
 }
 
 // Remove an association between a file and a task
-export async function unlinkFileFromTask(taskId: number, fileId: number): Promise<boolean> {
+export async function unlinkFileFromTask(
+  taskId: number,
+  fileId: number,
+): Promise<boolean> {
   return await storage.unlinkFileFromTask(taskId, fileId);
 }
 
@@ -150,11 +159,11 @@ export async function deleteFile(fileId: number): Promise<boolean> {
     if (!file) {
       throw new Error(`File with ID ${fileId} not found`);
     }
-    
+
     // Delete file from disk
     const filePath = path.join(UPLOADS_DIR, file.path);
     await fsPromises.unlink(filePath);
-    
+
     // Delete file record from database
     return storage.deleteFile(fileId);
   } catch (error: any) {

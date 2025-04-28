@@ -5,28 +5,28 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Redirect, Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
-import { 
-  ArrowRight, 
-  Loader2, 
-  Lock, 
-  Mail, 
-  User, 
-  Bot, 
-  ShieldCheck, 
-  Zap, 
-  PlugZap 
+import {
+  ArrowRight,
+  Loader2,
+  Lock,
+  Mail,
+  User,
+  Bot,
+  ShieldCheck,
+  Zap,
+  PlugZap,
 } from "lucide-react";
 
 export default function AuthPage() {
@@ -35,7 +35,7 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const { toast } = useToast();
   const [windowWidth, setWindowWidth] = useState<number>(
-    typeof window !== "undefined" ? window.innerWidth : 0
+    typeof window !== "undefined" ? window.innerWidth : 0,
   );
 
   // Handle window resize for better responsiveness
@@ -43,11 +43,11 @@ export default function AuthPage() {
     function handleResize() {
       setWindowWidth(window.innerWidth);
     }
-    
+
     if (typeof window !== "undefined") {
       window.addEventListener("resize", handleResize);
       handleResize(); // Set initial size
-      
+
       return () => window.removeEventListener("resize", handleResize);
     }
   }, []);
@@ -57,8 +57,8 @@ export default function AuthPage() {
     resolver: zodResolver(loginSchema),
     defaultValues: {
       username: "",
-      password: ""
-    }
+      password: "",
+    },
   });
 
   // Register form
@@ -69,8 +69,8 @@ export default function AuthPage() {
       email: "",
       fullName: "",
       password: "",
-      confirmPassword: ""
-    }
+      confirmPassword: "",
+    },
   });
 
   const onLoginSubmit = (data: z.infer<typeof loginSchema>) => {
@@ -80,13 +80,13 @@ export default function AuthPage() {
   const onRegisterSubmit = (data: z.infer<typeof registerSchema>) => {
     // Remove confirmPassword as it's not part of the API
     const { confirmPassword, ...registrationData } = data;
-    
+
     // Make sure we're passing an object with the correct fields
     registerMutation.mutate({
       username: registrationData.username,
       email: registrationData.email,
       fullName: registrationData.fullName,
-      password: registrationData.password
+      password: registrationData.password,
     });
   };
 
@@ -99,18 +99,28 @@ export default function AuthPage() {
     <div className="min-h-screen flex flex-col md:flex-row bg-gradient-to-b from-background to-slate-50 dark:from-background dark:to-slate-950">
       {/* Left side - Forms */}
       <div className="w-full md:w-3/5 flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-16 xl:p-20">
-        <div className={`w-full ${windowWidth > 1200 ? 'max-w-xl' : 'max-w-md'} backdrop-blur-sm bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 ${windowWidth > 1400 ? 'p-10' : ''} rounded-xl shadow-lg border border-gray-200 dark:border-gray-800`}>
+        <div
+          className={`w-full ${windowWidth > 1200 ? "max-w-xl" : "max-w-md"} backdrop-blur-sm bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 ${windowWidth > 1400 ? "p-10" : ""} rounded-xl shadow-lg border border-gray-200 dark:border-gray-800`}
+        >
           <div className="text-center mb-6 sm:mb-8">
             <div className="inline-flex items-center justify-center">
               <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center mr-2">
                 <span className="text-white font-bold text-xl">M</span>
               </div>
-              <h1 className="text-2xl font-heading font-bold">{t("app.name")}</h1>
+              <h1 className="text-2xl font-heading font-bold">
+                {t("app.name")}
+              </h1>
             </div>
-            <p className="text-muted-foreground mt-2 text-sm sm:text-base">{t("app.slogan")}</p>
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">
+              {t("app.slogan")}
+            </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="grid grid-cols-2 mb-6 sm:mb-8">
               <TabsTrigger value="login">{t("auth.login")}</TabsTrigger>
               <TabsTrigger value="register">{t("auth.register")}</TabsTrigger>
@@ -119,20 +129,25 @@ export default function AuthPage() {
             {/* Login Form */}
             <TabsContent value="login">
               <Form {...loginForm}>
-                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                <form
+                  onSubmit={loginForm.handleSubmit(onLoginSubmit)}
+                  className="space-y-4"
+                >
                   <FormField
                     control={loginForm.control}
                     name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm">{t("auth.username")}</FormLabel>
+                        <FormLabel className="text-sm">
+                          {t("auth.username")}
+                        </FormLabel>
                         <FormControl>
                           <div className="relative">
                             <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              placeholder={`${t("auth.username")}...`} 
+                            <Input
+                              placeholder={`${t("auth.username")}...`}
                               className="pl-9"
-                              {...field} 
+                              {...field}
                             />
                           </div>
                         </FormControl>
@@ -146,15 +161,17 @@ export default function AuthPage() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm">{t("auth.password")}</FormLabel>
+                        <FormLabel className="text-sm">
+                          {t("auth.password")}
+                        </FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              type="password" 
-                              placeholder={`${t("auth.password")}...`} 
+                            <Input
+                              type="password"
+                              placeholder={`${t("auth.password")}...`}
                               className="pl-9"
-                              {...field} 
+                              {...field}
                             />
                           </div>
                         </FormControl>
@@ -164,9 +181,9 @@ export default function AuthPage() {
                   />
 
                   <div className="flex justify-end">
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-primary hover:bg-primary/90 transition-colors" 
+                    <Button
+                      type="submit"
+                      className="w-full bg-primary hover:bg-primary/90 transition-colors"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending ? (
@@ -182,20 +199,25 @@ export default function AuthPage() {
             {/* Register Form */}
             <TabsContent value="register">
               <Form {...registerForm}>
-                <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                <form
+                  onSubmit={registerForm.handleSubmit(onRegisterSubmit)}
+                  className="space-y-4"
+                >
                   <FormField
                     control={registerForm.control}
                     name="fullName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm">{t("auth.fullName")}</FormLabel>
+                        <FormLabel className="text-sm">
+                          {t("auth.fullName")}
+                        </FormLabel>
                         <FormControl>
                           <div className="relative">
                             <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input 
+                            <Input
                               placeholder={`${t("auth.fullName")}...`}
                               className="pl-9"
-                              {...field} 
+                              {...field}
                             />
                           </div>
                         </FormControl>
@@ -210,9 +232,14 @@ export default function AuthPage() {
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm">{t("auth.username")}</FormLabel>
+                          <FormLabel className="text-sm">
+                            {t("auth.username")}
+                          </FormLabel>
                           <FormControl>
-                            <Input placeholder={`${t("auth.username")}...`} {...field} />
+                            <Input
+                              placeholder={`${t("auth.username")}...`}
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage className="text-xs" />
                         </FormItem>
@@ -224,15 +251,17 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm">{t("auth.email")}</FormLabel>
+                          <FormLabel className="text-sm">
+                            {t("auth.email")}
+                          </FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                type="email" 
+                              <Input
+                                type="email"
                                 placeholder={`${t("auth.email")}...`}
-                                className="pl-9" 
-                                {...field} 
+                                className="pl-9"
+                                {...field}
                               />
                             </div>
                           </FormControl>
@@ -248,15 +277,17 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm">{t("auth.password")}</FormLabel>
+                          <FormLabel className="text-sm">
+                            {t("auth.password")}
+                          </FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                type="password" 
+                              <Input
+                                type="password"
                                 placeholder={`${t("auth.password")}...`}
-                                className="pl-9" 
-                                {...field} 
+                                className="pl-9"
+                                {...field}
                               />
                             </div>
                           </FormControl>
@@ -270,11 +301,13 @@ export default function AuthPage() {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm">{t("auth.confirmPassword")}</FormLabel>
+                          <FormLabel className="text-sm">
+                            {t("auth.confirmPassword")}
+                          </FormLabel>
                           <FormControl>
-                            <Input 
-                              type="password" 
-                              placeholder={`${t("auth.confirmPassword")}...`} 
+                            <Input
+                              type="password"
+                              placeholder={`${t("auth.confirmPassword")}...`}
                               {...field}
                             />
                           </FormControl>
@@ -284,9 +317,9 @@ export default function AuthPage() {
                     />
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-primary hover:bg-primary/90 transition-colors" 
+                  <Button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary/90 transition-colors"
                     disabled={registerMutation.isPending}
                   >
                     {registerMutation.isPending ? (
@@ -308,85 +341,133 @@ export default function AuthPage() {
         <div className="absolute bottom-0 left-0 w-80 h-80 md:w-96 md:h-96 bg-white/5 rounded-full -mb-40 -ml-20 animate-pulse-slow"></div>
         <div className="absolute top-1/3 left-1/4 w-40 h-40 bg-white/5 rounded-full blur-xl"></div>
         <div className="absolute bottom-1/3 right-1/4 w-32 h-32 bg-white/10 rounded-full blur-lg animate-pulse-slow"></div>
-        
-        <div className={`${windowWidth > 1400 ? 'max-w-2xl' : 'max-w-xl'} mx-auto relative z-10`}>
+
+        <div
+          className={`${windowWidth > 1400 ? "max-w-2xl" : "max-w-xl"} mx-auto relative z-10`}
+        >
           <div className="flex items-center mb-6 md:mb-8">
-            <Bot className={`h-10 w-10 ${windowWidth > 1400 ? 'h-12 w-12' : ''} text-white/80 mr-4`} />
-            <h2 className={`text-3xl sm:text-4xl ${windowWidth > 1400 ? 'text-5xl' : ''} font-heading font-bold`}>
+            <Bot
+              className={`h-10 w-10 ${windowWidth > 1400 ? "h-12 w-12" : ""} text-white/80 mr-4`}
+            />
+            <h2
+              className={`text-3xl sm:text-4xl ${windowWidth > 1400 ? "text-5xl" : ""} font-heading font-bold`}
+            >
               {t("auth.hero.title")}
             </h2>
           </div>
-          <p className={`text-primary-100 text-base sm:text-lg ${windowWidth > 1400 ? 'text-xl leading-relaxed' : ''} mb-8 md:mb-10`}>
+          <p
+            className={`text-primary-100 text-base sm:text-lg ${windowWidth > 1400 ? "text-xl leading-relaxed" : ""} mb-8 md:mb-10`}
+          >
             {t("auth.hero.description")}
           </p>
-          
-          <div className={`space-y-6 ${windowWidth > 1400 ? 'space-y-8 grid grid-cols-2 gap-x-8 gap-y-8' : ''} text-primary-100`}>
+
+          <div
+            className={`space-y-6 ${windowWidth > 1400 ? "space-y-8 grid grid-cols-2 gap-x-8 gap-y-8" : ""} text-primary-100`}
+          >
             <div className="flex items-start">
-              <div className={`${windowWidth > 1400 ? 'w-14 h-14' : 'w-10 h-10 sm:w-12 sm:h-12'} bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0 shadow-glow transition-transform hover:scale-105`}>
-                <Bot className={`${windowWidth > 1400 ? 'h-7 w-7' : 'h-5 w-5 sm:h-6 sm:w-6'} text-white`} />
+              <div
+                className={`${windowWidth > 1400 ? "w-14 h-14" : "w-10 h-10 sm:w-12 sm:h-12"} bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0 shadow-glow transition-transform hover:scale-105`}
+              >
+                <Bot
+                  className={`${windowWidth > 1400 ? "h-7 w-7" : "h-5 w-5 sm:h-6 sm:w-6"} text-white`}
+                />
               </div>
               <div>
-                <h3 className={`text-lg sm:text-xl ${windowWidth > 1400 ? 'text-2xl' : ''} font-medium text-white mb-1`}>
+                <h3
+                  className={`text-lg sm:text-xl ${windowWidth > 1400 ? "text-2xl" : ""} font-medium text-white mb-1`}
+                >
                   {t("auth.hero.feature1")}
                 </h3>
-                <p className={`text-sm sm:text-base ${windowWidth > 1400 ? 'text-lg' : ''}`}>
+                <p
+                  className={`text-sm sm:text-base ${windowWidth > 1400 ? "text-lg" : ""}`}
+                >
                   {t("auth.hero.feature1Description")}
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start">
-              <div className={`${windowWidth > 1400 ? 'w-14 h-14' : 'w-10 h-10 sm:w-12 sm:h-12'} bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0 shadow-glow transition-transform hover:scale-105`}>
-                <ShieldCheck className={`${windowWidth > 1400 ? 'h-7 w-7' : 'h-5 w-5 sm:h-6 sm:w-6'} text-white`} />
+              <div
+                className={`${windowWidth > 1400 ? "w-14 h-14" : "w-10 h-10 sm:w-12 sm:h-12"} bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0 shadow-glow transition-transform hover:scale-105`}
+              >
+                <ShieldCheck
+                  className={`${windowWidth > 1400 ? "h-7 w-7" : "h-5 w-5 sm:h-6 sm:w-6"} text-white`}
+                />
               </div>
               <div>
-                <h3 className={`text-lg sm:text-xl ${windowWidth > 1400 ? 'text-2xl' : ''} font-medium text-white mb-1`}>
+                <h3
+                  className={`text-lg sm:text-xl ${windowWidth > 1400 ? "text-2xl" : ""} font-medium text-white mb-1`}
+                >
                   {t("auth.hero.feature2")}
                 </h3>
-                <p className={`text-sm sm:text-base ${windowWidth > 1400 ? 'text-lg' : ''}`}>
+                <p
+                  className={`text-sm sm:text-base ${windowWidth > 1400 ? "text-lg" : ""}`}
+                >
                   {t("auth.hero.feature2Description")}
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start">
-              <div className={`${windowWidth > 1400 ? 'w-14 h-14' : 'w-10 h-10 sm:w-12 sm:h-12'} bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0 shadow-glow transition-transform hover:scale-105`}>
-                <Zap className={`${windowWidth > 1400 ? 'h-7 w-7' : 'h-5 w-5 sm:h-6 sm:w-6'} text-white`} />
+              <div
+                className={`${windowWidth > 1400 ? "w-14 h-14" : "w-10 h-10 sm:w-12 sm:h-12"} bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0 shadow-glow transition-transform hover:scale-105`}
+              >
+                <Zap
+                  className={`${windowWidth > 1400 ? "h-7 w-7" : "h-5 w-5 sm:h-6 sm:w-6"} text-white`}
+                />
               </div>
               <div>
-                <h3 className={`text-lg sm:text-xl ${windowWidth > 1400 ? 'text-2xl' : ''} font-medium text-white mb-1`}>
+                <h3
+                  className={`text-lg sm:text-xl ${windowWidth > 1400 ? "text-2xl" : ""} font-medium text-white mb-1`}
+                >
                   {t("auth.hero.feature3")}
                 </h3>
-                <p className={`text-sm sm:text-base ${windowWidth > 1400 ? 'text-lg' : ''}`}>
+                <p
+                  className={`text-sm sm:text-base ${windowWidth > 1400 ? "text-lg" : ""}`}
+                >
                   {t("auth.hero.feature3Description")}
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start">
-              <div className={`${windowWidth > 1400 ? 'w-14 h-14' : 'w-10 h-10 sm:w-12 sm:h-12'} bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0 shadow-glow transition-transform hover:scale-105`}>
-                <PlugZap className={`${windowWidth > 1400 ? 'h-7 w-7' : 'h-5 w-5 sm:h-6 sm:w-6'} text-white`} />
+              <div
+                className={`${windowWidth > 1400 ? "w-14 h-14" : "w-10 h-10 sm:w-12 sm:h-12"} bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0 shadow-glow transition-transform hover:scale-105`}
+              >
+                <PlugZap
+                  className={`${windowWidth > 1400 ? "h-7 w-7" : "h-5 w-5 sm:h-6 sm:w-6"} text-white`}
+                />
               </div>
               <div>
-                <h3 className={`text-lg sm:text-xl ${windowWidth > 1400 ? 'text-2xl' : ''} font-medium text-white mb-1`}>
+                <h3
+                  className={`text-lg sm:text-xl ${windowWidth > 1400 ? "text-2xl" : ""} font-medium text-white mb-1`}
+                >
                   {t("auth.hero.feature4")}
                 </h3>
-                <p className={`text-sm sm:text-base ${windowWidth > 1400 ? 'text-lg' : ''}`}>
+                <p
+                  className={`text-sm sm:text-base ${windowWidth > 1400 ? "text-lg" : ""}`}
+                >
                   {t("auth.hero.feature4Description")}
                 </p>
               </div>
             </div>
           </div>
-          
-          <div className={`mt-8 ${windowWidth > 1400 ? 'mt-12' : ''} hidden lg:block`}>
-            <Button variant="secondary" size={windowWidth > 1400 ? "lg" : "default"} className="group hover:bg-white hover:text-primary">
+
+          <div
+            className={`mt-8 ${windowWidth > 1400 ? "mt-12" : ""} hidden lg:block`}
+          >
+            <Button
+              variant="secondary"
+              size={windowWidth > 1400 ? "lg" : "default"}
+              className="group hover:bg-white hover:text-primary"
+            >
               <span>Learn more about our platform</span>
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
           </div>
         </div>
       </div>
-      
+
       {/* Mobile hero section (shown only on small screens) */}
       <div className="block md:hidden bg-gradient-to-br from-primary to-primary-foreground text-white p-6 rounded-lg mx-4 my-6">
         <div className="flex items-center mb-4">
@@ -395,11 +476,11 @@ export default function AuthPage() {
             {t("auth.hero.title")}
           </h2>
         </div>
-        
+
         <p className="text-primary-100 text-sm mb-5">
           {t("auth.hero.description")}
         </p>
-        
+
         <div className="space-y-3 mb-5">
           <div className="flex items-center">
             <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center mr-3">
@@ -407,14 +488,14 @@ export default function AuthPage() {
             </div>
             <p className="text-sm text-white/90">{t("auth.hero.feature1")}</p>
           </div>
-          
+
           <div className="flex items-center">
             <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center mr-3">
               <ShieldCheck className="h-4 w-4 text-white" />
             </div>
             <p className="text-sm text-white/90">{t("auth.hero.feature2")}</p>
           </div>
-          
+
           <div className="flex items-center">
             <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center mr-3">
               <Zap className="h-4 w-4 text-white" />
@@ -422,7 +503,7 @@ export default function AuthPage() {
             <p className="text-sm text-white/90">{t("auth.hero.feature3")}</p>
           </div>
         </div>
-        
+
         <Link href="/">
           <Button variant="secondary" size="sm" className="w-full group">
             <span>Explore platform</span>

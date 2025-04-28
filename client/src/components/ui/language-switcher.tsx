@@ -1,27 +1,27 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Check, ChevronsUpDown, Globe } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Check, ChevronsUpDown, Globe } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from '@/components/ui/command';
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from "@/components/ui/popover";
 
 // List of supported languages
 // The first value is the i18n language code
 // The second value is the display name in their own language
 const languages = [
-  { value: 'en', label: 'English' },
-  { value: 'ar', label: 'العربية' }
+  { value: "en", label: "English" },
+  { value: "ar", label: "العربية" },
 ];
 
 export default function LanguageSwitcher() {
@@ -36,7 +36,8 @@ export default function LanguageSwitcher() {
   };
 
   // Get current language display name
-  const currentLanguage = languages.find(lang => lang.value === value) || languages[0];
+  const currentLanguage =
+    languages.find((lang) => lang.value === value) || languages[0];
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -66,7 +67,7 @@ export default function LanguageSwitcher() {
                 <Check
                   className={cn(
                     "mr-2 h-4 w-4",
-                    value === language.value ? "opacity-100" : "opacity-0"
+                    value === language.value ? "opacity-100" : "opacity-0",
                   )}
                 />
                 {language.label}

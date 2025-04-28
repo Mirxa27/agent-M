@@ -1,14 +1,14 @@
-import { db } from './server/db';
-import { users } from './shared/schema';
-import { hashPassword } from './server/auth';
+import { db } from "./server/db";
+import { users } from "./shared/schema";
+import { hashPassword } from "./server/auth";
 
 async function createAdminUser() {
   try {
     // Define admin user details
-    const adminUsername = 'admin';
-    const adminPassword = 'tU5&RhL+hzm(';
-    const adminEmail = 'admin@mirxa.io';
-    const adminFullName = 'Mirxa Administrator';
+    const adminUsername = "admin";
+    const adminPassword = "tU5&RhL+hzm(";
+    const adminEmail = "admin@mirxa.io";
+    const adminFullName = "Mirxa Administrator";
 
     // Check if admin already exists
     const existingAdmin = await db.query.users.findFirst({
@@ -16,7 +16,7 @@ async function createAdminUser() {
     });
 
     if (existingAdmin) {
-      console.log('Admin user already exists!');
+      console.log("Admin user already exists!");
       process.exit(0);
     }
 
@@ -31,18 +31,18 @@ async function createAdminUser() {
         password: hashedPassword,
         email: adminEmail,
         fullName: adminFullName,
-        role: 'admin',
+        role: "admin",
       })
       .returning();
 
-    console.log('✅ Admin user created successfully');
-    console.log('Username:', adminUsername);
-    console.log('Password:', adminPassword);
-    console.log('Email:', adminEmail);
-    
+    console.log("✅ Admin user created successfully");
+    console.log("Username:", adminUsername);
+    console.log("Password:", adminPassword);
+    console.log("Email:", adminEmail);
+
     process.exit(0);
   } catch (error) {
-    console.error('Error creating admin user:', error);
+    console.error("Error creating admin user:", error);
     process.exit(1);
   }
 }

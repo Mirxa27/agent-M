@@ -19,7 +19,7 @@ export function Skeleton({
       className={cn(
         "rounded-md bg-muted/50",
         animated && "animate-pulse",
-        className
+        className,
       )}
       {...props}
     />
@@ -45,12 +45,11 @@ export function ContentSkeleton({
 }: ContentSkeletonProps) {
   if (type === "card" && characterAnimation) {
     return (
-      <Card className={cn("p-6 relative flex flex-col items-center", className)} {...props}>
-        <AnimatedLoader 
-          variant="bot" 
-          size="md" 
-          className="mb-4"
-        />
+      <Card
+        className={cn("p-6 relative flex flex-col items-center", className)}
+        {...props}
+      >
+        <AnimatedLoader variant="bot" size="md" className="mb-4" />
         <Skeleton className="h-4 w-3/4 mb-6" />
         <Skeleton className="h-3 w-5/6 mb-2" />
         <Skeleton className="h-3 w-4/6 mb-2" />
@@ -91,7 +90,13 @@ export function ContentSkeleton({
 
   if (type === "grid") {
     return (
-      <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4", className)} {...props}>
+      <div
+        className={cn(
+          "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4",
+          className,
+        )}
+        {...props}
+      >
         {characterAnimation && (
           <div className="flex justify-center col-span-full mb-4">
             <AnimatedLoader variant="stars" size="sm" />

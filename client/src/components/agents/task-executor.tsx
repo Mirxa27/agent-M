@@ -7,13 +7,13 @@ import { Agent, Task, Message } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { 
-  Bot, 
-  Sparkles, 
-  FileText, 
-  RefreshCw, 
-  Loader2, 
-  Send, 
+import {
+  Bot,
+  Sparkles,
+  FileText,
+  RefreshCw,
+  Loader2,
+  Send,
   PaperclipIcon,
   DownloadIcon,
   CheckIcon,
@@ -21,21 +21,42 @@ import {
   XIcon,
   Paperclip,
   Download,
-  Settings
+  Settings,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dropzone } from "@/components/ui/dropzone";
@@ -66,16 +87,17 @@ interface TaskExecutorProps {
 
 export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
   const [files, setFiles] = useState<File[]>([]);
-  const [messagesContainerHeight, setMessagesContainerHeight] = useState<number>(400);
+  const [messagesContainerHeight, setMessagesContainerHeight] =
+    useState<number>(400);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  
+
   // Fetch agent details
-  const { 
-    data: agent, 
+  const {
+    data: agent,
     isLoading: isLoadingAgent,
-    error: agentError
+    error: agentError,
   } = useQuery({
     queryKey: ["/api/agents", agentId],
     queryFn: async () => {
@@ -85,14 +107,14 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
         throw new Error(error.message || "Failed to fetch agent details");
       }
       return res.json();
-    }
+    },
   });
 
   // Fetch current task if taskId is provided
-  const { 
-    data: task, 
+  const {
+    data: task,
     isLoading: isLoadingTask,
-    error: taskError 
+    error: taskError,
   } = useQuery({
     queryKey: ["/api/tasks", taskId],
     queryFn: async () => {
@@ -104,14 +126,14 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
       }
       return res.json();
     },
-    enabled: !!taskId
+    enabled: !!taskId,
   });
 
   // Fetch messages for the current task
-  const { 
-    data: messages = [], 
+  const {
+    data: messages = [],
     isLoading: isLoadingMessages,
-    error: messagesError
+    error: messagesError,
   } = useQuery({
     queryKey: ["/api/tasks", taskId, "messages"],
     queryFn: async () => {
@@ -124,30 +146,38 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
       return res.json();
     },
     enabled: !!taskId,
-    refetchInterval: task?.status === "running" ? 2000 : false
+    refetchInterval: task?.status === "running" ? 2000 : false,
   });
 
   // Fetch available credentials for this agent
-  const { 
-    data: credentials = [], 
+  const {
+    data: credentials = [],
     isLoading: isLoadingCredentials,
-    error: credentialsError
+    error: credentialsError,
   } = useQuery({
     queryKey: ["/api/credentials", agentId],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/credentials?agentId=${agentId}`);
+      const res = await apiRequest(
+        "GET",
+        `/api/credentials?agentId=${agentId}`,
+      );
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to fetch credentials");
       }
       return res.json();
-    }
+    },
   });
 
   // Create task mutation
   const createTaskMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const res = await apiRequest("POST", `/api/agents/${agentId}/tasks`, undefined, formData);
+      const res = await apiRequest(
+        "POST",
+        `/api/agents/${agentId}/tasks`,
+        undefined,
+        formData,
+      );
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to create task");
@@ -168,13 +198,18 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const res = await apiRequest("POST", `/api/tasks/${taskId}/messages`, undefined, formData);
+      const res = await apiRequest(
+        "POST",
+        `/api/tasks/${taskId}/messages`,
+        undefined,
+        formData,
+      );
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to send message");
@@ -186,7 +221,9 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
         title: "Message sent",
         description: "Your message has been sent to the agent.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/tasks", taskId, "messages"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/tasks", taskId, "messages"],
+      });
       messageForm.reset({ content: "", files: [] });
       setFiles([]);
     },
@@ -196,7 +233,7 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Task retry mutation
@@ -215,7 +252,9 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
         description: "The task has been restarted and is now running.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks", taskId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/tasks", taskId, "messages"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/tasks", taskId, "messages"],
+      });
     },
     onError: (error) => {
       toast({
@@ -223,7 +262,7 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Cancel task mutation
@@ -249,7 +288,7 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Task form
@@ -282,45 +321,45 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
 
   // Handle file upload for task creation
   const handleFileUpload = (acceptedFiles: File[]) => {
-    setFiles(prev => [...prev, ...acceptedFiles]);
+    setFiles((prev) => [...prev, ...acceptedFiles]);
   };
 
   // Remove file from the list
   const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Create a new task
   const onTaskSubmit = (values: TaskFormValues) => {
     const formData = new FormData();
     formData.append("title", values.title);
-    
+
     if (values.description) {
       formData.append("description", values.description);
     }
-    
+
     if (values.useCredentials && values.credentialIds?.length) {
       formData.append("credentialIds", JSON.stringify(values.credentialIds));
     }
-    
+
     files.forEach((file) => {
       formData.append("files", file);
     });
-    
+
     createTaskMutation.mutate(formData);
   };
 
   // Send a message to the agent
   const onMessageSubmit = (values: MessageFormValues) => {
     if (!taskId) return;
-    
+
     const formData = new FormData();
     formData.append("content", values.content);
-    
+
     files.forEach((file) => {
       formData.append("files", file);
     });
-    
+
     sendMessageMutation.mutate(formData);
   };
 
@@ -362,7 +401,8 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
       <Alert variant="destructive">
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>
-          Failed to load agent: {agentError instanceof Error ? agentError.message : "Unknown error"}
+          Failed to load agent:{" "}
+          {agentError instanceof Error ? agentError.message : "Unknown error"}
         </AlertDescription>
       </Alert>
     );
@@ -396,7 +436,10 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
         </CardHeader>
         <CardContent>
           <Form {...taskForm}>
-            <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-6">
+            <form
+              onSubmit={taskForm.handleSubmit(onTaskSubmit)}
+              className="space-y-6"
+            >
               <FormField
                 control={taskForm.control}
                 name="title"
@@ -404,7 +447,10 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                   <FormItem>
                     <FormLabel>Task Title</FormLabel>
                     <FormControl>
-                      <Input placeholder="What do you need help with?" {...field} />
+                      <Input
+                        placeholder="What do you need help with?"
+                        {...field}
+                      />
                     </FormControl>
                     <FormDescription>
                       A clear, concise title for your task
@@ -444,17 +490,17 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                       maxFiles={5}
                       maxSize={10 * 1024 * 1024} // 10MB
                       accept={{
-                        'application/pdf': ['.pdf'],
-                        'text/plain': ['.txt'],
-                        'text/csv': ['.csv'],
-                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [
-                          '.docx',
-                        ],
-                        'application/json': ['.json'],
+                        "application/pdf": [".pdf"],
+                        "text/plain": [".txt"],
+                        "text/csv": [".csv"],
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                          [".docx"],
+                        "application/json": [".json"],
                       }}
                     />
                     <FormDescription>
-                      Upload files for your agent to process (PDF, TXT, CSV, DOCX, JSON up to 10MB)
+                      Upload files for your agent to process (PDF, TXT, CSV,
+                      DOCX, JSON up to 10MB)
                     </FormDescription>
                   </div>
 
@@ -463,7 +509,10 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                       <Label className="mb-2 block">Uploaded Files</Label>
                       <div className="space-y-2">
                         {files.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between text-sm bg-secondary/50 rounded p-2">
+                          <div
+                            key={index}
+                            className="flex items-center justify-between text-sm bg-secondary/50 rounded p-2"
+                          >
                             <div className="flex items-center gap-2 overflow-hidden">
                               <PaperclipIcon className="h-4 w-4 flex-shrink-0" />
                               <span className="truncate">{file.name}</span>
@@ -496,7 +545,9 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between border rounded-md p-4">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-base">Use Credentials</FormLabel>
+                          <FormLabel className="text-base">
+                            Use Credentials
+                          </FormLabel>
                           <FormDescription>
                             Allow this task to access your saved credentials
                           </FormDescription>
@@ -520,7 +571,12 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                           <FormLabel>Select Credentials</FormLabel>
                           <FormControl>
                             <Select
-                              onValueChange={(value) => field.onChange([...field.value || [], parseInt(value)])}
+                              onValueChange={(value) =>
+                                field.onChange([
+                                  ...(field.value || []),
+                                  parseInt(value),
+                                ])
+                              }
                               value=""
                             >
                               <FormControl>
@@ -530,13 +586,17 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                               </FormControl>
                               <SelectContent>
                                 {credentials
-                                  .filter(cred => !field.value?.includes(cred.id))
+                                  .filter(
+                                    (cred) => !field.value?.includes(cred.id),
+                                  )
                                   .map((credential) => (
-                                    <SelectItem key={credential.id} value={credential.id.toString()}>
+                                    <SelectItem
+                                      key={credential.id}
+                                      value={credential.id.toString()}
+                                    >
                                       {credential.name} ({credential.service})
                                     </SelectItem>
-                                  ))
-                                }
+                                  ))}
                               </SelectContent>
                             </Select>
                           </FormControl>
@@ -549,37 +609,51 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                     />
                   )}
 
-                  {taskForm.watch("useCredentials") && taskForm.watch("credentialIds")?.length > 0 && (
-                    <div className="border rounded-md p-3">
-                      <Label className="mb-2 block">Selected Credentials</Label>
-                      <div className="space-y-2">
-                        {taskForm.watch("credentialIds")?.map((credId) => {
-                          const credential = credentials.find(c => c.id === credId);
-                          return credential ? (
-                            <div key={credId} className="flex items-center justify-between text-sm bg-secondary/50 rounded p-2">
-                              <div className="flex items-center gap-2">
-                                <Settings className="h-4 w-4" />
-                                <span>{credential.name}</span>
-                                <Badge variant="outline" className="text-xs">{credential.service}</Badge>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  const currentIds = taskForm.watch("credentialIds") || [];
-                                  taskForm.setValue("credentialIds", currentIds.filter(id => id !== credId));
-                                }}
-                                className="h-6 w-6 p-0 rounded-full"
+                  {taskForm.watch("useCredentials") &&
+                    taskForm.watch("credentialIds")?.length > 0 && (
+                      <div className="border rounded-md p-3">
+                        <Label className="mb-2 block">
+                          Selected Credentials
+                        </Label>
+                        <div className="space-y-2">
+                          {taskForm.watch("credentialIds")?.map((credId) => {
+                            const credential = credentials.find(
+                              (c) => c.id === credId,
+                            );
+                            return credential ? (
+                              <div
+                                key={credId}
+                                className="flex items-center justify-between text-sm bg-secondary/50 rounded p-2"
                               >
-                                <XIcon className="h-4 w-4" />
-                                <span className="sr-only">Remove</span>
-                              </Button>
-                            </div>
-                          ) : null;
-                        })}
+                                <div className="flex items-center gap-2">
+                                  <Settings className="h-4 w-4" />
+                                  <span>{credential.name}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {credential.service}
+                                  </Badge>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const currentIds =
+                                      taskForm.watch("credentialIds") || [];
+                                    taskForm.setValue(
+                                      "credentialIds",
+                                      currentIds.filter((id) => id !== credId),
+                                    );
+                                  }}
+                                  className="h-6 w-6 p-0 rounded-full"
+                                >
+                                  <XIcon className="h-4 w-4" />
+                                  <span className="sr-only">Remove</span>
+                                </Button>
+                              </div>
+                            ) : null;
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               )}
 
@@ -591,10 +665,7 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={createTaskMutation.isPending}
-                >
+                <Button type="submit" disabled={createTaskMutation.isPending}>
                   {createTaskMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
@@ -636,8 +707,8 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
             </div>
             <div className="flex items-center gap-2">
               {task?.status === "running" && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={handleCancelTask}
                   disabled={cancelTaskMutation.isPending}
@@ -651,8 +722,8 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                 </Button>
               )}
               {(task?.status === "failed" || task?.status === "completed") && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={handleRetryTask}
                   disabled={retryTaskMutation.isPending}
@@ -675,23 +746,25 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                 <div className="flex flex-col items-center justify-center h-64 text-center">
                   <Bot className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">
-                    {task?.status === "running" 
-                      ? "The agent is processing your request..." 
+                    {task?.status === "running"
+                      ? "The agent is processing your request..."
                       : "No messages yet. Start the conversation with the agent."}
                   </p>
                 </div>
               ) : (
                 messages.map((message) => (
-                  <div 
-                    key={message.id} 
+                  <div
+                    key={message.id}
                     className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    <div 
+                    <div
                       className={`max-w-[80%] flex ${message.role === "user" ? "flex-row-reverse" : "flex-row"} gap-3`}
                     >
                       <Avatar className="h-8 w-8">
                         {message.role === "user" ? (
-                          <AvatarFallback className="bg-primary">U</AvatarFallback>
+                          <AvatarFallback className="bg-primary">
+                            U
+                          </AvatarFallback>
                         ) : (
                           <AvatarFallback className="bg-primary/10">
                             <Bot className="h-4 w-4" />
@@ -699,26 +772,33 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                         )}
                       </Avatar>
                       <div>
-                        <div 
+                        <div
                           className={`rounded-lg p-3 ${
-                            message.role === "user" 
-                              ? "bg-primary text-primary-foreground" 
+                            message.role === "user"
+                              ? "bg-primary text-primary-foreground"
                               : "bg-muted"
                           }`}
                         >
-                          <div className="whitespace-pre-wrap">{message.content}</div>
-                          
+                          <div className="whitespace-pre-wrap">
+                            {message.content}
+                          </div>
+
                           {message.files?.length > 0 && (
                             <div className="mt-2 pt-2 border-t border-t-primary/20 space-y-1">
                               {message.files.map((file, index) => (
-                                <div key={index} className="flex items-center gap-2 text-sm">
+                                <div
+                                  key={index}
+                                  className="flex items-center gap-2 text-sm"
+                                >
                                   <Paperclip className="h-3 w-3 flex-shrink-0" />
                                   <span className="truncate">
-                                    {typeof file === 'string' ? file : file.name}
+                                    {typeof file === "string"
+                                      ? file
+                                      : file.name}
                                   </span>
                                   {file.url && (
-                                    <Button 
-                                      variant="ghost" 
+                                    <Button
+                                      variant="ghost"
                                       size="sm"
                                       className="h-6 px-2"
                                       onClick={() => window.open(file.url)}
@@ -731,7 +811,7 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                             </div>
                           )}
                         </div>
-                        <div 
+                        <div
                           className={`text-xs text-muted-foreground mt-1 ${
                             message.role === "user" ? "text-right" : "text-left"
                           }`}
@@ -764,11 +844,14 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
               <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
-          
+
           {task?.status === "running" && (
             <div className="border-t p-4">
               <Form {...messageForm}>
-                <form onSubmit={messageForm.handleSubmit(onMessageSubmit)} className="space-y-4">
+                <form
+                  onSubmit={messageForm.handleSubmit(onMessageSubmit)}
+                  className="space-y-4"
+                >
                   <div className="grid gap-4">
                     <FormField
                       control={messageForm.control}
@@ -790,19 +873,18 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                                   maxFiles={3}
                                   maxSize={5 * 1024 * 1024} // 5MB
                                   accept={{
-                                    'application/pdf': ['.pdf'],
-                                    'text/plain': ['.txt'],
-                                    'text/csv': ['.csv'],
-                                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [
-                                      '.docx',
-                                    ],
-                                    'application/json': ['.json'],
+                                    "application/pdf": [".pdf"],
+                                    "text/plain": [".txt"],
+                                    "text/csv": [".csv"],
+                                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                                      [".docx"],
+                                    "application/json": [".json"],
                                   }}
                                   buttonOnly
                                 >
-                                  <Button 
-                                    type="button" 
-                                    variant="ghost" 
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
                                     size="sm"
                                     className="h-8 w-8 p-0 rounded-full"
                                   >
@@ -816,7 +898,9 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                               type="submit"
                               size="sm"
                               className="absolute bottom-3 right-3 h-8 w-8 p-0 rounded-full"
-                              disabled={sendMessageMutation.isPending || !field.value}
+                              disabled={
+                                sendMessageMutation.isPending || !field.value
+                              }
                             >
                               {sendMessageMutation.isPending ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -831,16 +915,21 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                       )}
                     />
                   </div>
-                  
+
                   {files.length > 0 && (
                     <div className="border rounded p-2">
                       <div className="flex items-center gap-2 mb-2">
                         <PaperclipIcon className="h-4 w-4" />
-                        <span className="text-sm font-medium">Attached files</span>
+                        <span className="text-sm font-medium">
+                          Attached files
+                        </span>
                       </div>
                       <div className="space-y-1">
                         {files.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between text-xs bg-secondary/50 rounded p-1">
+                          <div
+                            key={index}
+                            className="flex items-center justify-between text-xs bg-secondary/50 rounded p-1"
+                          >
                             <div className="flex items-center gap-2 overflow-hidden">
                               <span className="truncate">{file.name}</span>
                               <span className="text-muted-foreground">
@@ -865,7 +954,7 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
               </Form>
             </div>
           )}
-          
+
           {task?.status !== "running" && (
             <div className="border-t p-4">
               <div className="flex items-center justify-center gap-2 text-muted-foreground">
@@ -885,9 +974,9 @@ export default function TaskExecutor({ agentId, taskId }: TaskExecutorProps) {
                     <span>Task {task?.status}</span>
                   </>
                 )}
-                
-                <Button 
-                  variant="outline" 
+
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={handleRetryTask}
                   disabled={retryTaskMutation.isPending}

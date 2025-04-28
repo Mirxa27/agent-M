@@ -6,7 +6,13 @@ import { z } from "zod";
 import { toast } from "@/hooks/use-toast";
 import { AiModel, AiProvider } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import { EditIcon, PlusIcon, SearchIcon, TrashIcon, TagIcon } from "lucide-react";
+import {
+  EditIcon,
+  PlusIcon,
+  SearchIcon,
+  TrashIcon,
+  TagIcon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,7 +67,9 @@ const modelFormSchema = z.object({
   modelId: z.string().min(1, "Model ID is required"),
   description: z.string().optional().nullable(),
   contextLength: z.coerce.number().min(1, "Context length must be at least 1"),
-  maxOutputTokens: z.coerce.number().min(1, "Max output tokens must be at least 1"),
+  maxOutputTokens: z.coerce
+    .number()
+    .min(1, "Max output tokens must be at least 1"),
   isActive: z.boolean().default(true),
   capabilities: z.array(z.string()).optional(),
   pricePer1000Tokens: z.coerce.number().min(0, "Price cannot be negative"),
@@ -82,7 +90,7 @@ const defaultCapabilities = [
   "image-generation",
   "audio-transcription",
   "text-to-speech",
-  "fine-tuning"
+  "fine-tuning",
 ];
 
 export default function AiModelsPanel() {
@@ -91,31 +99,30 @@ export default function AiModelsPanel() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<AiModel | null>(null);
-  const [selectedCapabilities, setSelectedCapabilities] = useState<Set<string>>(new Set());
-  
+  const [selectedCapabilities, setSelectedCapabilities] = useState<Set<string>>(
+    new Set(),
+  );
+
   const queryClient = useQueryClient();
 
   // Fetch all AI models
-  const { 
-    data: models = [], 
+  const {
+    data: models = [],
     isLoading: isLoadingModels,
-    error: modelsError 
+    error: modelsError,
   } = useQuery({
     queryKey: ["/api/admin/ai-models"],
     queryFn: async () => {
       return await apiRequest("GET", "/api/admin/ai-models");
-    }
+    },
   });
 
   // Fetch all AI providers for the dropdown
-  const { 
-    data: providers = [], 
-    isLoading: isLoadingProviders,
-  } = useQuery({
+  const { data: providers = [], isLoading: isLoadingProviders } = useQuery({
     queryKey: ["/api/admin/ai-providers"],
     queryFn: async () => {
       return await apiRequest("GET", "/api/admin/ai-providers");
-    }
+    },
   });
 
   // Create model mutation
@@ -138,12 +145,18 @@ export default function AiModelsPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Update model mutation
   const updateModelMutation = useMutation({
-    mutationFn: async ({ id, model }: { id: number, model: ModelFormValues }) => {
+    mutationFn: async ({
+      id,
+      model,
+    }: {
+      id: number;
+      model: ModelFormValues;
+    }) => {
       return await apiRequest("PATCH", `/api/admin/ai-models/${id}`, model);
     },
     onSuccess: () => {
@@ -160,7 +173,7 @@ export default function AiModelsPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete model mutation
@@ -183,7 +196,7 @@ export default function AiModelsPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Create form
@@ -203,7 +216,7 @@ export default function AiModelsPanel() {
       isChatModel: true,
       isVisionModel: false,
       isEmbeddingModel: false,
-    }
+    },
   });
 
   // Edit form
@@ -223,7 +236,7 @@ export default function AiModelsPanel() {
       isChatModel: true,
       isVisionModel: false,
       isEmbeddingModel: false,
-    }
+    },
   });
 
   // Reset form to default values
@@ -253,7 +266,7 @@ export default function AiModelsPanel() {
       contextWindow: values.contextLength || null,
       costInputPerK: values.pricePer1000Tokens?.toString() || null,
       costOutputPerK: values.pricePer1000Tokens?.toString() || null,
-      capabilities: Array.from(selectedCapabilities)
+      capabilities: Array.from(selectedCapabilities),
     };
     createModelMutation.mutate(modelData);
   };
@@ -266,11 +279,11 @@ export default function AiModelsPanel() {
         contextWindow: values.contextLength || null,
         costInputPerK: values.pricePer1000Tokens?.toString() || null,
         costOutputPerK: values.pricePer1000Tokens?.toString() || null,
-        capabilities: Array.from(selectedCapabilities)
+        capabilities: Array.from(selectedCapabilities),
       };
-      updateModelMutation.mutate({ 
-        id: selectedModel.id, 
-        model: modelData
+      updateModelMutation.mutate({
+        id: selectedModel.id,
+        model: modelData,
       });
     }
   };
@@ -286,10 +299,10 @@ export default function AiModelsPanel() {
   const handleEdit = (model: AiModel) => {
     setSelectedModel(model);
     setSelectedCapabilities(new Set(model.capabilities as string[]));
-    
+
     // Map DB fields to form fields
     const costInput = model.costInputPerK ? parseFloat(model.costInputPerK) : 0;
-    
+
     editForm.reset({
       name: model.name,
       providerId: model.providerId,
@@ -302,9 +315,13 @@ export default function AiModelsPanel() {
       pricePer1000Tokens: costInput,
       currency: "SAR", // Default to SAR if not provided
       // These are stored in capabilities but we expose them as separate fields for UX
-      isChatModel: ((model.capabilities as string[]) || []).includes('chat'),
-      isVisionModel: ((model.capabilities as string[]) || []).includes('vision'),
-      isEmbeddingModel: ((model.capabilities as string[]) || []).includes('embeddings'),
+      isChatModel: ((model.capabilities as string[]) || []).includes("chat"),
+      isVisionModel: ((model.capabilities as string[]) || []).includes(
+        "vision",
+      ),
+      isEmbeddingModel: ((model.capabilities as string[]) || []).includes(
+        "embeddings",
+      ),
     });
     setIsEditDialogOpen(true);
   };
@@ -327,15 +344,17 @@ export default function AiModelsPanel() {
   };
 
   // Filter models by search query
-  const filteredModels = models.filter(model => 
-    model.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    model.modelId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (model.description && model.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredModels = models.filter(
+    (model) =>
+      model.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      model.modelId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (model.description &&
+        model.description.toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
   // Get provider name by ID
   const getProviderName = (providerId: number) => {
-    const provider = providers.find(p => p.id === providerId);
+    const provider = providers.find((p) => p.id === providerId);
     return provider ? provider.name : "Unknown";
   };
 
@@ -347,7 +366,10 @@ export default function AiModelsPanel() {
         </CardHeader>
         <CardContent>
           <div className="text-red-500">
-            Error loading AI models: {modelsError instanceof Error ? modelsError.message : "Unknown error"}
+            Error loading AI models:{" "}
+            {modelsError instanceof Error
+              ? modelsError.message
+              : "Unknown error"}
           </div>
         </CardContent>
       </Card>
@@ -404,55 +426,88 @@ export default function AiModelsPanel() {
                 <TableBody>
                   {filteredModels.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
-                        {searchQuery ? "No models match your search" : "No AI models found"}
+                      <TableCell
+                        colSpan={8}
+                        className="text-center py-6 text-muted-foreground"
+                      >
+                        {searchQuery
+                          ? "No models match your search"
+                          : "No AI models found"}
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredModels.map((model) => (
                       <TableRow key={model.id}>
-                        <TableCell className="font-medium">{model.name}</TableCell>
-                        <TableCell>{getProviderName(model.providerId)}</TableCell>
+                        <TableCell className="font-medium">
+                          {model.name}
+                        </TableCell>
+                        <TableCell>
+                          {getProviderName(model.providerId)}
+                        </TableCell>
                         <TableCell>
                           <code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-sm">
                             {model.modelId}
                           </code>
                         </TableCell>
-                        <TableCell>{model.contextWindow ? model.contextWindow.toLocaleString() : 'N/A'} tokens</TableCell>
+                        <TableCell>
+                          {model.contextWindow
+                            ? model.contextWindow.toLocaleString()
+                            : "N/A"}{" "}
+                          tokens
+                        </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {model.capabilities && (model.capabilities as string[]).slice(0, 3).map((capability, index) => (
-                              <Badge key={index} variant="secondary" className="capitalize">
-                                {capability.replace('-', ' ')}
-                              </Badge>
-                            ))}
-                            {model.capabilities && (model.capabilities as string[]).length > 3 && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Badge variant="outline">
-                                      +{(model.capabilities as string[]).length - 3} more
-                                    </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <div className="space-y-1">
-                                      {(model.capabilities as string[]).slice(3).map((capability, index) => (
-                                        <div key={index} className="capitalize">
-                                          {capability.replace('-', ' ')}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
+                            {model.capabilities &&
+                              (model.capabilities as string[])
+                                .slice(0, 3)
+                                .map((capability, index) => (
+                                  <Badge
+                                    key={index}
+                                    variant="secondary"
+                                    className="capitalize"
+                                  >
+                                    {capability.replace("-", " ")}
+                                  </Badge>
+                                ))}
+                            {model.capabilities &&
+                              (model.capabilities as string[]).length > 3 && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge variant="outline">
+                                        +
+                                        {(model.capabilities as string[])
+                                          .length - 3}{" "}
+                                        more
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <div className="space-y-1">
+                                        {(model.capabilities as string[])
+                                          .slice(3)
+                                          .map((capability, index) => (
+                                            <div
+                                              key={index}
+                                              className="capitalize"
+                                            >
+                                              {capability.replace("-", " ")}
+                                            </div>
+                                          ))}
+                                      </div>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          {model.costInputPerK || 'N/A'} {model.currency || "SAR"}/1K tokens
+                          {model.costInputPerK || "N/A"}{" "}
+                          {model.currency || "SAR"}/1K tokens
                         </TableCell>
                         <TableCell>
-                          <Badge variant={model.isActive ? "success" : "outline"}>
+                          <Badge
+                            variant={model.isActive ? "success" : "outline"}
+                          >
                             {model.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
@@ -494,7 +549,10 @@ export default function AiModelsPanel() {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onCreateSubmit)} className="space-y-6">
+            <form
+              onSubmit={form.handleSubmit(onCreateSubmit)}
+              className="space-y-6"
+            >
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -512,15 +570,17 @@ export default function AiModelsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="providerId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>AI Provider</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange(parseInt(value))} 
+                      <Select
+                        onValueChange={(value) =>
+                          field.onChange(parseInt(value))
+                        }
                         value={field.value?.toString()}
                       >
                         <FormControl>
@@ -535,8 +595,8 @@ export default function AiModelsPanel() {
                             </div>
                           ) : (
                             providers.map((provider) => (
-                              <SelectItem 
-                                key={provider.id} 
+                              <SelectItem
+                                key={provider.id}
                                 value={provider.id.toString()}
                                 disabled={!provider.isActive}
                               >
@@ -569,7 +629,7 @@ export default function AiModelsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="contextLength"
@@ -577,11 +637,13 @@ export default function AiModelsPanel() {
                     <FormItem>
                       <FormLabel>Context Length (tokens)</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="4096" 
+                        <Input
+                          type="number"
+                          placeholder="4096"
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value) || 0)
+                          }
                         />
                       </FormControl>
                       <FormMessage />
@@ -589,7 +651,7 @@ export default function AiModelsPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="description"
@@ -597,9 +659,9 @@ export default function AiModelsPanel() {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Description of the AI model" 
-                        {...field} 
+                      <Textarea
+                        placeholder="Description of the AI model"
+                        {...field}
                         value={field.value || ""}
                       />
                     </FormControl>
@@ -616,18 +678,20 @@ export default function AiModelsPanel() {
                     <FormItem>
                       <FormLabel>Max Output Tokens</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="1024" 
+                        <Input
+                          type="number"
+                          placeholder="1024"
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value) || 0)
+                          }
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="flex space-x-3">
                   <FormField
                     control={form.control}
@@ -636,11 +700,13 @@ export default function AiModelsPanel() {
                       <FormItem className="flex-1">
                         <FormLabel>Price per 1K Tokens</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.01" 
+                          <Input
+                            type="number"
+                            placeholder="0.01"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            onChange={(e) =>
+                              field.onChange(parseFloat(e.target.value) || 0)
+                            }
                             step="0.001"
                           />
                         </FormControl>
@@ -648,15 +714,15 @@ export default function AiModelsPanel() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="currency"
                     render={({ field }) => (
                       <FormItem className="w-24">
                         <FormLabel>Currency</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
+                        <Select
+                          onValueChange={field.onChange}
                           defaultValue={field.value}
                         >
                           <FormControl>
@@ -676,7 +742,7 @@ export default function AiModelsPanel() {
                   />
                 </div>
               </div>
-              
+
               {/* Capabilities selection */}
               <div>
                 <FormLabel>Capabilities</FormLabel>
@@ -691,12 +757,16 @@ export default function AiModelsPanel() {
                       }`}
                       onClick={() => toggleCapability(capability)}
                     >
-                      <TagIcon className={`h-4 w-4 mr-2 ${
-                        selectedCapabilities.has(capability)
-                          ? "text-primary"
-                          : "text-muted-foreground"
-                      }`} />
-                      <span className="capitalize">{capability.replace('-', ' ')}</span>
+                      <TagIcon
+                        className={`h-4 w-4 mr-2 ${
+                          selectedCapabilities.has(capability)
+                            ? "text-primary"
+                            : "text-muted-foreground"
+                        }`}
+                      />
+                      <span className="capitalize">
+                        {capability.replace("-", " ")}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -704,7 +774,7 @@ export default function AiModelsPanel() {
                   Select all capabilities applicable to this model
                 </FormDescription>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
@@ -723,14 +793,16 @@ export default function AiModelsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="isVisionModel"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Vision Model</FormLabel>
+                        <FormLabel className="text-base">
+                          Vision Model
+                        </FormLabel>
                       </div>
                       <FormControl>
                         <Switch
@@ -741,14 +813,16 @@ export default function AiModelsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="isEmbeddingModel"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Embedding Model</FormLabel>
+                        <FormLabel className="text-base">
+                          Embedding Model
+                        </FormLabel>
                       </div>
                       <FormControl>
                         <Switch
@@ -760,7 +834,7 @@ export default function AiModelsPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="isActive"
@@ -781,19 +855,16 @@ export default function AiModelsPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsCreateDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={createModelMutation.isPending}
-                >
+                <Button type="submit" disabled={createModelMutation.isPending}>
                   {createModelMutation.isPending && (
                     <span className="mr-2 h-4 w-4 animate-spin">◌</span>
                   )}
@@ -815,7 +886,10 @@ export default function AiModelsPanel() {
             </DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
+            <form
+              onSubmit={editForm.handleSubmit(onEditSubmit)}
+              className="space-y-6"
+            >
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={editForm.control}
@@ -833,15 +907,17 @@ export default function AiModelsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="providerId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>AI Provider</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange(parseInt(value))} 
+                      <Select
+                        onValueChange={(value) =>
+                          field.onChange(parseInt(value))
+                        }
                         value={field.value?.toString()}
                       >
                         <FormControl>
@@ -856,8 +932,8 @@ export default function AiModelsPanel() {
                             </div>
                           ) : (
                             providers.map((provider) => (
-                              <SelectItem 
-                                key={provider.id} 
+                              <SelectItem
+                                key={provider.id}
                                 value={provider.id.toString()}
                                 disabled={!provider.isActive}
                               >
@@ -890,7 +966,7 @@ export default function AiModelsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="contextLength"
@@ -898,11 +974,13 @@ export default function AiModelsPanel() {
                     <FormItem>
                       <FormLabel>Context Length (tokens)</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="4096" 
+                        <Input
+                          type="number"
+                          placeholder="4096"
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value) || 0)
+                          }
                         />
                       </FormControl>
                       <FormMessage />
@@ -910,7 +988,7 @@ export default function AiModelsPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={editForm.control}
                 name="description"
@@ -918,9 +996,9 @@ export default function AiModelsPanel() {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Description of the AI model" 
-                        {...field} 
+                      <Textarea
+                        placeholder="Description of the AI model"
+                        {...field}
                         value={field.value || ""}
                       />
                     </FormControl>
@@ -937,18 +1015,20 @@ export default function AiModelsPanel() {
                     <FormItem>
                       <FormLabel>Max Output Tokens</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="1024" 
+                        <Input
+                          type="number"
+                          placeholder="1024"
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value) || 0)
+                          }
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="flex space-x-3">
                   <FormField
                     control={editForm.control}
@@ -957,11 +1037,13 @@ export default function AiModelsPanel() {
                       <FormItem className="flex-1">
                         <FormLabel>Price per 1K Tokens</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0.01" 
+                          <Input
+                            type="number"
+                            placeholder="0.01"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            onChange={(e) =>
+                              field.onChange(parseFloat(e.target.value) || 0)
+                            }
                             step="0.001"
                           />
                         </FormControl>
@@ -969,15 +1051,15 @@ export default function AiModelsPanel() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={editForm.control}
                     name="currency"
                     render={({ field }) => (
                       <FormItem className="w-24">
                         <FormLabel>Currency</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
+                        <Select
+                          onValueChange={field.onChange}
                           defaultValue={field.value}
                         >
                           <FormControl>
@@ -997,7 +1079,7 @@ export default function AiModelsPanel() {
                   />
                 </div>
               </div>
-              
+
               {/* Capabilities selection */}
               <div>
                 <FormLabel>Capabilities</FormLabel>
@@ -1012,12 +1094,16 @@ export default function AiModelsPanel() {
                       }`}
                       onClick={() => toggleCapability(capability)}
                     >
-                      <TagIcon className={`h-4 w-4 mr-2 ${
-                        selectedCapabilities.has(capability)
-                          ? "text-primary"
-                          : "text-muted-foreground"
-                      }`} />
-                      <span className="capitalize">{capability.replace('-', ' ')}</span>
+                      <TagIcon
+                        className={`h-4 w-4 mr-2 ${
+                          selectedCapabilities.has(capability)
+                            ? "text-primary"
+                            : "text-muted-foreground"
+                        }`}
+                      />
+                      <span className="capitalize">
+                        {capability.replace("-", " ")}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1025,7 +1111,7 @@ export default function AiModelsPanel() {
                   Select all capabilities applicable to this model
                 </FormDescription>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={editForm.control}
@@ -1044,14 +1130,16 @@ export default function AiModelsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="isVisionModel"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Vision Model</FormLabel>
+                        <FormLabel className="text-base">
+                          Vision Model
+                        </FormLabel>
                       </div>
                       <FormControl>
                         <Switch
@@ -1062,14 +1150,16 @@ export default function AiModelsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="isEmbeddingModel"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Embedding Model</FormLabel>
+                        <FormLabel className="text-base">
+                          Embedding Model
+                        </FormLabel>
                       </div>
                       <FormControl>
                         <Switch
@@ -1081,7 +1171,7 @@ export default function AiModelsPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={editForm.control}
                 name="isActive"
@@ -1102,19 +1192,16 @@ export default function AiModelsPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsEditDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={updateModelMutation.isPending}
-                >
+                <Button type="submit" disabled={updateModelMutation.isPending}>
                   {updateModelMutation.isPending && (
                     <span className="mr-2 h-4 w-4 animate-spin">◌</span>
                   )}
@@ -1132,8 +1219,9 @@ export default function AiModelsPanel() {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the model "{selectedModel?.name}"? 
-              This action cannot be undone and will affect any agents using this model.
+              Are you sure you want to delete the model "{selectedModel?.name}"?
+              This action cannot be undone and will affect any agents using this
+              model.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">

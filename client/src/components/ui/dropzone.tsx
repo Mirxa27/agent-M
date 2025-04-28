@@ -4,7 +4,9 @@ import { UploadCloud } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-interface DropzoneProps extends React.HTMLAttributes<HTMLDivElement>, DropzoneOptions {
+interface DropzoneProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    DropzoneOptions {
   buttonOnly?: boolean;
   children?: React.ReactNode;
 }
@@ -22,11 +24,7 @@ export function Dropzone({
       <div {...getRootProps()}>
         <input {...getInputProps()} />
         {children || (
-          <Button 
-            variant="ghost" 
-            size="sm"
-            type="button"
-          >
+          <Button variant="ghost" size="sm" type="button">
             <UploadCloud className="h-4 w-4 mr-2" />
             <span>Upload Files</span>
           </Button>
@@ -43,7 +41,7 @@ export function Dropzone({
           isDragActive
             ? "border-primary/50 bg-primary/5"
             : "border-muted-foreground/25 hover:bg-muted/25",
-          className
+          className,
         ),
       })}
     >

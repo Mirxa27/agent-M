@@ -1,7 +1,7 @@
 /**
  * Templates for common agent tools
  */
-import { AgentTool, InsertAgentTool } from './schema';
+import { AgentTool, InsertAgentTool } from "./schema";
 
 /**
  * Template type for tool creation
@@ -18,7 +18,9 @@ export interface AgentToolTemplate {
 /**
  * Helper function to convert a template to an agent tool insert object
  */
-export const templateToInsertTool = (template: AgentToolTemplate): InsertAgentTool => {
+export const templateToInsertTool = (
+  template: AgentToolTemplate,
+): InsertAgentTool => {
   return {
     name: template.name,
     description: template.description,
@@ -26,7 +28,7 @@ export const templateToInsertTool = (template: AgentToolTemplate): InsertAgentTo
     type: template.type,
     icon: template.icon,
     config: template.config,
-    isActive: true
+    isActive: true,
   };
 };
 
@@ -40,7 +42,7 @@ export const TOOL_CATEGORIES = {
   KNOWLEDGE: "knowledge",
   UTILITIES: "utilities",
   INTEGRATIONS: "integrations",
-  CUSTOM: "custom"
+  CUSTOM: "custom",
 };
 
 /**
@@ -56,8 +58,8 @@ export const OPENAI_CHAT_TEMPLATE: AgentToolTemplate = {
     model: "gpt-4o",
     temperature: 0.7,
     maxTokens: 1000,
-    systemPrompt: "You are a helpful AI assistant."
-  }
+    systemPrompt: "You are a helpful AI assistant.",
+  },
 };
 
 /**
@@ -73,8 +75,8 @@ export const OPENAI_IMAGE_TEMPLATE: AgentToolTemplate = {
     model: "dall-e-3",
     size: "1024x1024",
     quality: "standard",
-    style: "vivid"
-  }
+    style: "vivid",
+  },
 };
 
 /**
@@ -88,8 +90,8 @@ export const OPENAI_EMBEDDINGS_TEMPLATE: AgentToolTemplate = {
   icon: "FileText",
   config: {
     model: "text-embedding-3-small",
-    dimensions: 1536
-  }
+    dimensions: 1536,
+  },
 };
 
 /**
@@ -104,8 +106,8 @@ export const OPENAI_TRANSCRIPTION_TEMPLATE: AgentToolTemplate = {
   config: {
     model: "whisper-1",
     language: "en",
-    temperature: 0
-  }
+    temperature: 0,
+  },
 };
 
 /**
@@ -120,8 +122,8 @@ export const OPENAI_VISION_TEMPLATE: AgentToolTemplate = {
   config: {
     model: "gpt-4o",
     maxTokens: 1000,
-    detailLevel: "high"
-  }
+    detailLevel: "high",
+  },
 };
 
 /**
@@ -136,8 +138,8 @@ export const WEB_SEARCH_TEMPLATE: AgentToolTemplate = {
   config: {
     engine: "google",
     resultCount: 5,
-    includeSnippets: true
-  }
+    includeSnippets: true,
+  },
 };
 
 /**
@@ -153,8 +155,8 @@ export const EMAIL_TEMPLATE: AgentToolTemplate = {
     service: "sendgrid",
     from: "{{sender}}",
     subject: "{{subject}}",
-    template: "default"
-  }
+    template: "default",
+  },
 };
 
 /**
@@ -169,8 +171,8 @@ export const SMS_TEMPLATE: AgentToolTemplate = {
   config: {
     service: "twilio",
     from: "{{sender}}",
-    template: "default"
-  }
+    template: "default",
+  },
 };
 
 /**
@@ -186,8 +188,8 @@ export const DATABASE_QUERY_TEMPLATE: AgentToolTemplate = {
     type: "postgresql",
     allowedTables: ["public.*"],
     maxRows: 1000,
-    readOnly: true
-  }
+    readOnly: true,
+  },
 };
 
 /**
@@ -202,8 +204,8 @@ export const FILE_READER_TEMPLATE: AgentToolTemplate = {
   config: {
     allowedExtensions: [".txt", ".md", ".csv", ".json", ".xml"],
     maxSizeKB: 5000,
-    operation: "read"
-  }
+    operation: "read",
+  },
 };
 
 /**
@@ -218,8 +220,8 @@ export const FILE_WRITER_TEMPLATE: AgentToolTemplate = {
   config: {
     allowedExtensions: [".txt", ".md", ".csv", ".json", ".xml"],
     maxSizeKB: 5000,
-    operation: "write"
-  }
+    operation: "write",
+  },
 };
 
 /**
@@ -234,8 +236,8 @@ export const SLACK_TEMPLATE: AgentToolTemplate = {
   config: {
     service: "slack",
     defaultChannel: "general",
-    username: "AI Agent"
-  }
+    username: "AI Agent",
+  },
 };
 
 /**
@@ -251,8 +253,8 @@ export const GITHUB_TEMPLATE: AgentToolTemplate = {
     service: "github",
     owner: "{{owner}}",
     repo: "{{repo}}",
-    operations: ["list", "create", "update"]
-  }
+    operations: ["list", "create", "update"],
+  },
 };
 
 /**
@@ -267,8 +269,8 @@ export const WEBHOOK_TEMPLATE: AgentToolTemplate = {
   config: {
     url: "{{url}}",
     method: "POST",
-    headers: {}
-  }
+    headers: {},
+  },
 };
 
 /**
@@ -283,8 +285,8 @@ export const CSV_PROCESSOR_TEMPLATE: AgentToolTemplate = {
   config: {
     operations: ["read", "transform", "filter", "aggregate"],
     delimiter: ",",
-    maxRows: 10000
-  }
+    maxRows: 10000,
+  },
 };
 
 /**
@@ -300,8 +302,8 @@ export const PDF_PROCESSOR_TEMPLATE: AgentToolTemplate = {
     extractText: true,
     extractImages: false,
     extractTables: true,
-    maxPages: 100
-  }
+    maxPages: 100,
+  },
 };
 
 /**
@@ -317,8 +319,8 @@ export const TRANSLATION_TEMPLATE: AgentToolTemplate = {
     model: "gpt-4o",
     sourceLanguage: "auto",
     targetLanguage: "en",
-    preserveFormatting: true
-  }
+    preserveFormatting: true,
+  },
 };
 
 /**
@@ -334,8 +336,8 @@ export const WEATHER_TEMPLATE: AgentToolTemplate = {
     service: "openweathermap",
     units: "metric",
     includesForecast: true,
-    forecastDays: 5
-  }
+    forecastDays: 5,
+  },
 };
 
 /**
@@ -351,8 +353,8 @@ export const NEWS_TEMPLATE: AgentToolTemplate = {
     service: "newsapi",
     sources: ["bbc-news", "cnn", "the-verge"],
     language: "en",
-    maxResults: 10
-  }
+    maxResults: 10,
+  },
 };
 
 /**
@@ -367,8 +369,8 @@ export const CALENDAR_TEMPLATE: AgentToolTemplate = {
   config: {
     service: "google_calendar",
     operations: ["list", "create", "update", "delete"],
-    defaultCalendar: "primary"
-  }
+    defaultCalendar: "primary",
+  },
 };
 
 /**
@@ -384,8 +386,8 @@ export const DATA_VISUALIZER_TEMPLATE: AgentToolTemplate = {
     chartTypes: ["bar", "line", "pie", "scatter"],
     width: 800,
     height: 600,
-    format: "svg"
-  }
+    format: "svg",
+  },
 };
 
 /**
@@ -402,8 +404,8 @@ export const CODE_GENERATOR_TEMPLATE: AgentToolTemplate = {
     temperature: 0.2,
     languages: ["javascript", "python", "typescript", "java", "c++", "go"],
     includeExplanation: true,
-    includeTests: false
-  }
+    includeTests: false,
+  },
 };
 
 /**
@@ -419,8 +421,8 @@ export const MATH_SOLVER_TEMPLATE: AgentToolTemplate = {
     model: "gpt-4o",
     showWorkingSteps: true,
     generateGraphs: false,
-    topics: ["algebra", "calculus", "statistics", "geometry", "linear-algebra"]
-  }
+    topics: ["algebra", "calculus", "statistics", "geometry", "linear-algebra"],
+  },
 };
 
 /**
@@ -436,20 +438,20 @@ export const CUSTOM_API_TEMPLATE: AgentToolTemplate = {
     baseUrl: "{{baseUrl}}",
     authentication: {
       type: "bearer",
-      token: "{{token}}"
+      token: "{{token}}",
     },
     endpoints: [
       {
         name: "list_items",
         method: "GET",
         path: "/items",
-        params: []
+        params: [],
       },
       {
         name: "get_item",
         method: "GET",
         path: "/items/{id}",
-        params: ["id"]
+        params: ["id"],
       },
       {
         name: "create_item",
@@ -460,12 +462,12 @@ export const CUSTOM_API_TEMPLATE: AgentToolTemplate = {
           required: ["name"],
           properties: {
             name: { type: "string" },
-            description: { type: "string" }
-          }
-        }
-      }
-    ]
-  }
+            description: { type: "string" },
+          },
+        },
+      },
+    ],
+  },
 };
 
 /**
@@ -473,7 +475,8 @@ export const CUSTOM_API_TEMPLATE: AgentToolTemplate = {
  */
 export const VIDEO_ANALYSIS_TEMPLATE: AgentToolTemplate = {
   name: "Video Analysis",
-  description: "Analyze video content and extract insights, transcriptions, and scene descriptions",
+  description:
+    "Analyze video content and extract insights, transcriptions, and scene descriptions",
   category: TOOL_CATEGORIES.DATA_PROCESSING,
   type: "openai",
   icon: "Video",
@@ -484,8 +487,8 @@ export const VIDEO_ANALYSIS_TEMPLATE: AgentToolTemplate = {
     analyzeScenes: true,
     extractMetadata: true,
     analyzeAudio: true,
-    maxVideoDuration: 600 // 10 minutes
-  }
+    maxVideoDuration: 600, // 10 minutes
+  },
 };
 
 /**
@@ -493,7 +496,8 @@ export const VIDEO_ANALYSIS_TEMPLATE: AgentToolTemplate = {
  */
 export const DOCUMENT_SUMMARIZATION_TEMPLATE: AgentToolTemplate = {
   name: "Document Summarization",
-  description: "Generate concise summaries of documents with key points and insights",
+  description:
+    "Generate concise summaries of documents with key points and insights",
   category: TOOL_CATEGORIES.CONTENT_GENERATION,
   type: "openai",
   icon: "FileDigit",
@@ -504,8 +508,8 @@ export const DOCUMENT_SUMMARIZATION_TEMPLATE: AgentToolTemplate = {
     style: "bullet", // bullet, paragraph, executive
     includeKeyPoints: true,
     includeTakeaways: true,
-    includeActionItems: true
-  }
+    includeActionItems: true,
+  },
 };
 
 /**
@@ -513,7 +517,8 @@ export const DOCUMENT_SUMMARIZATION_TEMPLATE: AgentToolTemplate = {
  */
 export const SENTIMENT_ANALYSIS_TEMPLATE: AgentToolTemplate = {
   name: "Sentiment Analysis",
-  description: "Analyze text to determine sentiment, emotional tone, and key themes",
+  description:
+    "Analyze text to determine sentiment, emotional tone, and key themes",
   category: TOOL_CATEGORIES.DATA_PROCESSING,
   type: "openai",
   icon: "HeartPulse",
@@ -523,8 +528,8 @@ export const SENTIMENT_ANALYSIS_TEMPLATE: AgentToolTemplate = {
     sentiment: true,
     emotions: true,
     themes: true,
-    metrics: ["positivity", "negativity", "objectivity", "subjectivity"]
-  }
+    metrics: ["positivity", "negativity", "objectivity", "subjectivity"],
+  },
 };
 
 /**
@@ -542,8 +547,8 @@ export const SOCIAL_MEDIA_PUBLISHER_TEMPLATE: AgentToolTemplate = {
     scheduling: true,
     analytics: true,
     contentCreation: true,
-    defaultFormat: "text"
-  }
+    defaultFormat: "text",
+  },
 };
 
 /**
@@ -551,7 +556,8 @@ export const SOCIAL_MEDIA_PUBLISHER_TEMPLATE: AgentToolTemplate = {
  */
 export const VOICE_GENERATOR_TEMPLATE: AgentToolTemplate = {
   name: "Voice Generator",
-  description: "Convert text to realistic speech in various languages and voices",
+  description:
+    "Convert text to realistic speech in various languages and voices",
   category: TOOL_CATEGORIES.CONTENT_GENERATION,
   type: "openai",
   icon: "Mic",
@@ -561,8 +567,8 @@ export const VOICE_GENERATOR_TEMPLATE: AgentToolTemplate = {
     speed: 1.0,
     format: "mp3",
     quality: "standard", // standard, high
-    languages: ["en", "es", "fr", "de", "it", "pt", "ja", "zh"]
-  }
+    languages: ["en", "es", "fr", "de", "it", "pt", "ja", "zh"],
+  },
 };
 
 /**
@@ -570,7 +576,8 @@ export const VOICE_GENERATOR_TEMPLATE: AgentToolTemplate = {
  */
 export const ANTHROPIC_CLAUDE_TEMPLATE: AgentToolTemplate = {
   name: "Anthropic Claude",
-  description: "Generate responses using Anthropic's Claude model with its strengths in reasoning and safety",
+  description:
+    "Generate responses using Anthropic's Claude model with its strengths in reasoning and safety",
   category: TOOL_CATEGORIES.CONTENT_GENERATION,
   type: "anthropic",
   icon: "MessagesSquare",
@@ -578,8 +585,9 @@ export const ANTHROPIC_CLAUDE_TEMPLATE: AgentToolTemplate = {
     model: "claude-3-opus-20240229",
     temperature: 0.7,
     maxTokens: 4000,
-    systemPrompt: "You are Claude, a helpful AI assistant created by Anthropic."
-  }
+    systemPrompt:
+      "You are Claude, a helpful AI assistant created by Anthropic.",
+  },
 };
 
 /**
@@ -587,7 +595,8 @@ export const ANTHROPIC_CLAUDE_TEMPLATE: AgentToolTemplate = {
  */
 export const LLAMA_TEMPLATE: AgentToolTemplate = {
   name: "Llama AI",
-  description: "Generate content using Meta's Llama open-source AI model with local processing capability",
+  description:
+    "Generate content using Meta's Llama open-source AI model with local processing capability",
   category: TOOL_CATEGORIES.CONTENT_GENERATION,
   type: "llama",
   icon: "Flame",
@@ -597,8 +606,8 @@ export const LLAMA_TEMPLATE: AgentToolTemplate = {
     maxTokens: 2000,
     systemPrompt: "You are a helpful assistant.",
     localInference: true,
-    quantization: "8bit"
-  }
+    quantization: "8bit",
+  },
 };
 
 /**
@@ -606,7 +615,8 @@ export const LLAMA_TEMPLATE: AgentToolTemplate = {
  */
 export const GEMINI_TEMPLATE: AgentToolTemplate = {
   name: "Google Gemini",
-  description: "Generate multimodal content using Google's Gemini model with advanced reasoning capabilities",
+  description:
+    "Generate multimodal content using Google's Gemini model with advanced reasoning capabilities",
   category: TOOL_CATEGORIES.CONTENT_GENERATION,
   type: "gemini",
   icon: "Gem",
@@ -620,9 +630,9 @@ export const GEMINI_TEMPLATE: AgentToolTemplate = {
       harassment: "block_medium_and_above",
       hateSpeech: "block_medium_and_above",
       sexuallyExplicit: "block_medium_and_above",
-      dangerous: "block_medium_and_above"
-    }
-  }
+      dangerous: "block_medium_and_above",
+    },
+  },
 };
 
 /**
@@ -630,19 +640,26 @@ export const GEMINI_TEMPLATE: AgentToolTemplate = {
  */
 export const IMAGE_EDITOR_TEMPLATE: AgentToolTemplate = {
   name: "AI Image Editor",
-  description: "Edit and manipulate images using AI with operations like inpainting, outpainting, and style transfer",
+  description:
+    "Edit and manipulate images using AI with operations like inpainting, outpainting, and style transfer",
   category: TOOL_CATEGORIES.CONTENT_GENERATION,
   type: "openai",
   icon: "ImagePlus",
   config: {
     model: "dall-e-3",
-    operations: ["inpaint", "outpaint", "style-transfer", "remove-background", "enhance"],
+    operations: [
+      "inpaint",
+      "outpaint",
+      "style-transfer",
+      "remove-background",
+      "enhance",
+    ],
     quality: "hd",
     preserveOriginal: true,
     maxEdits: 10,
     editHistory: true,
-    outputFormats: ["png", "jpg", "webp"]
-  }
+    outputFormats: ["png", "jpg", "webp"],
+  },
 };
 
 /**
@@ -650,7 +667,8 @@ export const IMAGE_EDITOR_TEMPLATE: AgentToolTemplate = {
  */
 export const PERPLEXITY_TEMPLATE: AgentToolTemplate = {
   name: "Perplexity AI",
-  description: "Generate research-focused responses with built-in web search capabilities",
+  description:
+    "Generate research-focused responses with built-in web search capabilities",
   category: TOOL_CATEGORIES.KNOWLEDGE,
   type: "perplexity",
   icon: "Search",
@@ -661,8 +679,9 @@ export const PERPLEXITY_TEMPLATE: AgentToolTemplate = {
     webSearch: true,
     citeSources: true,
     followupQuestions: true,
-    systemPrompt: "You are a research assistant that provides thorough, accurate information with proper citations."
-  }
+    systemPrompt:
+      "You are a research assistant that provides thorough, accurate information with proper citations.",
+  },
 };
 
 /**
@@ -670,7 +689,8 @@ export const PERPLEXITY_TEMPLATE: AgentToolTemplate = {
  */
 export const XAI_TEMPLATE: AgentToolTemplate = {
   name: "Grok by xAI",
-  description: "Generate creative and conversational responses using xAI's Grok model",
+  description:
+    "Generate creative and conversational responses using xAI's Grok model",
   category: TOOL_CATEGORIES.CONTENT_GENERATION,
   type: "xai",
   icon: "Sparkles",
@@ -681,8 +701,9 @@ export const XAI_TEMPLATE: AgentToolTemplate = {
     webSearch: true,
     realTime: true,
     creativityLevel: "high",
-    systemPrompt: "You are Grok, a superintelligent AI with a bit of wit and humor. You aim to be helpful, accurate, and engaging."
-  }
+    systemPrompt:
+      "You are Grok, a superintelligent AI with a bit of wit and humor. You aim to be helpful, accurate, and engaging.",
+  },
 };
 
 /**
@@ -700,8 +721,8 @@ export const AUDIO_GENERATION_TEMPLATE: AgentToolTemplate = {
     maxDuration: 300, // 5 minutes
     audioQuality: "high",
     format: "mp3",
-    genres: ["ambient", "electronic", "cinematic", "jazz", "rock", "classical"]
-  }
+    genres: ["ambient", "electronic", "cinematic", "jazz", "rock", "classical"],
+  },
 };
 
 /**
@@ -722,8 +743,8 @@ export const MODEL_3D_TEMPLATE: AgentToolTemplate = {
     animation: false,
     maxPolygons: 100000,
     lightingSetup: "studio",
-    background: "transparent"
-  }
+    background: "transparent",
+  },
 };
 
 /**
@@ -731,7 +752,8 @@ export const MODEL_3D_TEMPLATE: AgentToolTemplate = {
  */
 export const CHATBOT_BUILDER_TEMPLATE: AgentToolTemplate = {
   name: "Chatbot Builder",
-  description: "Create and deploy specialized conversational agents for specific domains",
+  description:
+    "Create and deploy specialized conversational agents for specific domains",
   category: TOOL_CATEGORIES.UTILITIES,
   type: "custom",
   icon: "Bot",
@@ -744,8 +766,8 @@ export const CHATBOT_BUILDER_TEMPLATE: AgentToolTemplate = {
     conversationHistory: true,
     personalityTraits: ["friendly", "professional", "concise"],
     responseTemplates: true,
-    feedbackLoop: true
-  }
+    feedbackLoop: true,
+  },
 };
 
 /**
@@ -753,7 +775,8 @@ export const CHATBOT_BUILDER_TEMPLATE: AgentToolTemplate = {
  */
 export const SALESFORCE_TEMPLATE: AgentToolTemplate = {
   name: "Salesforce Integration",
-  description: "Connect with Salesforce CRM to manage leads, opportunities, and customer data",
+  description:
+    "Connect with Salesforce CRM to manage leads, opportunities, and customer data",
   category: TOOL_CATEGORIES.INTEGRATIONS,
   type: "webhook",
   icon: "CloudLightning",
@@ -764,8 +787,8 @@ export const SALESFORCE_TEMPLATE: AgentToolTemplate = {
     operations: ["query", "create", "update", "delete"],
     bulkOperations: true,
     customFields: true,
-    webhookEvents: ["created", "updated", "deleted"]
-  }
+    webhookEvents: ["created", "updated", "deleted"],
+  },
 };
 
 /**
@@ -773,7 +796,8 @@ export const SALESFORCE_TEMPLATE: AgentToolTemplate = {
  */
 export const SAP_TEMPLATE: AgentToolTemplate = {
   name: "SAP Integration",
-  description: "Connect with SAP ERP systems to manage business processes and data",
+  description:
+    "Connect with SAP ERP systems to manage business processes and data",
   category: TOOL_CATEGORIES.INTEGRATIONS,
   type: "webhook",
   icon: "Database",
@@ -784,8 +808,8 @@ export const SAP_TEMPLATE: AgentToolTemplate = {
     operations: ["read", "create", "update", "delete"],
     authentication: "oauth2",
     metadata: true,
-    batchProcessing: true
-  }
+    batchProcessing: true,
+  },
 };
 
 /**
@@ -793,7 +817,8 @@ export const SAP_TEMPLATE: AgentToolTemplate = {
  */
 export const DYNAMICS_TEMPLATE: AgentToolTemplate = {
   name: "Microsoft Dynamics",
-  description: "Connect with Microsoft Dynamics 365 to manage business applications and customer data",
+  description:
+    "Connect with Microsoft Dynamics 365 to manage business applications and customer data",
   category: TOOL_CATEGORIES.INTEGRATIONS,
   type: "webhook",
   icon: "Box",
@@ -804,8 +829,8 @@ export const DYNAMICS_TEMPLATE: AgentToolTemplate = {
     operations: ["retrieve", "create", "update", "delete"],
     bulkOperations: true,
     webhookEvents: true,
-    customEntities: true
-  }
+    customEntities: true,
+  },
 };
 
 /**
@@ -813,7 +838,8 @@ export const DYNAMICS_TEMPLATE: AgentToolTemplate = {
  */
 export const ZAPIER_TEMPLATE: AgentToolTemplate = {
   name: "Zapier Integration",
-  description: "Connect with thousands of apps through Zapier's automation platform",
+  description:
+    "Connect with thousands of apps through Zapier's automation platform",
   category: TOOL_CATEGORIES.INTEGRATIONS,
   type: "webhook",
   icon: "Zap",
@@ -823,8 +849,15 @@ export const ZAPIER_TEMPLATE: AgentToolTemplate = {
     actionEvents: true,
     filterSteps: true,
     customWebhooks: true,
-    zapierApps: ["gmail", "slack", "trello", "asana", "googlesheets", "dropbox"]
-  }
+    zapierApps: [
+      "gmail",
+      "slack",
+      "trello",
+      "asana",
+      "googlesheets",
+      "dropbox",
+    ],
+  },
 };
 
 /**
@@ -832,18 +865,25 @@ export const ZAPIER_TEMPLATE: AgentToolTemplate = {
  */
 export const DATA_ANALYSIS_TEMPLATE: AgentToolTemplate = {
   name: "Data Analysis",
-  description: "Perform advanced data analysis, statistical modeling, and insights generation",
+  description:
+    "Perform advanced data analysis, statistical modeling, and insights generation",
   category: TOOL_CATEGORIES.DATA_PROCESSING,
   type: "custom",
   icon: "LineChart",
   config: {
     operations: ["descriptive", "inferential", "predictive", "prescriptive"],
-    statisticalTests: ["t-test", "anova", "chi-square", "regression", "correlation"],
+    statisticalTests: [
+      "t-test",
+      "anova",
+      "chi-square",
+      "regression",
+      "correlation",
+    ],
     visualization: true,
     exportFormats: ["csv", "json", "xlsx", "pdf"],
     maxDatasetSize: "100MB",
-    machineLearningSuggestions: true
-  }
+    machineLearningSuggestions: true,
+  },
 };
 
 /**
@@ -851,7 +891,8 @@ export const DATA_ANALYSIS_TEMPLATE: AgentToolTemplate = {
  */
 export const ZENDESK_TEMPLATE: AgentToolTemplate = {
   name: "Zendesk Integration",
-  description: "Connect with Zendesk to manage customer support tickets and interactions",
+  description:
+    "Connect with Zendesk to manage customer support tickets and interactions",
   category: TOOL_CATEGORIES.INTEGRATIONS,
   type: "webhook",
   icon: "HeadphonesIcon",
@@ -862,8 +903,8 @@ export const ZENDESK_TEMPLATE: AgentToolTemplate = {
     operations: ["list", "show", "create", "update", "delete"],
     webhookEvents: ["ticket.created", "ticket.updated", "ticket.solved"],
     customFields: true,
-    macros: true
-  }
+    macros: true,
+  },
 };
 
 /**
@@ -881,19 +922,19 @@ export const TOOL_TEMPLATES: Record<string, AgentToolTemplate> = {
   GEMINI: GEMINI_TEMPLATE,
   PERPLEXITY: PERPLEXITY_TEMPLATE,
   XAI: XAI_TEMPLATE,
-  
+
   // Content Generation
   IMAGE_EDITOR: IMAGE_EDITOR_TEMPLATE,
   AUDIO_GENERATION: AUDIO_GENERATION_TEMPLATE,
   MODEL_3D: MODEL_3D_TEMPLATE,
   VOICE_GENERATOR: VOICE_GENERATOR_TEMPLATE,
-  
+
   // Utilities
   CHATBOT_BUILDER: CHATBOT_BUILDER_TEMPLATE,
   WEB_SEARCH: WEB_SEARCH_TEMPLATE,
   EMAIL: EMAIL_TEMPLATE,
   SMS: SMS_TEMPLATE,
-  
+
   // Data Processing
   DATABASE_QUERY: DATABASE_QUERY_TEMPLATE,
   DATA_ANALYSIS: DATA_ANALYSIS_TEMPLATE,
@@ -902,26 +943,26 @@ export const TOOL_TEMPLATES: Record<string, AgentToolTemplate> = {
   DATA_VISUALIZER: DATA_VISUALIZER_TEMPLATE,
   VIDEO_ANALYSIS: VIDEO_ANALYSIS_TEMPLATE,
   SENTIMENT_ANALYSIS: SENTIMENT_ANALYSIS_TEMPLATE,
-  
+
   // File Operations
   FILE_READER: FILE_READER_TEMPLATE,
   FILE_WRITER: FILE_WRITER_TEMPLATE,
-  
+
   // Development Tools
   CODE_GENERATOR: CODE_GENERATOR_TEMPLATE,
   MATH_SOLVER: MATH_SOLVER_TEMPLATE,
   CUSTOM_API: CUSTOM_API_TEMPLATE,
-  
+
   // Communication and Content
   TRANSLATION: TRANSLATION_TEMPLATE,
   DOCUMENT_SUMMARIZATION: DOCUMENT_SUMMARIZATION_TEMPLATE,
   SOCIAL_MEDIA_PUBLISHER: SOCIAL_MEDIA_PUBLISHER_TEMPLATE,
-  
+
   // External Services
   WEATHER: WEATHER_TEMPLATE,
   NEWS: NEWS_TEMPLATE,
   CALENDAR: CALENDAR_TEMPLATE,
-  
+
   // Enterprise Integrations
   SALESFORCE: SALESFORCE_TEMPLATE,
   SAP: SAP_TEMPLATE,
@@ -930,7 +971,7 @@ export const TOOL_TEMPLATES: Record<string, AgentToolTemplate> = {
   ZAPIER: ZAPIER_TEMPLATE,
   SLACK: SLACK_TEMPLATE,
   GITHUB: GITHUB_TEMPLATE,
-  WEBHOOK: WEBHOOK_TEMPLATE
+  WEBHOOK: WEBHOOK_TEMPLATE,
 };
 
 /**
@@ -943,8 +984,12 @@ export const getAllTemplates = (): AgentToolTemplate[] => {
 /**
  * Get templates by category
  */
-export const getTemplatesByCategory = (category: string): AgentToolTemplate[] => {
-  return Object.values(TOOL_TEMPLATES).filter(template => template.category === category);
+export const getTemplatesByCategory = (
+  category: string,
+): AgentToolTemplate[] => {
+  return Object.values(TOOL_TEMPLATES).filter(
+    (template) => template.category === category,
+  );
 };
 
 /**

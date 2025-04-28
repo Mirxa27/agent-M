@@ -15,30 +15,30 @@ async function throwIfResNotOk(res: Response) {
  * @returns Promise resolving to response or JSON data
  */
 export async function apiRequest<T = any>(
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   url: string,
-  data?: any
+  data?: any,
 ): Promise<T> {
   const options: RequestInit = {
     method,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-    credentials: 'include',
+    credentials: "include",
   };
 
-  if (data !== undefined && method !== 'GET') {
+  if (data !== undefined && method !== "GET") {
     options.body = JSON.stringify(data);
   }
 
   const res = await fetch(url, options);
   await throwIfResNotOk(res);
-  
+
   // For Response type, return the response itself
-  if (method === 'DELETE' || res.status === 204) {
+  if (method === "DELETE" || res.status === 204) {
     return {} as T;
   }
-  
+
   return await res.json();
 }
 
@@ -50,13 +50,15 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     // In TanStack Query v5, queryKey is always an array
     if (!Array.isArray(queryKey)) {
-      throw new Error('As of v4, queryKey needs to be an Array. If you are using a string like "repoData", please change it to an Array, e.g. ["repoData"]');
+      throw new Error(
+        'As of v4, queryKey needs to be an Array. If you are using a string like "repoData", please change it to an Array, e.g. ["repoData"]',
+      );
     }
-    
+
     // Use the first element of the array as the URL
     const url = queryKey[0] as string;
     // Any additional parameters can be in the rest of the array
-    
+
     const res = await fetch(url, {
       credentials: "include",
     });

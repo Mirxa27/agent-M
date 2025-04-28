@@ -6,7 +6,14 @@ import { z } from "zod";
 import { toast } from "@/hooks/use-toast";
 import { AiModel, AiPrompt } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import { EditIcon, PlusIcon, SearchIcon, TrashIcon, StarIcon, CopyIcon } from "lucide-react";
+import {
+  EditIcon,
+  PlusIcon,
+  SearchIcon,
+  TrashIcon,
+  StarIcon,
+  CopyIcon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,19 +61,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Define form schema for creating/updating prompts
 const promptFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   modelId: z.coerce.number({ required_error: "Model is required" }),
   purpose: z.string().min(2, "Purpose must be at least 2 characters."),
-  systemPrompt: z.string().min(10, "System prompt must be at least 10 characters."),
+  systemPrompt: z
+    .string()
+    .min(10, "System prompt must be at least 10 characters."),
   description: z.string().optional().nullable(),
   isActive: z.boolean().default(true),
   isDefault: z.boolean().default(false),
@@ -74,7 +78,7 @@ const promptFormSchema = z.object({
   temperature: z.coerce.number().min(0).max(2).default(0.7),
   topP: z.coerce.number().min(0).max(1).default(1),
   frequencyPenalty: z.coerce.number().min(0).max(2).default(0),
-  presencePenalty: z.coerce.number().min(0).max(2).default(0)
+  presencePenalty: z.coerce.number().min(0).max(2).default(0),
 });
 
 type PromptFormValues = z.infer<typeof promptFormSchema>;
@@ -90,7 +94,7 @@ const commonPurposes = [
   "data-analysis",
   "research-assistant",
   "task-automation",
-  "sentiment-analysis"
+  "sentiment-analysis",
 ];
 
 export default function AiPromptsPanel() {
@@ -101,30 +105,27 @@ export default function AiPromptsPanel() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<AiPrompt | null>(null);
   const [viewTab, setViewTab] = useState("system");
-  
+
   const queryClient = useQueryClient();
 
   // Fetch all AI prompts
-  const { 
-    data: prompts = [], 
+  const {
+    data: prompts = [],
     isLoading: isLoadingPrompts,
-    error: promptsError 
+    error: promptsError,
   } = useQuery({
     queryKey: ["/api/admin/ai-prompts"],
     queryFn: async () => {
       return await apiRequest("GET", "/api/admin/ai-prompts");
-    }
+    },
   });
 
   // Fetch all AI models for the dropdown
-  const { 
-    data: models = [], 
-    isLoading: isLoadingModels,
-  } = useQuery({
+  const { data: models = [], isLoading: isLoadingModels } = useQuery({
     queryKey: ["/api/admin/ai-models"],
     queryFn: async () => {
       return await apiRequest("GET", "/api/admin/ai-models");
-    }
+    },
   });
 
   // Create prompt mutation
@@ -147,12 +148,18 @@ export default function AiPromptsPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Update prompt mutation
   const updatePromptMutation = useMutation({
-    mutationFn: async ({ id, prompt }: { id: number, prompt: Partial<PromptFormValues> }) => {
+    mutationFn: async ({
+      id,
+      prompt,
+    }: {
+      id: number;
+      prompt: Partial<PromptFormValues>;
+    }) => {
       return await apiRequest("PATCH", `/api/admin/ai-prompts/${id}`, prompt);
     },
     onSuccess: () => {
@@ -169,7 +176,7 @@ export default function AiPromptsPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete prompt mutation
@@ -192,7 +199,7 @@ export default function AiPromptsPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Create form
@@ -210,8 +217,8 @@ export default function AiPromptsPanel() {
       temperature: 0.7,
       topP: 1,
       frequencyPenalty: 0,
-      presencePenalty: 0
-    }
+      presencePenalty: 0,
+    },
   });
 
   // Edit form
@@ -229,8 +236,8 @@ export default function AiPromptsPanel() {
       temperature: 0.7,
       topP: 1,
       frequencyPenalty: 0,
-      presencePenalty: 0
-    }
+      presencePenalty: 0,
+    },
   });
 
   // Reset form to default values
@@ -247,7 +254,7 @@ export default function AiPromptsPanel() {
       temperature: 0.7,
       topP: 1,
       frequencyPenalty: 0,
-      presencePenalty: 0
+      presencePenalty: 0,
     });
   };
 
@@ -259,9 +266,9 @@ export default function AiPromptsPanel() {
   // Handle edit submission
   const onEditSubmit = (values: PromptFormValues) => {
     if (selectedPrompt) {
-      updatePromptMutation.mutate({ 
-        id: selectedPrompt.id, 
-        prompt: values
+      updatePromptMutation.mutate({
+        id: selectedPrompt.id,
+        prompt: values,
       });
     }
   };
@@ -295,7 +302,7 @@ export default function AiPromptsPanel() {
       temperature: Number(prompt.temperature) || 0.7,
       topP: Number(prompt.topP) || 1,
       frequencyPenalty: Number(prompt.frequencyPenalty) || 0,
-      presencePenalty: Number(prompt.presencePenalty) || 0
+      presencePenalty: Number(prompt.presencePenalty) || 0,
     });
     setIsEditDialogOpen(true);
   };
@@ -320,31 +327,35 @@ export default function AiPromptsPanel() {
       temperature: Number(prompt.temperature) || 0.7,
       topP: Number(prompt.topP) || 1,
       frequencyPenalty: Number(prompt.frequencyPenalty) || 0,
-      presencePenalty: Number(prompt.presencePenalty) || 0
+      presencePenalty: Number(prompt.presencePenalty) || 0,
     });
     setIsCreateDialogOpen(true);
   };
 
   // Filter prompts by search query
-  const filteredPrompts = prompts.filter(prompt => 
-    prompt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    prompt.purpose.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (prompt.description && prompt.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredPrompts = prompts.filter(
+    (prompt) =>
+      prompt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      prompt.purpose.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (prompt.description &&
+        prompt.description.toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
   // Get model name by ID
   const getModelName = (modelId: number) => {
-    const model = models.find(m => m.id === modelId);
+    const model = models.find((m) => m.id === modelId);
     return model ? model.name : "Unknown";
   };
 
   // Function to format the system prompt for display
   const formatPromptForDisplay = (text: string) => {
     // Add line numbers and wrapping
-    return text.split('\n').map((line, i) => (
+    return text.split("\n").map((line, i) => (
       <div key={i} className="flex">
-        <span className="mr-2 text-gray-400 select-none w-8 text-right">{i + 1}</span>
-        <span className="flex-1 break-words">{line || ' '}</span>
+        <span className="mr-2 text-gray-400 select-none w-8 text-right">
+          {i + 1}
+        </span>
+        <span className="flex-1 break-words">{line || " "}</span>
       </div>
     ));
   };
@@ -357,7 +368,10 @@ export default function AiPromptsPanel() {
         </CardHeader>
         <CardContent>
           <div className="text-red-500">
-            Error loading AI prompts: {promptsError instanceof Error ? promptsError.message : "Unknown error"}
+            Error loading AI prompts:{" "}
+            {promptsError instanceof Error
+              ? promptsError.message
+              : "Unknown error"}
           </div>
         </CardContent>
       </Card>
@@ -412,8 +426,13 @@ export default function AiPromptsPanel() {
                 <TableBody>
                   {filteredPrompts.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                        {searchQuery ? "No prompts match your search" : "No AI prompts found"}
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-6 text-muted-foreground"
+                      >
+                        {searchQuery
+                          ? "No prompts match your search"
+                          : "No AI prompts found"}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -436,15 +455,17 @@ export default function AiPromptsPanel() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="capitalize">
-                            {prompt.purpose.replace('-', ' ')}
+                            {prompt.purpose.replace("-", " ")}
                           </Badge>
                         </TableCell>
                         <TableCell>{getModelName(prompt.modelId)}</TableCell>
                         <TableCell>
                           <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${getTemperatureColor(prompt.temperature)}`} 
-                              style={{ width: `${(Number(prompt.temperature) / 2) * 100}%` }}
+                            <div
+                              className={`h-full ${getTemperatureColor(prompt.temperature)}`}
+                              style={{
+                                width: `${(Number(prompt.temperature) / 2) * 100}%`,
+                              }}
                             />
                           </div>
                           <div className="mt-1 text-xs text-muted-foreground">
@@ -452,7 +473,9 @@ export default function AiPromptsPanel() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={prompt.isActive ? "success" : "outline"}>
+                          <Badge
+                            variant={prompt.isActive ? "success" : "outline"}
+                          >
                             {prompt.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
@@ -506,31 +529,35 @@ export default function AiPromptsPanel() {
           <DialogHeader>
             <DialogTitle>View AI Prompt</DialogTitle>
             <DialogDescription>
-              {selectedPrompt?.description || `A prompt for ${selectedPrompt?.purpose} using ${getModelName(selectedPrompt?.modelId || 0)}`}
+              {selectedPrompt?.description ||
+                `A prompt for ${selectedPrompt?.purpose} using ${getModelName(selectedPrompt?.modelId || 0)}`}
             </DialogDescription>
           </DialogHeader>
-          
+
           <Tabs value={viewTab} onValueChange={setViewTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="system">System Prompt</TabsTrigger>
               <TabsTrigger value="parameters">Parameters</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="system" className="space-y-4">
               <div className="rounded-md border bg-muted/50 p-4 text-sm font-mono overflow-auto max-h-[400px]">
-                {selectedPrompt && formatPromptForDisplay(selectedPrompt.systemPrompt)}
+                {selectedPrompt &&
+                  formatPromptForDisplay(selectedPrompt.systemPrompt)}
               </div>
-              
+
               {selectedPrompt?.defaultUserPrompt && (
                 <>
-                  <h4 className="text-sm font-medium mt-4">Default User Prompt</h4>
+                  <h4 className="text-sm font-medium mt-4">
+                    Default User Prompt
+                  </h4>
                   <div className="rounded-md border bg-muted/50 p-4 text-sm font-mono overflow-auto max-h-[200px]">
                     {formatPromptForDisplay(selectedPrompt.defaultUserPrompt)}
                   </div>
                 </>
               )}
             </TabsContent>
-            
+
             <TabsContent value="parameters" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -538,11 +565,13 @@ export default function AiPromptsPanel() {
                   <div className="flex items-center space-x-2">
                     <span className="w-10 text-sm">0</span>
                     <div className="relative flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                      <div 
-                        className={getTemperatureColor(selectedPrompt?.temperature)} 
-                        style={{ 
+                      <div
+                        className={getTemperatureColor(
+                          selectedPrompt?.temperature,
+                        )}
+                        style={{
                           width: `${(Number(selectedPrompt?.temperature) / 2) * 100}%`,
-                          height: '100%'
+                          height: "100%",
                         }}
                       ></div>
                     </div>
@@ -552,17 +581,17 @@ export default function AiPromptsPanel() {
                     Value: {Number(selectedPrompt?.temperature).toFixed(1)}
                   </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Top P</h4>
                   <div className="flex items-center space-x-2">
                     <span className="w-10 text-sm">0</span>
                     <div className="relative flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                      <div 
-                        className="bg-primary" 
-                        style={{ 
+                      <div
+                        className="bg-primary"
+                        style={{
                           width: `${Number(selectedPrompt?.topP) * 100}%`,
-                          height: '100%'
+                          height: "100%",
                         }}
                       ></div>
                     </div>
@@ -573,18 +602,18 @@ export default function AiPromptsPanel() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Frequency Penalty</h4>
                   <div className="flex items-center space-x-2">
                     <span className="w-10 text-sm">0</span>
                     <div className="relative flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                      <div 
-                        className="bg-blue-500" 
-                        style={{ 
+                      <div
+                        className="bg-blue-500"
+                        style={{
                           width: `${(Number(selectedPrompt?.frequencyPenalty) / 2) * 100}%`,
-                          height: '100%'
+                          height: "100%",
                         }}
                       ></div>
                     </div>
@@ -594,17 +623,17 @@ export default function AiPromptsPanel() {
                     Value: {Number(selectedPrompt?.frequencyPenalty).toFixed(1)}
                   </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Presence Penalty</h4>
                   <div className="flex items-center space-x-2">
                     <span className="w-10 text-sm">0</span>
                     <div className="relative flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                      <div 
-                        className="bg-purple-500" 
-                        style={{ 
+                      <div
+                        className="bg-purple-500"
+                        style={{
                           width: `${(Number(selectedPrompt?.presencePenalty) / 2) * 100}%`,
-                          height: '100%'
+                          height: "100%",
                         }}
                       ></div>
                     </div>
@@ -615,7 +644,7 @@ export default function AiPromptsPanel() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="space-y-2 pt-2">
                 <h4 className="text-sm font-medium">Additional Information</h4>
                 <div className="grid grid-cols-2 gap-4">
@@ -643,12 +672,9 @@ export default function AiPromptsPanel() {
               </div>
             </TabsContent>
           </Tabs>
-          
+
           <DialogFooter>
-            <Button 
-              type="button" 
-              onClick={() => setIsViewDialogOpen(false)}
-            >
+            <Button type="button" onClick={() => setIsViewDialogOpen(false)}>
               Close
             </Button>
           </DialogFooter>
@@ -665,7 +691,10 @@ export default function AiPromptsPanel() {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onCreateSubmit)} className="space-y-6">
+            <form
+              onSubmit={form.handleSubmit(onCreateSubmit)}
+              className="space-y-6"
+            >
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -680,15 +709,17 @@ export default function AiPromptsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="modelId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>AI Model</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange(parseInt(value))} 
+                      <Select
+                        onValueChange={(value) =>
+                          field.onChange(parseInt(value))
+                        }
                         value={field.value?.toString()}
                       >
                         <FormControl>
@@ -703,10 +734,12 @@ export default function AiPromptsPanel() {
                             </div>
                           ) : (
                             models
-                              .filter(model => model.isChatModel && model.isActive)
+                              .filter(
+                                (model) => model.isChatModel && model.isActive,
+                              )
                               .map((model) => (
-                                <SelectItem 
-                                  key={model.id} 
+                                <SelectItem
+                                  key={model.id}
                                   value={model.id.toString()}
                                 >
                                   {model.name}
@@ -728,8 +761,8 @@ export default function AiPromptsPanel() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Purpose</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         value={field.value}
                       >
                         <FormControl>
@@ -739,12 +772,12 @@ export default function AiPromptsPanel() {
                         </FormControl>
                         <SelectContent>
                           {commonPurposes.map((purpose) => (
-                            <SelectItem 
-                              key={purpose} 
+                            <SelectItem
+                              key={purpose}
                               value={purpose}
                               className="capitalize"
                             >
-                              {purpose.replace('-', ' ')}
+                              {purpose.replace("-", " ")}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -756,7 +789,7 @@ export default function AiPromptsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="description"
@@ -764,9 +797,9 @@ export default function AiPromptsPanel() {
                     <FormItem>
                       <FormLabel>Description (Optional)</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Brief description of this prompt" 
-                          {...field} 
+                        <Input
+                          placeholder="Brief description of this prompt"
+                          {...field}
                           value={field.value || ""}
                         />
                       </FormControl>
@@ -775,7 +808,7 @@ export default function AiPromptsPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="systemPrompt"
@@ -783,20 +816,21 @@ export default function AiPromptsPanel() {
                   <FormItem>
                     <FormLabel>System Prompt</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Enter your system prompt here..." 
+                      <Textarea
+                        placeholder="Enter your system prompt here..."
                         className="font-mono h-32"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      The system instructions that define the assistant's behavior
+                      The system instructions that define the assistant's
+                      behavior
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="defaultUserPrompt"
@@ -804,28 +838,31 @@ export default function AiPromptsPanel() {
                   <FormItem>
                     <FormLabel>Default User Prompt (Optional)</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Enter a default user prompt template..." 
+                      <Textarea
+                        placeholder="Enter a default user prompt template..."
                         className="font-mono h-20"
-                        {...field} 
+                        {...field}
                         value={field.value || ""}
                       />
                     </FormControl>
                     <FormDescription>
-                      A template for the initial user message (can include placeholders like {'{input}'})
+                      A template for the initial user message (can include
+                      placeholders like {"{input}"})
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="temperature"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Temperature: {field.value.toFixed(1)}</FormLabel>
+                      <FormLabel>
+                        Temperature: {field.value.toFixed(1)}
+                      </FormLabel>
                       <FormControl>
                         <Slider
                           min={0}
@@ -837,13 +874,14 @@ export default function AiPromptsPanel() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Higher values increase creativity but may reduce accuracy
+                        Higher values increase creativity but may reduce
+                        accuracy
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="topP"
@@ -867,14 +905,16 @@ export default function AiPromptsPanel() {
                   )}
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="frequencyPenalty"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Frequency Penalty: {field.value.toFixed(1)}</FormLabel>
+                      <FormLabel>
+                        Frequency Penalty: {field.value.toFixed(1)}
+                      </FormLabel>
                       <FormControl>
                         <Slider
                           min={0}
@@ -892,13 +932,15 @@ export default function AiPromptsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="presencePenalty"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Presence Penalty: {field.value.toFixed(1)}</FormLabel>
+                      <FormLabel>
+                        Presence Penalty: {field.value.toFixed(1)}
+                      </FormLabel>
                       <FormControl>
                         <Slider
                           min={0}
@@ -917,7 +959,7 @@ export default function AiPromptsPanel() {
                   )}
                 />
               </div>
-              
+
               <div className="flex flex-row items-center justify-between space-x-4">
                 <FormField
                   control={form.control}
@@ -939,7 +981,7 @@ export default function AiPromptsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="isActive"
@@ -961,19 +1003,16 @@ export default function AiPromptsPanel() {
                   )}
                 />
               </div>
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsCreateDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={createPromptMutation.isPending}
-                >
+                <Button type="submit" disabled={createPromptMutation.isPending}>
                   {createPromptMutation.isPending && (
                     <span className="mr-2 h-4 w-4 animate-spin">◌</span>
                   )}
@@ -995,7 +1034,10 @@ export default function AiPromptsPanel() {
             </DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
+            <form
+              onSubmit={editForm.handleSubmit(onEditSubmit)}
+              className="space-y-6"
+            >
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={editForm.control}
@@ -1010,15 +1052,17 @@ export default function AiPromptsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="modelId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>AI Model</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange(parseInt(value))} 
+                      <Select
+                        onValueChange={(value) =>
+                          field.onChange(parseInt(value))
+                        }
                         value={field.value?.toString()}
                       >
                         <FormControl>
@@ -1033,10 +1077,10 @@ export default function AiPromptsPanel() {
                             </div>
                           ) : (
                             models
-                              .filter(model => model.isChatModel)
+                              .filter((model) => model.isChatModel)
                               .map((model) => (
-                                <SelectItem 
-                                  key={model.id} 
+                                <SelectItem
+                                  key={model.id}
                                   value={model.id.toString()}
                                 >
                                   {model.name}
@@ -1058,8 +1102,8 @@ export default function AiPromptsPanel() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Purpose</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         value={field.value}
                       >
                         <FormControl>
@@ -1069,12 +1113,12 @@ export default function AiPromptsPanel() {
                         </FormControl>
                         <SelectContent>
                           {commonPurposes.map((purpose) => (
-                            <SelectItem 
-                              key={purpose} 
+                            <SelectItem
+                              key={purpose}
                               value={purpose}
                               className="capitalize"
                             >
-                              {purpose.replace('-', ' ')}
+                              {purpose.replace("-", " ")}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1086,7 +1130,7 @@ export default function AiPromptsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="description"
@@ -1094,9 +1138,9 @@ export default function AiPromptsPanel() {
                     <FormItem>
                       <FormLabel>Description (Optional)</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Brief description of this prompt" 
-                          {...field} 
+                        <Input
+                          placeholder="Brief description of this prompt"
+                          {...field}
                           value={field.value || ""}
                         />
                       </FormControl>
@@ -1105,7 +1149,7 @@ export default function AiPromptsPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={editForm.control}
                 name="systemPrompt"
@@ -1113,20 +1157,21 @@ export default function AiPromptsPanel() {
                   <FormItem>
                     <FormLabel>System Prompt</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Enter your system prompt here..." 
+                      <Textarea
+                        placeholder="Enter your system prompt here..."
                         className="font-mono h-32"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      The system instructions that define the assistant's behavior
+                      The system instructions that define the assistant's
+                      behavior
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={editForm.control}
                 name="defaultUserPrompt"
@@ -1134,28 +1179,31 @@ export default function AiPromptsPanel() {
                   <FormItem>
                     <FormLabel>Default User Prompt (Optional)</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Enter a default user prompt template..." 
+                      <Textarea
+                        placeholder="Enter a default user prompt template..."
                         className="font-mono h-20"
-                        {...field} 
+                        {...field}
                         value={field.value || ""}
                       />
                     </FormControl>
                     <FormDescription>
-                      A template for the initial user message (can include placeholders like {'{input}'})
+                      A template for the initial user message (can include
+                      placeholders like {"{input}"})
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-2 gap-6">
                 <FormField
                   control={editForm.control}
                   name="temperature"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Temperature: {field.value.toFixed(1)}</FormLabel>
+                      <FormLabel>
+                        Temperature: {field.value.toFixed(1)}
+                      </FormLabel>
                       <FormControl>
                         <Slider
                           min={0}
@@ -1167,13 +1215,14 @@ export default function AiPromptsPanel() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Higher values increase creativity but may reduce accuracy
+                        Higher values increase creativity but may reduce
+                        accuracy
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="topP"
@@ -1197,14 +1246,16 @@ export default function AiPromptsPanel() {
                   )}
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-6">
                 <FormField
                   control={editForm.control}
                   name="frequencyPenalty"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Frequency Penalty: {field.value.toFixed(1)}</FormLabel>
+                      <FormLabel>
+                        Frequency Penalty: {field.value.toFixed(1)}
+                      </FormLabel>
                       <FormControl>
                         <Slider
                           min={0}
@@ -1222,13 +1273,15 @@ export default function AiPromptsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="presencePenalty"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Presence Penalty: {field.value.toFixed(1)}</FormLabel>
+                      <FormLabel>
+                        Presence Penalty: {field.value.toFixed(1)}
+                      </FormLabel>
                       <FormControl>
                         <Slider
                           min={0}
@@ -1247,7 +1300,7 @@ export default function AiPromptsPanel() {
                   )}
                 />
               </div>
-              
+
               <div className="flex flex-row items-center justify-between space-x-4">
                 <FormField
                   control={editForm.control}
@@ -1269,7 +1322,7 @@ export default function AiPromptsPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="isActive"
@@ -1291,19 +1344,16 @@ export default function AiPromptsPanel() {
                   )}
                 />
               </div>
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsEditDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={updatePromptMutation.isPending}
-                >
+                <Button type="submit" disabled={updatePromptMutation.isPending}>
                   {updatePromptMutation.isPending && (
                     <span className="mr-2 h-4 w-4 animate-spin">◌</span>
                   )}
@@ -1321,8 +1371,9 @@ export default function AiPromptsPanel() {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the prompt "{selectedPrompt?.name}"? 
-              This action cannot be undone and will affect any agents using this prompt.
+              Are you sure you want to delete the prompt "{selectedPrompt?.name}
+              "? This action cannot be undone and will affect any agents using
+              this prompt.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -1354,7 +1405,7 @@ export default function AiPromptsPanel() {
 // Helper function to determine the color for the temperature indicator
 function getTemperatureColor(temperature: string | number | null | undefined) {
   if (temperature === null || temperature === undefined) return "bg-gray-300";
-  
+
   const temp = Number(temperature);
   if (temp < 0.3) return "bg-blue-500";
   if (temp < 0.7) return "bg-green-500";

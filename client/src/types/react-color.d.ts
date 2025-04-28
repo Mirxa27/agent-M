@@ -1,6 +1,6 @@
-declare module 'react-color' {
-  import { ComponentType } from 'react';
-  
+declare module "react-color" {
+  import { ComponentType } from "react";
+
   export interface ColorResult {
     hex: string;
     rgb: {
@@ -16,19 +16,22 @@ declare module 'react-color' {
       a?: number;
     };
   }
-  
+
   export interface ColorPickerProps {
-    color?: string | {
-      r: number;
-      g: number;
-      b: number;
-      a?: number;
-    } | {
-      h: number;
-      s: number;
-      l: number;
-      a?: number;
-    };
+    color?:
+      | string
+      | {
+          r: number;
+          g: number;
+          b: number;
+          a?: number;
+        }
+      | {
+          h: number;
+          s: number;
+          l: number;
+          a?: number;
+        };
     onChange?: (color: ColorResult) => void;
     onChangeComplete?: (color: ColorResult) => void;
     className?: string;
@@ -38,9 +41,9 @@ declare module 'react-color' {
     disableAlpha?: boolean;
     presetColors?: string[];
     renderers?: any;
-    triangle?: 'hide' | 'top-left' | 'top-right';
+    triangle?: "hide" | "top-left" | "top-right";
   }
-  
+
   export const AlphaPicker: ComponentType<ColorPickerProps>;
   export const BlockPicker: ComponentType<ColorPickerProps>;
   export const ChromePicker: ComponentType<ColorPickerProps>;

@@ -3,33 +3,55 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Credential } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Key, Trash2, Edit, Eye, EyeOff, Check, X, AlertCircle } from "lucide-react";
-import { 
-  Dialog, 
-  DialogTrigger, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Plus,
+  Key,
+  Trash2,
+  Edit,
+  Eye,
+  EyeOff,
+  Check,
+  X,
+  AlertCircle,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { decrypt } from "@shared/crypto";
@@ -41,7 +63,7 @@ const credentialSchema = z.object({
   apiSecret: z.string().optional(),
   baseUrl: z.string().optional(),
   organizationId: z.string().optional(),
-  additionalParams: z.string().optional()
+  additionalParams: z.string().optional(),
 });
 
 export default function CredentialsPage() {
@@ -50,20 +72,18 @@ export default function CredentialsPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedCredential, setSelectedCredential] = useState<Credential | null>(null);
+  const [selectedCredential, setSelectedCredential] =
+    useState<Credential | null>(null);
   const [showSecret, setShowSecret] = useState<Record<number, boolean>>({});
 
   // Fetch credentials
-  const { 
-    data: credentials,
-    isLoading
-  } = useQuery({
+  const { data: credentials, isLoading } = useQuery({
     queryKey: ["/api/credentials"],
     queryFn: async () => {
       const res = await fetch("/api/credentials");
       if (!res.ok) throw new Error("Failed to fetch credentials");
       return res.json() as Promise<Credential[]>;
-    }
+    },
   });
 
   // Create credential mutation
@@ -77,8 +97,10 @@ export default function CredentialsPage() {
           apiSecret: data.apiSecret || null,
           baseUrl: data.baseUrl || null,
           organizationId: data.organizationId || null,
-          additionalParams: data.additionalParams ? JSON.parse(data.additionalParams) : null
-        }
+          additionalParams: data.additionalParams
+            ? JSON.parse(data.additionalParams)
+            : null,
+        },
       };
       const res = await apiRequest("POST", "/api/credentials", transformedData);
       return res.json();
@@ -98,7 +120,7 @@ export default function CredentialsPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete credential mutation
@@ -121,7 +143,7 @@ export default function CredentialsPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Form setup
@@ -134,8 +156,8 @@ export default function CredentialsPage() {
       apiSecret: "",
       baseUrl: "",
       organizationId: "",
-      additionalParams: ""
-    }
+      additionalParams: "",
+    },
   });
 
   const handleCreateSubmit = (data: z.infer<typeof credentialSchema>) => {
@@ -154,17 +176,18 @@ export default function CredentialsPage() {
   };
 
   const toggleShowSecret = (id: number) => {
-    setShowSecret(prev => ({ ...prev, [id]: !prev[id] }));
+    setShowSecret((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   // Filter credentials based on active tab
-  const filteredCredentials = activeTab === "all" 
-    ? credentials 
-    : credentials?.filter(cred => cred.type === activeTab);
+  const filteredCredentials =
+    activeTab === "all"
+      ? credentials
+      : credentials?.filter((cred) => cred.type === activeTab);
 
   // Organize credentials by type for the tabs
-  const credentialTypes = credentials 
-    ? [...new Set(credentials.map(cred => cred.type))]
+  const credentialTypes = credentials
+    ? [...new Set(credentials.map((cred) => cred.type))]
     : [];
 
   return (
@@ -176,8 +199,8 @@ export default function CredentialsPage() {
             Manage your API keys and credentials for various services
           </p>
         </div>
-        <Button 
-          onClick={() => setIsCreateDialogOpen(true)} 
+        <Button
+          onClick={() => setIsCreateDialogOpen(true)}
           className="mt-4 md:mt-0"
         >
           <Plus className="mr-2 h-4 w-4" /> Add Credential
@@ -192,7 +215,7 @@ export default function CredentialsPage() {
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="all">All</TabsTrigger>
-            {credentialTypes.map(type => (
+            {credentialTypes.map((type) => (
               <TabsTrigger key={type} value={type}>
                 {type.charAt(0).toUpperCase() + type.slice(1)}
               </TabsTrigger>
@@ -204,9 +227,12 @@ export default function CredentialsPage() {
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                   <Key className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No credentials found</h3>
+                  <h3 className="text-lg font-medium mb-2">
+                    No credentials found
+                  </h3>
                   <p className="text-sm text-muted-foreground mb-6 max-w-md">
-                    Add your first credential to connect your AI agents to external services.
+                    Add your first credential to connect your AI agents to
+                    external services.
                   </p>
                   <Button onClick={() => setIsCreateDialogOpen(true)}>
                     <Plus className="mr-2 h-4 w-4" /> Add Credential
@@ -215,20 +241,23 @@ export default function CredentialsPage() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredCredentials?.map(credential => (
+                {filteredCredentials?.map((credential) => (
                   <Card key={credential.id}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="font-bold">{credential.name}</CardTitle>
+                          <CardTitle className="font-bold">
+                            {credential.name}
+                          </CardTitle>
                           <CardDescription>
-                            {credential.type.charAt(0).toUpperCase() + credential.type.slice(1)}
+                            {credential.type.charAt(0).toUpperCase() +
+                              credential.type.slice(1)}
                           </CardDescription>
                         </div>
                         <div className="flex gap-1">
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
+                          <Button
+                            variant="outline"
+                            size="icon"
                             onClick={() => handleDeleteClick(credential)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -241,7 +270,7 @@ export default function CredentialsPage() {
                         <div className="text-sm font-medium mb-1">API Key</div>
                         <div className="flex items-center gap-2">
                           <div className="text-sm bg-muted p-2 rounded w-full font-mono truncate">
-                            {showSecret[credential.id] 
+                            {showSecret[credential.id]
                               ? decrypt(credential.data.apiKey)
                               : "••••••••••••••••••••••••••••"}
                           </div>
@@ -258,10 +287,12 @@ export default function CredentialsPage() {
                           </Button>
                         </div>
                       </div>
-                      
+
                       {credential.data.baseUrl && (
                         <div>
-                          <div className="text-sm font-medium mb-1">Base URL</div>
+                          <div className="text-sm font-medium mb-1">
+                            Base URL
+                          </div>
                           <div className="text-sm bg-muted p-2 rounded font-mono truncate">
                             {credential.data.baseUrl}
                           </div>
@@ -282,12 +313,16 @@ export default function CredentialsPage() {
           <DialogHeader>
             <DialogTitle>Add Credential</DialogTitle>
             <DialogDescription>
-              Add API keys and other credentials for connecting with external services.
+              Add API keys and other credentials for connecting with external
+              services.
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleCreateSubmit)} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit(handleCreateSubmit)}
+              className="space-y-4"
+            >
               <FormField
                 control={form.control}
                 name="name"
@@ -301,15 +336,15 @@ export default function CredentialsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Service Type</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -332,7 +367,7 @@ export default function CredentialsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="apiKey"
@@ -346,7 +381,7 @@ export default function CredentialsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="apiSecret"
@@ -360,7 +395,7 @@ export default function CredentialsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="baseUrl"
@@ -374,7 +409,7 @@ export default function CredentialsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="organizationId"
@@ -388,34 +423,36 @@ export default function CredentialsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="additionalParams"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Additional Parameters (Optional, JSON format)</FormLabel>
+                    <FormLabel>
+                      Additional Parameters (Optional, JSON format)
+                    </FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder='{"param1": "value1", "param2": "value2"}'
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsCreateDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={createCredentialMutation.isPending}
                 >
                   {createCredentialMutation.isPending && (
@@ -435,18 +472,19 @@ export default function CredentialsPage() {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the credential "{selectedCredential?.name}"? This action cannot be undone.
+              Are you sure you want to delete the credential "
+              {selectedCredential?.name}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleDeleteConfirm}
               disabled={deleteCredentialMutation.isPending}
             >

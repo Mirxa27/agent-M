@@ -1,17 +1,38 @@
-import { useState } from 'react';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
 // Import the tool categories and templates
 const TOOL_CATEGORIES = {
   DATA_PROCESSING: "data_processing",
@@ -20,7 +41,7 @@ const TOOL_CATEGORIES = {
   KNOWLEDGE: "knowledge",
   UTILITIES: "utilities",
   INTEGRATIONS: "integrations",
-  CUSTOM: "custom"
+  CUSTOM: "custom",
 };
 
 // Define types for the templates
@@ -42,27 +63,33 @@ const AGENT_TOOL_TEMPLATES: AgentToolTemplate[] = [
   {
     id: "search_tool",
     name: "Search Knowledge Base",
-    description: "Search through internal knowledge base using natural language queries",
+    description:
+      "Search through internal knowledge base using natural language queries",
     category: "knowledge",
     implementation_type: "openai",
-    input_schema: "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"query\": {\n      \"type\": \"string\",\n      \"description\": \"The search query\"\n    }\n  },\n  \"required\": [\"query\"]\n}",
-    output_schema: "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"results\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}",
+    input_schema:
+      '{\n  "type": "object",\n  "properties": {\n    "query": {\n      "type": "string",\n      "description": "The search query"\n    }\n  },\n  "required": ["query"]\n}',
+    output_schema:
+      '{\n  "type": "object",\n  "properties": {\n    "results": {\n      "type": "array",\n      "items": {\n        "type": "string"\n      }\n    }\n  }\n}',
     endpoint: "",
     api_key_name: "",
-    code: ""
+    code: "",
   },
   {
     id: "content_generator",
     name: "Content Generator",
-    description: "Generate various types of content based on prompts and guidelines",
+    description:
+      "Generate various types of content based on prompts and guidelines",
     category: "content_generation",
     implementation_type: "openai",
-    input_schema: "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"content_type\": {\n      \"type\": \"string\",\n      \"enum\": [\"blog\", \"email\", \"social_post\", \"product_description\"]\n    },\n    \"topic\": {\n      \"type\": \"string\"\n    },\n    \"tone\": {\n      \"type\": \"string\",\n      \"enum\": [\"professional\", \"casual\", \"humorous\", \"formal\"]\n    },\n    \"length\": {\n      \"type\": \"string\",\n      \"enum\": [\"short\", \"medium\", \"long\"]\n    }\n  },\n  \"required\": [\"content_type\", \"topic\"]\n}",
-    output_schema: "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"content\": {\n      \"type\": \"string\"\n    },\n    \"suggestions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}",
+    input_schema:
+      '{\n  "type": "object",\n  "properties": {\n    "content_type": {\n      "type": "string",\n      "enum": ["blog", "email", "social_post", "product_description"]\n    },\n    "topic": {\n      "type": "string"\n    },\n    "tone": {\n      "type": "string",\n      "enum": ["professional", "casual", "humorous", "formal"]\n    },\n    "length": {\n      "type": "string",\n      "enum": ["short", "medium", "long"]\n    }\n  },\n  "required": ["content_type", "topic"]\n}',
+    output_schema:
+      '{\n  "type": "object",\n  "properties": {\n    "content": {\n      "type": "string"\n    },\n    "suggestions": {\n      "type": "array",\n      "items": {\n        "type": "string"\n      }\n    }\n  }\n}',
     endpoint: "",
     api_key_name: "",
-    code: ""
-  }
+    code: "",
+  },
 ];
 
 export function AgentToolsPanel() {
@@ -96,8 +123,10 @@ export function AgentToolsPanel() {
     description: "",
     category: "",
     implementation_type: "",
-    input_schema: "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"query\": {\n      \"type\": \"string\",\n      \"description\": \"The search query\"\n    }\n  },\n  \"required\": [\"query\"]\n}",
-    output_schema: "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"results\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}",
+    input_schema:
+      '{\n  "type": "object",\n  "properties": {\n    "query": {\n      "type": "string",\n      "description": "The search query"\n    }\n  },\n  "required": ["query"]\n}',
+    output_schema:
+      '{\n  "type": "object",\n  "properties": {\n    "results": {\n      "type": "array",\n      "items": {\n        "type": "string"\n      }\n    }\n  }\n}',
     endpoint: "",
     api_key_name: "",
     code: "",
@@ -120,7 +149,9 @@ export function AgentToolsPanel() {
   }
 
   function fillTemplateData(templateId: string) {
-    const template = AGENT_TOOL_TEMPLATES.find((t: AgentToolTemplate) => t.id === templateId);
+    const template = AGENT_TOOL_TEMPLATES.find(
+      (t: AgentToolTemplate) => t.id === templateId,
+    );
     if (template) {
       form.reset({
         name: template.name,
@@ -138,18 +169,24 @@ export function AgentToolsPanel() {
 
   return (
     <div className="w-full space-y-4">
-      <Tabs defaultValue="tools-list" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        defaultValue="tools-list"
+        value={activeTab}
+        onValueChange={setActiveTab}
+      >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="tools-list">Agent Tools</TabsTrigger>
           <TabsTrigger value="add-tool">Add New Tool</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="tools-list" className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium">Available Tools</h3>
-            <Button size="sm" onClick={() => setActiveTab("add-tool")}>Add New</Button>
+            <Button size="sm" onClick={() => setActiveTab("add-tool")}>
+              Add New
+            </Button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {AGENT_TOOL_TEMPLATES.map((tool: AgentToolTemplate) => (
               <Card key={tool.id} className="overflow-hidden">
@@ -157,7 +194,11 @@ export function AgentToolsPanel() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">{tool.name}</CardTitle>
                     <span className="text-xs bg-muted px-2 py-1 rounded-full">
-                      {Object.entries(TOOL_CATEGORIES).find(([_, value]) => value === tool.category)?.[0]?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || "Custom"}
+                      {Object.entries(TOOL_CATEGORIES)
+                        .find(([_, value]) => value === tool.category)?.[0]
+                        ?.replace(/_/g, " ")
+                        .replace(/\b\w/g, (l: string) => l.toUpperCase()) ||
+                        "Custom"}
                     </span>
                   </div>
                   <CardDescription className="text-xs line-clamp-2">
@@ -166,13 +207,16 @@ export function AgentToolsPanel() {
                 </CardHeader>
                 <CardContent className="pb-2 text-xs">
                   <div className="text-muted-foreground">
-                    Type: {tool.implementation_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                    Type:{" "}
+                    {tool.implementation_type
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (l: string) => l.toUpperCase())}
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end pt-0">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="text-xs h-7"
                     onClick={() => {
                       fillTemplateData(tool.id);
@@ -186,7 +230,7 @@ export function AgentToolsPanel() {
             ))}
           </div>
         </TabsContent>
-        
+
         <TabsContent value="add-tool">
           <Card>
             <CardHeader>
@@ -197,30 +241,41 @@ export function AgentToolsPanel() {
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs sm:text-sm">Tool Name</FormLabel>
+                          <FormLabel className="text-xs sm:text-sm">
+                            Tool Name
+                          </FormLabel>
                           <FormControl>
-                            <Input className="h-9 sm:h-10 text-xs sm:text-sm" placeholder="Search Knowledge Base" {...field} />
+                            <Input
+                              className="h-9 sm:h-10 text-xs sm:text-sm"
+                              placeholder="Search Knowledge Base"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="category"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs sm:text-sm">Category</FormLabel>
+                          <FormLabel className="text-xs sm:text-sm">
+                            Category
+                          </FormLabel>
                           <Select
-                            onValueChange={field.onChange} 
+                            onValueChange={field.onChange}
                             defaultValue={field.value}
                           >
                             <FormControl>
@@ -229,15 +284,23 @@ export function AgentToolsPanel() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="text-xs sm:text-sm">
-                              {Object.entries(TOOL_CATEGORIES).map(([key, value]) => (
-                                <SelectItem 
-                                  key={key} 
-                                  value={value || `category_${key.toLowerCase()}`}
-                                  className="text-xs sm:text-sm"
-                                >
-                                  {key.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                                </SelectItem>
-                              ))}
+                              {Object.entries(TOOL_CATEGORIES).map(
+                                ([key, value]) => (
+                                  <SelectItem
+                                    key={key}
+                                    value={
+                                      value || `category_${key.toLowerCase()}`
+                                    }
+                                    className="text-xs sm:text-sm"
+                                  >
+                                    {key
+                                      .replace(/_/g, " ")
+                                      .replace(/\b\w/g, (l: string) =>
+                                        l.toUpperCase(),
+                                      )}
+                                  </SelectItem>
+                                ),
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage className="text-xs" />
@@ -245,13 +308,15 @@ export function AgentToolsPanel() {
                       )}
                     />
                   </div>
-                  
+
                   <FormField
                     control={form.control}
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs sm:text-sm">Description</FormLabel>
+                        <FormLabel className="text-xs sm:text-sm">
+                          Description
+                        </FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder="Search through internal knowledge base using natural language queries"
@@ -260,21 +325,24 @@ export function AgentToolsPanel() {
                           />
                         </FormControl>
                         <FormDescription className="text-xs">
-                          Clearly describe what this tool does and when it should be used.
+                          Clearly describe what this tool does and when it
+                          should be used.
                         </FormDescription>
                         <FormMessage className="text-xs" />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="implementation_type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs sm:text-sm">Implementation Type</FormLabel>
+                        <FormLabel className="text-xs sm:text-sm">
+                          Implementation Type
+                        </FormLabel>
                         <Select
-                          onValueChange={field.onChange} 
+                          onValueChange={field.onChange}
                           defaultValue={field.value}
                         >
                           <FormControl>
@@ -283,31 +351,58 @@ export function AgentToolsPanel() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="text-xs sm:text-sm">
-                            <SelectItem value="openai" className="text-xs sm:text-sm">OpenAI</SelectItem>
-                            <SelectItem value="custom_api" className="text-xs sm:text-sm">Custom API</SelectItem>
-                            <SelectItem value="webhook" className="text-xs sm:text-sm">Webhook</SelectItem>
-                            <SelectItem value="database" className="text-xs sm:text-sm">Database</SelectItem>
-                            <SelectItem value="file_system" className="text-xs sm:text-sm">File System</SelectItem>
+                            <SelectItem
+                              value="openai"
+                              className="text-xs sm:text-sm"
+                            >
+                              OpenAI
+                            </SelectItem>
+                            <SelectItem
+                              value="custom_api"
+                              className="text-xs sm:text-sm"
+                            >
+                              Custom API
+                            </SelectItem>
+                            <SelectItem
+                              value="webhook"
+                              className="text-xs sm:text-sm"
+                            >
+                              Webhook
+                            </SelectItem>
+                            <SelectItem
+                              value="database"
+                              className="text-xs sm:text-sm"
+                            >
+                              Database
+                            </SelectItem>
+                            <SelectItem
+                              value="file_system"
+                              className="text-xs sm:text-sm"
+                            >
+                              File System
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage className="text-xs" />
                       </FormItem>
                     )}
                   />
-                  
+
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h4 className="text-sm font-medium">Tool Schema</h4>
                     </div>
                     <Separator />
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name="input_schema"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs sm:text-sm">Input Schema (JSON Schema)</FormLabel>
+                            <FormLabel className="text-xs sm:text-sm">
+                              Input Schema (JSON Schema)
+                            </FormLabel>
                             <FormControl>
                               <Textarea
                                 className="font-mono text-xs h-48"
@@ -321,13 +416,15 @@ export function AgentToolsPanel() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="output_schema"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs sm:text-sm">Output Schema (JSON Schema)</FormLabel>
+                            <FormLabel className="text-xs sm:text-sm">
+                              Output Schema (JSON Schema)
+                            </FormLabel>
                             <FormControl>
                               <Textarea
                                 className="font-mono text-xs h-48"
@@ -343,40 +440,55 @@ export function AgentToolsPanel() {
                       />
                     </div>
                   </div>
-                  
+
                   {form.watch("implementation_type") === "custom_api" && (
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-medium">API Configuration</h4>
+                        <h4 className="text-sm font-medium">
+                          API Configuration
+                        </h4>
                       </div>
                       <Separator />
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
                           name="endpoint"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs sm:text-sm">API Endpoint</FormLabel>
+                              <FormLabel className="text-xs sm:text-sm">
+                                API Endpoint
+                              </FormLabel>
                               <FormControl>
-                                <Input className="h-9 sm:h-10 text-xs sm:text-sm" placeholder="https://api.example.com/search" {...field} />
+                                <Input
+                                  className="h-9 sm:h-10 text-xs sm:text-sm"
+                                  placeholder="https://api.example.com/search"
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage className="text-xs" />
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="api_key_name"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs sm:text-sm">API Key Environment Variable</FormLabel>
+                              <FormLabel className="text-xs sm:text-sm">
+                                API Key Environment Variable
+                              </FormLabel>
                               <FormControl>
-                                <Input className="h-9 sm:h-10 text-xs sm:text-sm" placeholder="SEARCH_API_KEY" {...field} />
+                                <Input
+                                  className="h-9 sm:h-10 text-xs sm:text-sm"
+                                  placeholder="SEARCH_API_KEY"
+                                  {...field}
+                                />
                               </FormControl>
                               <FormDescription className="text-xs">
-                                Name of the environment variable that stores the API key
+                                Name of the environment variable that stores the
+                                API key
                               </FormDescription>
                               <FormMessage className="text-xs" />
                             </FormItem>
@@ -385,20 +497,25 @@ export function AgentToolsPanel() {
                       </div>
                     </div>
                   )}
-                  
-                  {(form.watch("implementation_type") === "database" || form.watch("implementation_type") === "file_system") && (
+
+                  {(form.watch("implementation_type") === "database" ||
+                    form.watch("implementation_type") === "file_system") && (
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-medium">Implementation Code</h4>
+                        <h4 className="text-sm font-medium">
+                          Implementation Code
+                        </h4>
                       </div>
                       <Separator />
-                      
+
                       <FormField
                         control={form.control}
                         name="code"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs sm:text-sm">Function Implementation</FormLabel>
+                            <FormLabel className="text-xs sm:text-sm">
+                              Function Implementation
+                            </FormLabel>
                             <FormControl>
                               <Textarea
                                 className="font-mono text-xs h-64"
@@ -407,7 +524,8 @@ export function AgentToolsPanel() {
                               />
                             </FormControl>
                             <FormDescription className="text-xs">
-                              JavaScript code that implements this tool's functionality
+                              JavaScript code that implements this tool's
+                              functionality
                             </FormDescription>
                             <FormMessage className="text-xs" />
                           </FormItem>
@@ -415,14 +533,16 @@ export function AgentToolsPanel() {
                       />
                     </div>
                   )}
-                  
+
                   <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setActiveTab("tools-list")}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setActiveTab("tools-list")}
+                    >
                       Cancel
                     </Button>
-                    <Button type="submit">
-                      Save Tool
-                    </Button>
+                    <Button type="submit">Save Tool</Button>
                   </div>
                 </form>
               </Form>

@@ -30,13 +30,15 @@ export function LoadingContainer({
     return (
       <div className="relative" {...props}>
         {children}
-        <div className={cn(
-          "absolute inset-0 flex items-center justify-center backdrop-blur-sm bg-background/60 z-10",
-          className
-        )}>
-          <AnimatedLoader 
+        <div
+          className={cn(
+            "absolute inset-0 flex items-center justify-center backdrop-blur-sm bg-background/60 z-10",
+            className,
+          )}
+        >
+          <AnimatedLoader
             variant={loaderVariant}
-            size={loaderSize} 
+            size={loaderSize}
             text={loadingText}
           />
         </div>
@@ -45,10 +47,13 @@ export function LoadingContainer({
   }
 
   return (
-    <Card className={cn("flex flex-col items-center justify-center p-8", className)} {...props}>
-      <AnimatedLoader 
+    <Card
+      className={cn("flex flex-col items-center justify-center p-8", className)}
+      {...props}
+    >
+      <AnimatedLoader
         variant={loaderVariant}
-        size={loaderSize} 
+        size={loaderSize}
         text={loadingText}
       />
     </Card>

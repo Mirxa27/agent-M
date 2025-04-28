@@ -6,10 +6,21 @@ import { z } from "zod";
 import { toast } from "@/hooks/use-toast";
 import { Plan } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import { 
-  EditIcon, PlusIcon, SearchIcon, TrashIcon, 
-  CheckIcon, XIcon, PlusCircleIcon, BrainCircuitIcon, CoinsIcon, BotIcon, 
-  FilesIcon, ZapIcon, BoxesIcon, CreditCardIcon
+import {
+  EditIcon,
+  PlusIcon,
+  SearchIcon,
+  TrashIcon,
+  CheckIcon,
+  XIcon,
+  PlusCircleIcon,
+  BrainCircuitIcon,
+  CoinsIcon,
+  BotIcon,
+  FilesIcon,
+  ZapIcon,
+  BoxesIcon,
+  CreditCardIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -138,16 +149,16 @@ export default function PlansPanel() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  
+
   const queryClient = useQueryClient();
 
   // Fetch all plans
-  const { 
-    data: plans = [], 
+  const {
+    data: plans = [],
     isLoading,
-    error 
+    error,
   } = useQuery({
-    queryKey: ["/api/admin/plans"]
+    queryKey: ["/api/admin/plans"],
   });
 
   // Create plan mutation
@@ -175,12 +186,18 @@ export default function PlansPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Update plan mutation
   const updatePlanMutation = useMutation({
-    mutationFn: async ({ id, plan }: { id: number, plan: Partial<PlanFormValues> }) => {
+    mutationFn: async ({
+      id,
+      plan,
+    }: {
+      id: number;
+      plan: Partial<PlanFormValues>;
+    }) => {
       const res = await apiRequest("PATCH", `/api/admin/plans/${id}`, plan);
       if (!res.ok) {
         const error = await res.json();
@@ -202,7 +219,7 @@ export default function PlansPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete plan mutation
@@ -229,7 +246,7 @@ export default function PlansPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Create form with default feature values
@@ -249,9 +266,9 @@ export default function PlansPanel() {
         templates: 5,
         advancedModels: false,
         customPrompts: false,
-        priority: false
-      }
-    }
+        priority: false,
+      },
+    },
   });
 
   // Edit form
@@ -264,8 +281,8 @@ export default function PlansPanel() {
       interval: "monthly",
       currency: "SAR",
       isActive: true,
-      features: {}
-    }
+      features: {},
+    },
   });
 
   // Reset form to default values
@@ -284,8 +301,8 @@ export default function PlansPanel() {
         templates: 5,
         advancedModels: false,
         customPrompts: false,
-        priority: false
-      }
+        priority: false,
+      },
     });
   };
 
@@ -297,9 +314,9 @@ export default function PlansPanel() {
   // Handle edit submission
   const onEditSubmit = (values: PlanFormValues) => {
     if (selectedPlan) {
-      updatePlanMutation.mutate({ 
-        id: selectedPlan.id, 
-        plan: values
+      updatePlanMutation.mutate({
+        id: selectedPlan.id,
+        plan: values,
       });
     }
   };
@@ -314,19 +331,19 @@ export default function PlansPanel() {
   // Handle opening edit dialog
   const handleEdit = (plan: Plan) => {
     setSelectedPlan(plan);
-    
+
     // Parse features from string/JSON if needed
     let featuresObj = {};
     try {
-      if (typeof plan.features === 'string') {
+      if (typeof plan.features === "string") {
         featuresObj = JSON.parse(plan.features);
-      } else if (plan.features && typeof plan.features === 'object') {
+      } else if (plan.features && typeof plan.features === "object") {
         featuresObj = plan.features;
       }
     } catch (err) {
       console.error("Error parsing plan features:", err);
     }
-    
+
     editForm.reset({
       name: plan.name,
       description: plan.description || "",
@@ -334,9 +351,9 @@ export default function PlansPanel() {
       interval: plan.interval as "monthly" | "yearly" | "one-time",
       currency: "SAR", // Default to SAR as per requirements
       isActive: plan.isActive,
-      features: featuresObj as Record<string, any>
+      features: featuresObj as Record<string, any>,
     });
-    
+
     setIsEditDialogOpen(true);
   };
 
@@ -347,21 +364,27 @@ export default function PlansPanel() {
   };
 
   // Filter plans by search query
-  const filteredPlans = plans.filter(plan => 
-    plan.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (plan.description && plan.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredPlans = plans.filter(
+    (plan) =>
+      plan.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (plan.description &&
+        plan.description.toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
   // Format price with currency
-  const formatPrice = (price: number, currency: string = "SAR", interval: string = "monthly") => {
+  const formatPrice = (
+    price: number,
+    currency: string = "SAR",
+    interval: string = "monthly",
+  ) => {
     let formatted = `${price} ${currency}`;
-    
+
     if (interval === "monthly") {
       formatted += "/month";
     } else if (interval === "yearly") {
       formatted += "/year";
     }
-    
+
     return formatted;
   };
 
@@ -369,13 +392,13 @@ export default function PlansPanel() {
   const getFeatureValue = (plan: Plan, key: string) => {
     try {
       let features = {};
-      
-      if (typeof plan.features === 'string') {
+
+      if (typeof plan.features === "string") {
         features = JSON.parse(plan.features);
-      } else if (plan.features && typeof plan.features === 'object') {
+      } else if (plan.features && typeof plan.features === "object") {
         features = plan.features;
       }
-      
+
       return features[key];
     } catch (err) {
       return undefined;
@@ -385,7 +408,7 @@ export default function PlansPanel() {
   // Render feature value based on its type
   const renderFeatureValue = (plan: Plan, feature: PlanFeature) => {
     const value = getFeatureValue(plan, feature.key);
-    
+
     if (feature.type === "boolean") {
       return value === true ? (
         <CheckIcon className="h-5 w-5 text-green-500" />
@@ -407,11 +430,14 @@ export default function PlansPanel() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl font-bold">Subscription Plans</CardTitle>
+          <CardTitle className="text-xl font-bold">
+            Subscription Plans
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-red-500">
-            Error loading plans: {error instanceof Error ? error.message : "Unknown error"}
+            Error loading plans:{" "}
+            {error instanceof Error ? error.message : "Unknown error"}
           </div>
         </CardContent>
       </Card>
@@ -422,7 +448,9 @@ export default function PlansPanel() {
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-xl font-bold">Subscription Plans</CardTitle>
+          <CardTitle className="text-xl font-bold">
+            Subscription Plans
+          </CardTitle>
           <div className="flex space-x-2">
             <div className="relative">
               <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -454,7 +482,9 @@ export default function PlansPanel() {
             <div className="space-y-8">
               {filteredPlans.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  {searchQuery ? "No plans match your search" : "No subscription plans found"}
+                  {searchQuery
+                    ? "No plans match your search"
+                    : "No subscription plans found"}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -469,7 +499,9 @@ export default function PlansPanel() {
                         <CardTitle className="flex justify-between items-center">
                           <span>{plan.name}</span>
                           <span className="text-xl font-bold text-primary">
-                            {plan.price > 0 ? formatPrice(plan.price, "SAR", plan.interval) : "Free"}
+                            {plan.price > 0
+                              ? formatPrice(plan.price, "SAR", plan.interval)
+                              : "Free"}
                           </span>
                         </CardTitle>
                         {plan.description && (
@@ -479,20 +511,31 @@ export default function PlansPanel() {
                         )}
                       </CardHeader>
                       <CardContent>
-                        <Accordion type="single" collapsible defaultValue="features">
+                        <Accordion
+                          type="single"
+                          collapsible
+                          defaultValue="features"
+                        >
                           <AccordionItem value="features">
                             <AccordionTrigger>Features</AccordionTrigger>
                             <AccordionContent>
                               <div className="space-y-4">
                                 {planFeatures.map((feature) => (
-                                  <div key={feature.key} className="flex items-center justify-between">
+                                  <div
+                                    key={feature.key}
+                                    className="flex items-center justify-between"
+                                  >
                                     <div className="flex items-center">
                                       <div className="mr-2 text-primary">
                                         {feature.icon}
                                       </div>
                                       <div>
-                                        <p className="text-sm font-medium">{feature.name}</p>
-                                        <p className="text-xs text-muted-foreground">{feature.description}</p>
+                                        <p className="text-sm font-medium">
+                                          {feature.name}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {feature.description}
+                                        </p>
                                       </div>
                                     </div>
                                     <div>
@@ -504,7 +547,7 @@ export default function PlansPanel() {
                             </AccordionContent>
                           </AccordionItem>
                         </Accordion>
-                        
+
                         <div className="flex justify-end gap-2 mt-4">
                           <Button
                             variant="outline"
@@ -544,7 +587,10 @@ export default function PlansPanel() {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onCreateSubmit)} className="space-y-6">
+            <form
+              onSubmit={form.handleSubmit(onCreateSubmit)}
+              className="space-y-6"
+            >
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -559,15 +605,15 @@ export default function PlansPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="interval"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Billing Interval</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -578,7 +624,9 @@ export default function PlansPanel() {
                         <SelectContent>
                           <SelectItem value="monthly">Monthly</SelectItem>
                           <SelectItem value="yearly">Yearly</SelectItem>
-                          <SelectItem value="one-time">One-time Payment</SelectItem>
+                          <SelectItem value="one-time">
+                            One-time Payment
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -595,11 +643,13 @@ export default function PlansPanel() {
                     <FormItem>
                       <FormLabel>Price</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="0" 
+                        <Input
+                          type="number"
+                          placeholder="0"
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          onChange={(e) =>
+                            field.onChange(parseFloat(e.target.value) || 0)
+                          }
                         />
                       </FormControl>
                       <FormDescription>
@@ -609,15 +659,15 @@ export default function PlansPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="currency"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -636,7 +686,7 @@ export default function PlansPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="description"
@@ -644,9 +694,9 @@ export default function PlansPanel() {
                   <FormItem>
                     <FormLabel>Description (Optional)</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Brief description of the plan" 
-                        {...field} 
+                      <Textarea
+                        placeholder="Brief description of the plan"
+                        {...field}
                         value={field.value || ""}
                       />
                     </FormControl>
@@ -654,10 +704,10 @@ export default function PlansPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Plan Features</h3>
-                
+
                 {planFeatures.map((feature) => {
                   if (feature.type === "boolean") {
                     // Boolean feature (checkbox/switch)
@@ -673,7 +723,9 @@ export default function PlansPanel() {
                                 <div className="mr-2 text-primary">
                                   {feature.icon}
                                 </div>
-                                <FormLabel className="text-base">{feature.name}</FormLabel>
+                                <FormLabel className="text-base">
+                                  {feature.name}
+                                </FormLabel>
                               </div>
                               <FormDescription>
                                 {feature.description}
@@ -705,10 +757,12 @@ export default function PlansPanel() {
                               <FormLabel>{feature.name}</FormLabel>
                             </div>
                             <FormControl>
-                              <Input 
-                                type="number" 
+                              <Input
+                                type="number"
                                 {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                onChange={(e) =>
+                                  field.onChange(parseInt(e.target.value) || 0)
+                                }
                               />
                             </FormControl>
                             <FormDescription>
@@ -722,7 +776,7 @@ export default function PlansPanel() {
                   }
                 })}
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="isActive"
@@ -743,19 +797,16 @@ export default function PlansPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsCreateDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={createPlanMutation.isPending}
-                >
+                <Button type="submit" disabled={createPlanMutation.isPending}>
                   {createPlanMutation.isPending && (
                     <span className="mr-2 h-4 w-4 animate-spin">◌</span>
                   )}
@@ -777,7 +828,10 @@ export default function PlansPanel() {
             </DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
+            <form
+              onSubmit={editForm.handleSubmit(onEditSubmit)}
+              className="space-y-6"
+            >
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={editForm.control}
@@ -792,15 +846,15 @@ export default function PlansPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="interval"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Billing Interval</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -811,7 +865,9 @@ export default function PlansPanel() {
                         <SelectContent>
                           <SelectItem value="monthly">Monthly</SelectItem>
                           <SelectItem value="yearly">Yearly</SelectItem>
-                          <SelectItem value="one-time">One-time Payment</SelectItem>
+                          <SelectItem value="one-time">
+                            One-time Payment
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -828,11 +884,13 @@ export default function PlansPanel() {
                     <FormItem>
                       <FormLabel>Price</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="0" 
+                        <Input
+                          type="number"
+                          placeholder="0"
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          onChange={(e) =>
+                            field.onChange(parseFloat(e.target.value) || 0)
+                          }
                         />
                       </FormControl>
                       <FormDescription>
@@ -842,15 +900,15 @@ export default function PlansPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="currency"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -869,7 +927,7 @@ export default function PlansPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={editForm.control}
                 name="description"
@@ -877,9 +935,9 @@ export default function PlansPanel() {
                   <FormItem>
                     <FormLabel>Description (Optional)</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Brief description of the plan" 
-                        {...field} 
+                      <Textarea
+                        placeholder="Brief description of the plan"
+                        {...field}
                         value={field.value || ""}
                       />
                     </FormControl>
@@ -887,10 +945,10 @@ export default function PlansPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Plan Features</h3>
-                
+
                 {planFeatures.map((feature) => {
                   if (feature.type === "boolean") {
                     // Boolean feature (checkbox/switch)
@@ -906,7 +964,9 @@ export default function PlansPanel() {
                                 <div className="mr-2 text-primary">
                                   {feature.icon}
                                 </div>
-                                <FormLabel className="text-base">{feature.name}</FormLabel>
+                                <FormLabel className="text-base">
+                                  {feature.name}
+                                </FormLabel>
                               </div>
                               <FormDescription>
                                 {feature.description}
@@ -938,11 +998,13 @@ export default function PlansPanel() {
                               <FormLabel>{feature.name}</FormLabel>
                             </div>
                             <FormControl>
-                              <Input 
-                                type="number" 
+                              <Input
+                                type="number"
                                 {...field}
                                 value={field.value || 0}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                onChange={(e) =>
+                                  field.onChange(parseInt(e.target.value) || 0)
+                                }
                               />
                             </FormControl>
                             <FormDescription>
@@ -956,7 +1018,7 @@ export default function PlansPanel() {
                   }
                 })}
               </div>
-              
+
               <FormField
                 control={editForm.control}
                 name="isActive"
@@ -977,19 +1039,16 @@ export default function PlansPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsEditDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={updatePlanMutation.isPending}
-                >
+                <Button type="submit" disabled={updatePlanMutation.isPending}>
                   {updatePlanMutation.isPending && (
                     <span className="mr-2 h-4 w-4 animate-spin">◌</span>
                   )}
@@ -1007,8 +1066,9 @@ export default function PlansPanel() {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the plan "{selectedPlan?.name}"? 
-              This action cannot be undone and will affect any users currently subscribed to this plan.
+              Are you sure you want to delete the plan "{selectedPlan?.name}"?
+              This action cannot be undone and will affect any users currently
+              subscribed to this plan.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
