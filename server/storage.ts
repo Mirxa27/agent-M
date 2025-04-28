@@ -589,6 +589,13 @@ export class MemStorage implements IStorage {
   }
   
   async deleteAiProvider(id: number): Promise<boolean> {
+    // Check if any models are using this provider
+    const modelsUsingProvider = await this.getAiModelsByProviderId(id);
+    
+    if (modelsUsingProvider.length > 0) {
+      throw new Error("Cannot delete provider while models are using it");
+    }
+    
     return this.aiProviders.delete(id);
   }
   
@@ -1150,6 +1157,13 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteAiProvider(id: number): Promise<boolean> {
+    // Check if any models are using this provider
+    const modelsUsingProvider = await this.getAiModelsByProviderId(id);
+    
+    if (modelsUsingProvider.length > 0) {
+      throw new Error("Cannot delete provider while models are using it");
+    }
+    
     const result = await db.delete(aiProviders).where(eq(aiProviders.id, id));
     return result.rowCount > 0;
   }
@@ -1192,6 +1206,13 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteAiModel(id: number): Promise<boolean> {
+    // Check if any prompts are using this model
+    const promptsUsingModel = await this.getAiPromptsByModelId(id);
+    
+    if (promptsUsingModel.length > 0) {
+      throw new Error("Cannot delete model while prompts are using it");
+    }
+    
     const result = await db.delete(aiModels).where(eq(aiModels.id, id));
     return result.rowCount > 0;
   }
