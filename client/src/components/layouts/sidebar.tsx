@@ -11,6 +11,7 @@ import {
   CreditCard,
   Settings,
   LogOut,
+  Globe,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -23,6 +24,11 @@ export default function Sidebar() {
       href: "/agents",
       label: "My Agents",
       icon: <Bot className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/ai-browser",
+      label: "AI Browser",
+      icon: <Globe className="w-5 h-5 mr-3" />,
     },
     {
       href: "/credentials",
