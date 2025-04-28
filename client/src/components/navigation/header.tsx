@@ -93,14 +93,15 @@ export function Header() {
         <div className="container flex h-16 items-center justify-between px-4">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href={user ? "/dashboard" : "/"}>
-              <div className="flex items-center space-x-2 cursor-pointer">
-                <AnimatedLogo size="sm" />
-                <span className="font-heading text-lg font-bold hidden md:block text-primary">
-                  {t("app.name")}
-                </span>
-              </div>
-            </Link>
+            <div 
+              onClick={() => window.location.href = user ? "/dashboard" : "/"}
+              className="flex items-center space-x-2 cursor-pointer"
+            >
+              <AnimatedLogo size="sm" />
+              <span className="font-heading text-lg font-bold hidden md:block text-primary">
+                {t("app.name")}
+              </span>
+            </div>
           </div>
 
           {/* Desktop Navigation */}
@@ -110,7 +111,10 @@ export function Header() {
                 <NavigationMenuList>
                   {navItems.map((item) => (
                     <NavigationMenuItem key={item.href}>
-                      <Link href={item.href}>
+                      <div
+                        onClick={() => window.location.href = item.href}
+                        className="cursor-pointer"
+                      >
                         <NavigationMenuLink
                           className={cn(
                             navigationMenuTriggerStyle(),
@@ -122,7 +126,7 @@ export function Header() {
                           {item.icon}
                           {item.label}
                         </NavigationMenuLink>
-                      </Link>
+                      </div>
                     </NavigationMenuItem>
                   ))}
 
@@ -132,7 +136,10 @@ export function Header() {
                       <NavigationMenuContent>
                         <ul className="grid w-[200px] p-2 gap-2">
                           <li>
-                            <Link href="/admin/dashboard">
+                            <div 
+                              onClick={() => window.location.href = "/admin/dashboard"}
+                              className="cursor-pointer"
+                            >
                               <NavigationMenuLink 
                                 className={cn(
                                   "flex items-center select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
@@ -144,7 +151,7 @@ export function Header() {
                                   <span>Dashboard</span>
                                 </div>
                               </NavigationMenuLink>
-                            </Link>
+                            </div>
                           </li>
                         </ul>
                       </NavigationMenuContent>
@@ -160,10 +167,12 @@ export function Header() {
             <LanguageSwitcher />
             
             {!user ? (
-              <Button asChild size="sm" className="hidden md:flex">
-                <Link href="/auth">
-                  <div>{t("auth.login")}</div>
-                </Link>
+              <Button 
+                size="sm" 
+                className="hidden md:flex"
+                onClick={() => window.location.href = "/auth"}
+              >
+                {t("auth.login")}
               </Button>
             ) : (
               <DropdownMenu>
@@ -250,20 +259,22 @@ export function Header() {
             <div className="p-4">
               <div className="space-y-1">
                 {navItems.map((item) => (
-                  <Link key={item.href} href={item.href}>
-                    <span
-                      className={cn(
-                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
-                        location === item.href
-                          ? "bg-primary/10 text-primary"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      )}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {React.cloneElement(item.icon, { className: "h-5 w-5 mr-3" })}
-                      {item.label}
-                    </span>
-                  </Link>
+                  <div 
+                    key={item.href}
+                    onClick={() => {
+                      window.location.href = item.href;
+                      setMobileMenuOpen(false);
+                    }}
+                    className={cn(
+                      "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
+                      location === item.href
+                        ? "bg-primary/10 text-primary"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    )}
+                  >
+                    {React.cloneElement(item.icon, { className: "h-5 w-5 mr-3" })}
+                    {item.label}
+                  </div>
                 ))}
 
                 {user && user.role === "admin" && (
@@ -273,20 +284,21 @@ export function Header() {
                         Admin
                       </div>
                     </div>
-                    <Link href="/admin/dashboard">
-                      <span
-                        className={cn(
-                          "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
-                          location === "/admin/dashboard"
-                            ? "bg-primary/10 text-primary"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        )}
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <User className="h-5 w-5 mr-3" />
-                        Dashboard
-                      </span>
-                    </Link>
+                    <div
+                      onClick={() => {
+                        window.location.href = "/admin/dashboard";
+                        setMobileMenuOpen(false);
+                      }}
+                      className={cn(
+                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
+                        location === "/admin/dashboard"
+                          ? "bg-primary/10 text-primary"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      )}
+                    >
+                      <User className="h-5 w-5 mr-3" />
+                      Dashboard
+                    </div>
                   </>
                 )}
               </div>
