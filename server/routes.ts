@@ -215,7 +215,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.json(sanitizedCredentials);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("Error fetching credentials:", error);
+      res.status(500).json({ error: "Failed to fetch credentials" });
     }
   });
 
@@ -232,46 +233,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Not authorized" });
       }
 
-      // Decrypt the credential data
-      const decryptedData = decrypt(credential.data);
+      try {
+        // Decrypt the credential data with enhanced error handling
+        const decryptedData = decrypt(credential.data);
+        
+        // Parse the JSON data, handle potential parsing errors
+        let parsedData;
+        try {
+          parsedData = JSON.parse(decryptedData);
+        } catch (parseError) {
+          console.error("Error parsing credential data:", parseError);
+          return res.status(500).json({ 
+            error: "Credential data is corrupted or invalid" 
+          });
+        }
 
-      // Return credential with decrypted data
-      res.json({
-        ...credential,
-        data: JSON.parse(decryptedData),
-      });
+        // Return credential with decrypted data
+        res.json({
+          ...credential,
+          data: parsedData,
+        });
+      } catch (decryptError) {
+        console.error("Error decrypting credential:", decryptError);
+        return res.status(500).json({ 
+          error: "Failed to decrypt credential data" 
+        });
+      }
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("Error retrieving credential:", error);
+      res.status(500).json({ error: "Failed to retrieve credential" });
     }
   });
 
   app.post("/api/credentials", requireAuth, async (req, res) => {
     try {
-      // Encrypt the credential data
-      const encryptedData = encrypt(JSON.stringify(req.body.data));
-
-      // Validate and create credential
-      const validatedData = insertCredentialSchema.safeParse({
-        userId: req.user.id,
-        name: req.body.name,
-        type: req.body.type,
-        data: encryptedData,
-      });
-
-      if (!validatedData.success) {
+      // Validate request structure
+      if (!req.body.data || !req.body.name || !req.body.type) {
         return res.status(400).json({
           error: "Validation failed",
-          details: validatedData.error.format(),
+          details: "Missing required fields (name, type, and data)",
         });
       }
 
-      const credential = await storage.createCredential(validatedData.data);
+      try {
+        // Encrypt the credential data with enhanced security
+        const encryptedData = encrypt(JSON.stringify(req.body.data));
 
-      // Don't include sensitive data in the response
-      const { data, ...credentialWithoutData } = credential;
-      res.status(201).json(credentialWithoutData);
+        // Validate and create credential
+        const validatedData = insertCredentialSchema.safeParse({
+          userId: req.user.id,
+          name: req.body.name,
+          type: req.body.type,
+          data: encryptedData,
+        });
+
+        if (!validatedData.success) {
+          return res.status(400).json({
+            error: "Validation failed",
+            details: validatedData.error.format(),
+          });
+        }
+
+        const credential = await storage.createCredential(validatedData.data);
+
+        // Log the creation for audit
+        await storage.createUserActivity({
+          userId: req.user.id,
+          activityType: "credential_created",
+          resourceId: credential.id,
+          resourceType: "credential",
+          metadata: { name: credential.name, type: credential.type },
+        });
+
+        // Don't include sensitive data in the response
+        const { data, ...credentialWithoutData } = credential;
+        res.status(201).json(credentialWithoutData);
+      } catch (encryptError) {
+        console.error("Error encrypting credential data:", encryptError);
+        return res.status(500).json({ 
+          error: "Failed to secure credential data" 
+        });
+      }
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("Error creating credential:", error);
+      res.status(500).json({ error: "Failed to create credential" });
     }
   });
 
@@ -289,24 +334,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Not authorized" });
       }
 
-      // Update credential
-      const updates: any = {};
-      if (req.body.name) updates.name = req.body.name;
-      if (req.body.type) updates.type = req.body.type;
-      if (req.body.data) {
-        updates.data = encrypt(JSON.stringify(req.body.data));
+      try {
+        // Update credential
+        const updates: any = {};
+        if (req.body.name) updates.name = req.body.name;
+        if (req.body.type) updates.type = req.body.type;
+        
+        if (req.body.data) {
+          // Encrypt the updated data
+          updates.data = encrypt(JSON.stringify(req.body.data));
+        }
+
+        const updatedCredential = await storage.updateCredential(
+          credentialId,
+          updates,
+        );
+
+        // Log the update for audit
+        await storage.createUserActivity({
+          userId: req.user.id,
+          activityType: "credential_updated",
+          resourceId: credentialId,
+          resourceType: "credential",
+          metadata: { name: updatedCredential.name, type: updatedCredential.type },
+        });
+
+        // Don't include sensitive data in the response
+        const { data, ...credentialWithoutData } = updatedCredential;
+        res.json(credentialWithoutData);
+      } catch (encryptError) {
+        console.error("Error encrypting credential data:", encryptError);
+        return res.status(500).json({ 
+          error: "Failed to secure credential data" 
+        });
       }
-
-      const updatedCredential = await storage.updateCredential(
-        credentialId,
-        updates,
-      );
-
-      // Don't include sensitive data in the response
-      const { data, ...credentialWithoutData } = updatedCredential;
-      res.json(credentialWithoutData);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("Error updating credential:", error);
+      res.status(500).json({ error: "Failed to update credential" });
     }
   });
 
@@ -326,9 +390,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Delete credential
       await storage.deleteCredential(credentialId);
+      
+      // Log the deletion for audit
+      await storage.createUserActivity({
+        userId: req.user.id,
+        activityType: "credential_deleted",
+        resourceId: credentialId,
+        resourceType: "credential",
+        metadata: { name: credential.name, type: credential.type },
+      });
+      
       res.sendStatus(204);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("Error deleting credential:", error);
+      res.status(500).json({ error: "Failed to delete credential" });
     }
   });
 
