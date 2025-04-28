@@ -833,6 +833,19 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
+  
+  async getAllUsers(): Promise<User[]> {
+    try {
+      const allUsers = await db
+        .select()
+        .from(users)
+        .orderBy(asc(users.id));
+      return allUsers;
+    } catch (error) {
+      console.error('Error getting all users:', error);
+      return [];
+    }
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const now = new Date();
