@@ -1439,7 +1439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user dashboard preferences
   app.get("/api/user/dashboard/preferences", requireAuth, async (req, res) => {
     try {
-      const preferences = await storage.getDashboardPreferenceByUserId(req.user.id);
+      const preferences = await storage.getDashboardPreference(req.user.id);
       
       if (!preferences) {
         // Create default preferences if none exist
@@ -1483,7 +1483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { layout, widgets, theme, favoriteAgents, recentTasks } = req.body;
       
       // Get existing preferences
-      let preferences = await storage.getDashboardPreferenceByUserId(req.user.id);
+      let preferences = await storage.getDashboardPreference(req.user.id);
       
       if (!preferences) {
         // Create default preferences if none exist
@@ -1558,7 +1558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get preferences
-      let preferences = await storage.getDashboardPreferenceByUserId(req.user.id);
+      let preferences = await storage.getDashboardPreference(req.user.id);
       
       if (!preferences) {
         // Create preferences if they don't exist
@@ -1624,7 +1624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get preferences
-      const preferences = await storage.getDashboardPreferenceByUserId(req.user.id);
+      const preferences = await storage.getDashboardPreference(req.user.id);
       
       if (!preferences) {
         return res.status(404).json({ error: "Dashboard preferences not found" });
