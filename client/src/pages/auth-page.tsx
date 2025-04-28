@@ -34,6 +34,23 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const { user, loginMutation, registerMutation } = useAuth();
   const { toast } = useToast();
+  const [windowWidth, setWindowWidth] = useState<number>(
+    typeof window !== "undefined" ? window.innerWidth : 0
+  );
+
+  // Handle window resize for better responsiveness
+  useEffect(() => {
+    function handleResize() {
+      setWindowWidth(window.innerWidth);
+    }
+    
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", handleResize);
+      handleResize(); // Set initial size
+      
+      return () => window.removeEventListener("resize", handleResize);
+    }
+  }, []);
 
   // Login form
   const loginForm = useForm<z.infer<typeof loginSchema>>({
@@ -81,8 +98,8 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-gradient-to-b from-background to-slate-50 dark:from-background dark:to-slate-950">
       {/* Left side - Forms */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-md backdrop-blur-sm bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 rounded-xl shadow-lg">
+      <div className="w-full md:w-1/2 flex items-center justify-center p-4 sm:p-8 md:p-12">
+        <div className={`w-full ${windowWidth > 1200 ? 'max-w-lg' : 'max-w-md'} backdrop-blur-sm bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 ${windowWidth > 1400 ? 'p-10' : ''} rounded-xl shadow-lg border border-gray-200 dark:border-gray-800`}>
           <div className="text-center mb-6 sm:mb-8">
             <div className="inline-flex items-center justify-center">
               <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center mr-2">
@@ -285,82 +302,84 @@ export default function AuthPage() {
       </div>
 
       {/* Right side - Hero image and overview */}
-      <div className="hidden lg:flex w-full md:w-1/2 bg-gradient-to-br from-primary to-primary-foreground text-white p-8 flex-col justify-center relative overflow-hidden">
+      <div className="hidden lg:flex w-full md:w-1/2 bg-auth-gradient text-white p-8 xl:p-12 flex-col justify-center relative overflow-hidden">
         {/* Background decorative elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mt-20 -mr-20"></div>
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-white/5 rounded-full -mb-40 -ml-20"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 md:w-96 md:h-96 bg-white/5 rounded-full -mt-20 -mr-20 animate-pulse-slow"></div>
+        <div className="absolute bottom-0 left-0 w-80 h-80 md:w-96 md:h-96 bg-white/5 rounded-full -mb-40 -ml-20 animate-pulse-slow"></div>
+        <div className="absolute top-1/3 left-1/4 w-40 h-40 bg-white/5 rounded-full blur-xl"></div>
+        <div className="absolute bottom-1/3 right-1/4 w-32 h-32 bg-white/10 rounded-full blur-lg animate-pulse-slow"></div>
         
-        <div className="max-w-lg mx-auto relative z-10">
-          <div className="flex items-center mb-6">
-            <Bot className="h-10 w-10 text-white/80 mr-4" />
-            <h2 className="text-3xl sm:text-4xl font-heading font-bold">
+        <div className={`${windowWidth > 1400 ? 'max-w-2xl' : 'max-w-xl'} mx-auto relative z-10`}>
+          <div className="flex items-center mb-6 md:mb-8">
+            <Bot className={`h-10 w-10 ${windowWidth > 1400 ? 'h-12 w-12' : ''} text-white/80 mr-4`} />
+            <h2 className={`text-3xl sm:text-4xl ${windowWidth > 1400 ? 'text-5xl' : ''} font-heading font-bold`}>
               {t("auth.hero.title")}
             </h2>
           </div>
-          <p className="text-primary-100 text-base sm:text-lg mb-8">
+          <p className={`text-primary-100 text-base sm:text-lg ${windowWidth > 1400 ? 'text-xl leading-relaxed' : ''} mb-8 md:mb-10`}>
             {t("auth.hero.description")}
           </p>
           
-          <div className="space-y-6 text-primary-100">
+          <div className={`space-y-6 ${windowWidth > 1400 ? 'space-y-8 grid grid-cols-2 gap-x-8 gap-y-8' : ''} text-primary-100`}>
             <div className="flex items-start">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0">
-                <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              <div className={`${windowWidth > 1400 ? 'w-14 h-14' : 'w-10 h-10 sm:w-12 sm:h-12'} bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0 shadow-glow transition-transform hover:scale-105`}>
+                <Bot className={`${windowWidth > 1400 ? 'h-7 w-7' : 'h-5 w-5 sm:h-6 sm:w-6'} text-white`} />
               </div>
               <div>
-                <h3 className="text-lg sm:text-xl font-medium text-white mb-1">
+                <h3 className={`text-lg sm:text-xl ${windowWidth > 1400 ? 'text-2xl' : ''} font-medium text-white mb-1`}>
                   {t("auth.hero.feature1")}
                 </h3>
-                <p className="text-sm sm:text-base">
+                <p className={`text-sm sm:text-base ${windowWidth > 1400 ? 'text-lg' : ''}`}>
                   {t("auth.hero.feature1Description")}
                 </p>
               </div>
             </div>
             
             <div className="flex items-start">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0">
-                <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              <div className={`${windowWidth > 1400 ? 'w-14 h-14' : 'w-10 h-10 sm:w-12 sm:h-12'} bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0 shadow-glow transition-transform hover:scale-105`}>
+                <ShieldCheck className={`${windowWidth > 1400 ? 'h-7 w-7' : 'h-5 w-5 sm:h-6 sm:w-6'} text-white`} />
               </div>
               <div>
-                <h3 className="text-lg sm:text-xl font-medium text-white mb-1">
+                <h3 className={`text-lg sm:text-xl ${windowWidth > 1400 ? 'text-2xl' : ''} font-medium text-white mb-1`}>
                   {t("auth.hero.feature2")}
                 </h3>
-                <p className="text-sm sm:text-base">
+                <p className={`text-sm sm:text-base ${windowWidth > 1400 ? 'text-lg' : ''}`}>
                   {t("auth.hero.feature2Description")}
                 </p>
               </div>
             </div>
             
             <div className="flex items-start">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0">
-                <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              <div className={`${windowWidth > 1400 ? 'w-14 h-14' : 'w-10 h-10 sm:w-12 sm:h-12'} bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0 shadow-glow transition-transform hover:scale-105`}>
+                <Zap className={`${windowWidth > 1400 ? 'h-7 w-7' : 'h-5 w-5 sm:h-6 sm:w-6'} text-white`} />
               </div>
               <div>
-                <h3 className="text-lg sm:text-xl font-medium text-white mb-1">
+                <h3 className={`text-lg sm:text-xl ${windowWidth > 1400 ? 'text-2xl' : ''} font-medium text-white mb-1`}>
                   {t("auth.hero.feature3")}
                 </h3>
-                <p className="text-sm sm:text-base">
+                <p className={`text-sm sm:text-base ${windowWidth > 1400 ? 'text-lg' : ''}`}>
                   {t("auth.hero.feature3Description")}
                 </p>
               </div>
             </div>
             
             <div className="flex items-start">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0">
-                <PlugZap className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              <div className={`${windowWidth > 1400 ? 'w-14 h-14' : 'w-10 h-10 sm:w-12 sm:h-12'} bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0 shadow-glow transition-transform hover:scale-105`}>
+                <PlugZap className={`${windowWidth > 1400 ? 'h-7 w-7' : 'h-5 w-5 sm:h-6 sm:w-6'} text-white`} />
               </div>
               <div>
-                <h3 className="text-lg sm:text-xl font-medium text-white mb-1">
+                <h3 className={`text-lg sm:text-xl ${windowWidth > 1400 ? 'text-2xl' : ''} font-medium text-white mb-1`}>
                   {t("auth.hero.feature4")}
                 </h3>
-                <p className="text-sm sm:text-base">
+                <p className={`text-sm sm:text-base ${windowWidth > 1400 ? 'text-lg' : ''}`}>
                   {t("auth.hero.feature4Description")}
                 </p>
               </div>
             </div>
           </div>
           
-          <div className="mt-8 hidden lg:block">
-            <Button variant="secondary" size="lg" className="group">
+          <div className={`mt-8 ${windowWidth > 1400 ? 'mt-12' : ''} hidden lg:block`}>
+            <Button variant="secondary" size={windowWidth > 1400 ? "lg" : "default"} className="group hover:bg-white hover:text-primary">
               <span>Learn more about our platform</span>
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
