@@ -162,7 +162,7 @@ export function Header() {
             {!user ? (
               <Button asChild size="sm" className="hidden md:flex">
                 <Link href="/auth">
-                  <a>{t("auth.login")}</a>
+                  <div>{t("auth.login")}</div>
                 </Link>
               </Button>
             ) : (
@@ -257,9 +257,9 @@ export function Header() {
               <div className="space-y-1">
                 {navItems.map((item) => (
                   <Link key={item.href} href={item.href}>
-                    <a
+                    <div
                       className={cn(
-                        "flex items-center px-3 py-2 rounded-md transition-colors",
+                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
                         location === item.href
                           ? "bg-primary/10 text-primary"
                           : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -268,7 +268,7 @@ export function Header() {
                     >
                       {React.cloneElement(item.icon, { className: "h-5 w-5 mr-3" })}
                       {item.label}
-                    </a>
+                    </div>
                   </Link>
                 ))}
 
@@ -280,9 +280,9 @@ export function Header() {
                       </div>
                     </div>
                     <Link href="/admin/dashboard">
-                      <a
+                      <div
                         className={cn(
-                          "flex items-center px-3 py-2 rounded-md transition-colors",
+                          "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
                           location === "/admin/dashboard"
                             ? "bg-primary/10 text-primary"
                             : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -291,7 +291,7 @@ export function Header() {
                       >
                         <User className="h-5 w-5 mr-3" />
                         Dashboard
-                      </a>
+                      </div>
                     </Link>
                   </>
                 )}

@@ -60,7 +60,9 @@ const TranslationsPanel: React.FC = () => {
           
           // Group translations by their first segment (before the first dot)
           Object.entries(translationObj).forEach(([key, value]) => {
-            const [section, ...rest] = key.split('.');
+            const segments = key.split('.');
+            const section = segments[0];
+            const rest = segments.slice(1);
             
             if (!nestedTranslations[section]) {
               nestedTranslations[section] = {};
@@ -75,13 +77,21 @@ const TranslationsPanel: React.FC = () => {
             }
           });
           
+          // Ensure we have all common admin sections even if they're empty
+          const requiredSections = ['common', 'admin', 'auth', 'nav', 'app'];
+          requiredSections.forEach(section => {
+            if (!nestedTranslations[section]) {
+              nestedTranslations[section] = {};
+            }
+          });
+          
           setTranslations(nestedTranslations);
         }
       } catch (error) {
         console.error("Error loading translations:", error);
         toast({
-          title: "Error",
-          description: "Failed to load translations",
+          title: t("common.error"),
+          description: t("admin.failedToLoadTranslations"),
           variant: "destructive"
         });
       } finally {
@@ -90,7 +100,7 @@ const TranslationsPanel: React.FC = () => {
     };
 
     loadTranslations();
-  }, [i18n.language, toast]);
+  }, [i18n.language, toast, t]);
 
   // Get the sections from the translations
   const sections = Object.keys(translations).sort();
@@ -202,21 +212,24 @@ const TranslationsPanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">{t("admin.translations")}</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{t("admin.translations")}</h2>
         <Button 
           onClick={handleSave} 
           disabled={isLoading}
+          className="self-end sm:self-auto"
         >
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t("common.saving")}
+              <span className="hidden sm:inline">{t("common.saving")}</span>
+              <span className="sm:hidden">Saving</span>
             </>
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              {t("common.saveChanges")}
+              <span className="hidden sm:inline">{t("common.saveChanges")}</span>
+              <span className="sm:hidden">Save</span>
             </>
           )}
         </Button>
@@ -231,8 +244,8 @@ const TranslationsPanel: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-4">
-            <div className="flex items-center space-x-4">
-              <div className="relative flex-1">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="relative flex-1 w-full">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={t("common.search")}
@@ -244,9 +257,10 @@ const TranslationsPanel: React.FC = () => {
               
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button className="w-full sm:w-auto">
                     <Plus className="mr-2 h-4 w-4" />
-                    {t("admin.addNewTranslation")}
+                    <span className="hidden sm:inline">{t("admin.addNewTranslation")}</span>
+                    <span className="sm:hidden">Add New</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -295,68 +309,72 @@ const TranslationsPanel: React.FC = () => {
             </div>
             
             <Tabs defaultValue={activeSection} onValueChange={setActiveSection}>
-              <TabsList className="flex-wrap h-auto">
-                {sections.map((section) => (
-                  <TabsTrigger key={section} value={section}>
-                    {section}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+              <div className="overflow-x-auto pb-2">
+                <TabsList className="flex-wrap h-auto inline-flex min-w-max">
+                  {sections.map((section) => (
+                    <TabsTrigger key={section} value={section}>
+                      {section}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
               
               <TabsContent value={activeSection} className="mt-4">
-                <Table>
-                  <TableCaption>
-                    {t("admin.translation")} {t("common.list")}
-                  </TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[300px]">{t("admin.translationKey")}</TableHead>
-                      <TableHead>{t("admin.translationValue")}</TableHead>
-                      <TableHead className="w-[100px]">{t("common.actions")}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {getFilteredTranslations().length === 0 ? (
+                <div className="overflow-x-auto">
+                  <Table className="min-w-full">
+                    <TableCaption>
+                      {t("admin.translation")} {t("common.list")}
+                    </TableCaption>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center py-6">
-                          {searchQuery ? t("admin.noMatchingTranslations") : t("admin.noTranslationsInSection")}
-                        </TableCell>
+                        <TableHead className="w-[30%] min-w-[200px]">{t("admin.translationKey")}</TableHead>
+                        <TableHead className="w-[55%] min-w-[300px]">{t("admin.translationValue")}</TableHead>
+                        <TableHead className="w-[15%] min-w-[100px]">{t("common.actions")}</TableHead>
                       </TableRow>
-                    ) : (
-                      getFilteredTranslations().map(({ key, value }) => (
-                        <TableRow key={key}>
-                          <TableCell className="font-medium">{key}</TableCell>
-                          <TableCell>
-                            {editMode && editMode.key === key ? (
-                              <Input 
-                                value={editMode.value}
-                                onChange={(e) => setEditMode({...editMode, value: e.target.value})}
-                              />
-                            ) : (
-                              value
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {editMode && editMode.key === key ? (
-                              <div className="flex space-x-2">
-                                <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
-                                  <X className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={handleSaveEdit}>
-                                  <Check className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button variant="ghost" size="sm" onClick={() => handleEdit(key, value)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            )}
+                    </TableHeader>
+                    <TableBody>
+                      {getFilteredTranslations().length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center py-6">
+                            {searchQuery ? t("admin.noMatchingTranslations") : t("admin.noTranslationsInSection")}
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                      ) : (
+                        getFilteredTranslations().map(({ key, value }) => (
+                          <TableRow key={key}>
+                            <TableCell className="font-medium break-all">{key}</TableCell>
+                            <TableCell className="break-all">
+                              {editMode && editMode.key === key ? (
+                                <Input 
+                                  value={editMode.value}
+                                  onChange={(e) => setEditMode({...editMode, value: e.target.value})}
+                                />
+                              ) : (
+                                value
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {editMode && editMode.key === key ? (
+                                <div className="flex space-x-2">
+                                  <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={handleSaveEdit}>
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button variant="ghost" size="sm" onClick={() => handleEdit(key, value)}>
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </TabsContent>
             </Tabs>
           </div>
