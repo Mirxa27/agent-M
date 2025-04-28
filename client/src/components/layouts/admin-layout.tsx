@@ -123,11 +123,11 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
         </Sheet>
         
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 md:p-6 pl-4 md:pl-6">
+          <div className="max-w-6xl mx-auto w-full">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8">
+              <div className="min-w-0"> {/* Prevent text overflow */}
+                <h1 className="text-2xl font-bold tracking-tight truncate">{title}</h1>
                 {subtitle && <p className="text-muted-foreground mt-1">{subtitle}</p>}
               </div>
               
@@ -140,7 +140,9 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
               </div>
             </div>
             
-            {children}
+            <div className="w-full min-w-0"> {/* Container to prevent overflow */}
+              {children}
+            </div>
           </div>
         </main>
       </div>
