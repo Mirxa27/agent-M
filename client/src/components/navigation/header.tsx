@@ -251,7 +251,7 @@ export function Header() {
               <div className="space-y-1">
                 {navItems.map((item) => (
                   <Link key={item.href} href={item.href}>
-                    <div
+                    <span
                       className={cn(
                         "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
                         location === item.href
@@ -262,7 +262,7 @@ export function Header() {
                     >
                       {React.cloneElement(item.icon, { className: "h-5 w-5 mr-3" })}
                       {item.label}
-                    </div>
+                    </span>
                   </Link>
                 ))}
 
@@ -274,7 +274,7 @@ export function Header() {
                       </div>
                     </div>
                     <Link href="/admin/dashboard">
-                      <div
+                      <span
                         className={cn(
                           "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
                           location === "/admin/dashboard"
@@ -285,7 +285,7 @@ export function Header() {
                       >
                         <User className="h-5 w-5 mr-3" />
                         Dashboard
-                      </div>
+                      </span>
                     </Link>
                   </>
                 )}
