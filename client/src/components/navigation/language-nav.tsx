@@ -11,14 +11,12 @@ export function LanguageNav() {
     <div className="bg-white dark:bg-gray-900 py-2 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
       {/* Logo (in large screens) */}
       <div className="hidden md:flex items-center space-x-2">
-        <Link href="/">
-          <div className="flex items-center space-x-2 cursor-pointer">
-            <AnimatedLogo size="sm" />
-            <span className="text-lg font-semibold text-primary">
-              {t('app.name')}
-            </span>
-          </div>
-        </Link>
+        <div onClick={() => window.location.href = '/'} className="flex items-center space-x-2 cursor-pointer">
+          <AnimatedLogo size="sm" />
+          <span className="text-lg font-semibold text-primary">
+            {t('app.name')}
+          </span>
+        </div>
       </div>
       
       {/* Language switcher */}
@@ -26,11 +24,9 @@ export function LanguageNav() {
       
       {/* Logo (in small screens) */}
       <div className="md:hidden">
-        <Link href="/">
-          <div className="flex items-center space-x-2">
-            <AnimatedLogo size="sm" />
-          </div>
-        </Link>
+        <div onClick={() => window.location.href = '/'} className="flex items-center space-x-2 cursor-pointer">
+          <AnimatedLogo size="sm" />
+        </div>
       </div>
     </div>
   );

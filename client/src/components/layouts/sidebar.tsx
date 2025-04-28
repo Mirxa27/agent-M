@@ -65,11 +65,11 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto scrollbar-hide p-2">
         <div className="space-y-1">
           {navItems.map((item) => (
-            <a
+            <div
               key={item.href}
-              href={item.href}
+              onClick={() => window.location.href = item.href}
               className={cn(
-                "flex items-center px-3 py-2 rounded-md group",
+                "flex items-center px-3 py-2 rounded-md group cursor-pointer",
                 location === item.href
                   ? "bg-primary-50 text-primary-600"
                   : "text-gray-700 hover:bg-gray-100"
@@ -77,7 +77,7 @@ export default function Sidebar() {
             >
               {item.icon}
               <span>{item.label}</span>
-            </a>
+            </div>
           ))}
         </div>
         
@@ -87,11 +87,11 @@ export default function Sidebar() {
           </h3>
           <div className="mt-2 space-y-1">
             {settingsItems.map((item) => (
-              <a
+              <div
                 key={item.href}
-                href={item.href}
+                onClick={() => window.location.href = item.href}
                 className={cn(
-                  "flex items-center px-3 py-2 rounded-md group",
+                  "flex items-center px-3 py-2 rounded-md group cursor-pointer",
                   location === item.href
                     ? "bg-primary-50 text-primary-600"
                     : "text-gray-700 hover:bg-gray-100"
@@ -99,7 +99,7 @@ export default function Sidebar() {
               >
                 {item.icon}
                 <span>{item.label}</span>
-              </a>
+              </div>
             ))}
           </div>
         </div>

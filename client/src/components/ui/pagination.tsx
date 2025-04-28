@@ -43,15 +43,19 @@ const PaginationLink = ({
   className,
   isActive,
   size = "icon",
+  onClick,
+  href,
   ...props
 }: PaginationLinkProps) => (
-  <a
+  <div
+    onClick={onClick || (href ? () => window.location.href = href : undefined)}
     aria-current={isActive ? "page" : undefined}
     className={cn(
       buttonVariants({
         variant: isActive ? "outline" : "ghost",
         size,
       }),
+      "cursor-pointer",
       className
     )}
     {...props}
