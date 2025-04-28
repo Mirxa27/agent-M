@@ -90,7 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Log the user data for debugging
       console.log("Registration data:", userData);
       // Make sure we're sending userData directly, not wrapped in another object
-      return await apiRequest("POST", "/api/register", userData);
+      const response = await apiRequest<Omit<SelectUser, "password">>("POST", "/api/register", userData);
+      return response;
     },
     onSuccess: (userData: Omit<SelectUser, "password">) => {
       queryClient.setQueryData(["/api/user"], userData);
