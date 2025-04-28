@@ -111,36 +111,38 @@ export function AppRoutes() {
       {/* Public Routes */}
       {PUBLIC_ROUTES.map((route) => (
         <Route key={route.path} path={route.path}>
-          <PublicRouteWithLayout route={route} />
+          {() => <PublicRouteWithLayout route={route} />}
         </Route>
       ))}
       
       {/* Protected Routes */}
       {PRIVATE_ROUTES.map((route) => (
         <Route key={route.path} path={route.path}>
-          <ProtectedRoute route={route} />
+          {() => <ProtectedRoute route={route} />}
         </Route>
       ))}
       
       {/* Payment Routes */}
       {PAYMENT_ROUTES.map((route) => (
         <Route key={route.path} path={route.path}>
-          <PublicRouteWithLayout route={route} />
+          {() => <PublicRouteWithLayout route={route} />}
         </Route>
       ))}
       
       {/* Admin Routes */}
       {ADMIN_ROUTES.map((route) => (
         <Route key={route.path} path={route.path}>
-          <ProtectedRoute route={route} />
+          {() => <ProtectedRoute route={route} />}
         </Route>
       ))}
       
       {/* 404 Route */}
       <Route>
-        <MainLayout>
-          <NotFound />
-        </MainLayout>
+        {() => (
+          <MainLayout>
+            <NotFound />
+          </MainLayout>
+        )}
       </Route>
     </Switch>
   );

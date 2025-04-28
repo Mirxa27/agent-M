@@ -1,7 +1,4 @@
 import React from "react";
-import { Route, Switch } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
 
 // Pages
 import NotFound from "@/pages/not-found";
@@ -24,7 +21,7 @@ import LanguageDemoPage from "@/pages/language-demo-page";
 // Define route types
 export type RouteConfig = {
   path: string;
-  component: React.ComponentType;
+  component: React.ComponentType<any>;
   title: string;
   isPublic?: boolean;
   isAdmin?: boolean;
@@ -158,73 +155,3 @@ export const ALL_ROUTES = [
   ...PAYMENT_ROUTES,
   ...ADMIN_ROUTES,
 ];
-
-// Route guards
-export function ProtectedRoute({ route }: { route: RouteConfig }) {
-  const { user, isLoading } = useAuth();
-  const Component = route.component;
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Not authenticated
-  if (!user) {
-    window.location.href = "/auth";
-    return null;
-  }
-
-  // Admin route but user is not admin
-  if (route.isAdmin && user.role !== "admin") {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6">
-        <h1 className="text-2xl font-bold text-red-500 mb-2">Access Denied</h1>
-        <p className="text-gray-600 mb-4">You don't have permission to access this area.</p>
-        <a href="/dashboard" className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90">
-          Return to Dashboard
-        </a>
-      </div>
-    );
-  }
-
-  return <Component />;
-}
-
-// Router component with route definitions
-export function AppRouter() {
-  return (
-    <Switch>
-      {/* Public Routes */}
-      {PUBLIC_ROUTES.map((route) => (
-        <Route key={route.path} path={route.path} component={route.component} />
-      ))}
-
-      {/* Protected Routes */}
-      {PRIVATE_ROUTES.map((route) => (
-        <Route key={route.path} path={route.path}>
-          <ProtectedRoute route={route} />
-        </Route>
-      ))}
-
-      {/* Payment Routes */}
-      {PAYMENT_ROUTES.map((route) => (
-        <Route key={route.path} path={route.path} component={route.component} />
-      ))}
-
-      {/* Admin Routes */}
-      {ADMIN_ROUTES.map((route) => (
-        <Route key={route.path} path={route.path}>
-          <ProtectedRoute route={route} />
-        </Route>
-      ))}
-
-      {/* 404 Route */}
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
