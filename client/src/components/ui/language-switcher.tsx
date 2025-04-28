@@ -1,64 +1,80 @@
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Check, ChevronsUpDown, Globe } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Globe, Check } from 'lucide-react';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
-const LanguageSwitcher = () => {
-  const { i18n, t } = useTranslation();
-  const [currentLanguage, setCurrentLanguage] = useState('');
+// List of supported languages
+// The first value is the i18n language code
+// The second value is the display name in their own language
+const languages = [
+  { value: 'en', label: 'English' },
+  { value: 'ar', label: 'العربية' }
+];
 
-  useEffect(() => {
-    setCurrentLanguage(i18n.language);
-  }, [i18n.language]);
+export default function LanguageSwitcher() {
+  const { i18n } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(i18n.language);
 
-  const handleLanguageChange = (language: string) => {
-    i18n.changeLanguage(language);
-    
-    // Set document direction based on language (RTL for Arabic)
-    if (language === 'ar') {
-      document.documentElement.dir = 'rtl';
-      document.documentElement.lang = 'ar';
-      document.documentElement.classList.add('rtl');
-      document.documentElement.classList.remove('ltr');
-    } else {
-      document.documentElement.dir = 'ltr';
-      document.documentElement.lang = 'en';
-      document.documentElement.classList.add('ltr');
-      document.documentElement.classList.remove('rtl');
-    }
+  const handleLanguageChange = (selectedLang: string) => {
+    i18n.changeLanguage(selectedLang);
+    setValue(selectedLang);
+    setOpen(false);
   };
 
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={t('settings.selectLanguage') as string}>
-          <Globe className="h-5 w-5" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          onClick={() => handleLanguageChange('en')}
-          className="flex items-center justify-between"
-        >
-          <span>{t('settings.english')}</span>
-          {currentLanguage === 'en' && <Check className="h-4 w-4 ml-2" />}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => handleLanguageChange('ar')}
-          className="flex items-center justify-between"
-        >
-          <span>{t('settings.arabic')}</span>
-          {currentLanguage === 'ar' && <Check className="h-4 w-4 ml-2" />}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
+  // Get current language display name
+  const currentLanguage = languages.find(lang => lang.value === value) || languages[0];
 
-export default LanguageSwitcher;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-[120px] justify-between"
+        >
+          <Globe className="mr-2 h-4 w-4" />
+          <span>{currentLanguage.label}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[120px] p-0">
+        <Command>
+          <CommandInput placeholder="Search language..." />
+          <CommandEmpty>No language found.</CommandEmpty>
+          <CommandGroup>
+            {languages.map((language) => (
+              <CommandItem
+                key={language.value}
+                value={language.value}
+                onSelect={() => handleLanguageChange(language.value)}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    value === language.value ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {language.label}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
