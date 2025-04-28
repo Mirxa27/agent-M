@@ -23,6 +23,7 @@ import AiModelsPanel from "@/components/admin/ai-models-panel";
 import AiPromptsPanel from "@/components/admin/ai-prompts-panel";
 import PlansPanel from "@/components/admin/plans-panel";
 import ContentBuilder from "@/components/admin/content-builder";
+import AgentToolsPanel from "@/components/admin/agent-tools-panel";
 
 // Demo pages - These can be removed in production
 import LoadersDemoPage from "@/pages/loaders-demo-page";
@@ -216,6 +217,14 @@ export const ADMIN_ROUTES: RouteConfig[] = [
     path: "/admin/site-editor",
     component: SiteEditorPanel,
     title: "Site Editor",
+    isAdmin: true,
+    layout: "admin",
+    exact: true,
+  },
+  {
+    path: "/admin/agent-tools",
+    component: AgentToolsPanel,
+    title: "Agent Tools Management",
     isAdmin: true,
     layout: "admin",
     exact: true,
