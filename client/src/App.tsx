@@ -12,9 +12,12 @@ import AgentsPage from "@/pages/agents-page";
 import CredentialsPage from "@/pages/credentials-page";
 import FilesPage from "@/pages/files-page";
 import TaskHistoryPage from "@/pages/task-history-page";
+import LoadersDemoPage from "@/pages/loaders-demo-page";
 import AdminDashboard from "@/pages/admin/dashboard";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { AnimatedLoader } from "@/components/ui/animated-loader";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 // Custom route component for admin routes
 function AdminRoute({ path, component: Component }: { path: string, component: () => React.JSX.Element }) {
@@ -26,7 +29,7 @@ function AdminRoute({ path, component: Component }: { path: string, component: (
         if (isLoading) {
           return (
             <div className="flex items-center justify-center min-h-screen">
-              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
+              <AnimatedLoader variant="bot" size="lg" text="Loading..." />
             </div>
           );
         }
@@ -70,6 +73,9 @@ function Router() {
       {/* Admin Routes */}
       <AdminRoute path="/admin" component={AdminDashboard} />
       <AdminRoute path="/admin/dashboard" component={AdminDashboard} />
+      
+      {/* Demo Routes */}
+      <ProtectedRoute path="/loaders-demo" component={LoadersDemoPage} />
       
       {/* Catch-all for 404 */}
       <Route component={NotFound} />
