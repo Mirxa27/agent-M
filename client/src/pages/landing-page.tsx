@@ -9,15 +9,17 @@ export default function LandingPage() {
   const [, navigate] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   
-  // If already logged in, redirect to dashboard
-  if (user) {
-    navigate("/dashboard");
-    return null;
-  }
-  
   // Handle scroll events to change navbar appearance
   // Using useEffect to properly handle event listeners
   // This prevents memory leaks and React render warnings
+  useEffect(() => {
+    // If already logged in, redirect to dashboard
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+  
+  // Handle scroll events
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -309,36 +311,36 @@ export default function LandingPage() {
             <div>
               <h3 className="text-white text-lg font-semibold mb-4">Product</h3>
               <ul className="space-y-3">
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">API Access</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Enterprise</a></li>
+                <li><span onClick={() => document.getElementById('features')?.scrollIntoView()} className="hover:text-white transition-colors cursor-pointer">Features</span></li>
+                <li><span onClick={() => document.getElementById('pricing')?.scrollIntoView()} className="hover:text-white transition-colors cursor-pointer">Pricing</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">API Access</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">Enterprise</span></li>
               </ul>
             </div>
             <div>
               <h3 className="text-white text-lg font-semibold mb-4">Company</h3>
               <ul className="space-y-3">
-                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">About Us</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">Careers</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">Blog</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">Contact</span></li>
               </ul>
             </div>
             <div>
               <h3 className="text-white text-lg font-semibold mb-4">Legal</h3>
               <ul className="space-y-3">
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">Privacy Policy</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">Terms of Service</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">Security</span></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p>© {new Date().getFullYear()} Mirxa.io. All rights reserved.</p>
             <div className="mt-4 md:mt-0 flex space-x-6">
-              <a href="#" className="hover:text-white transition-colors">Twitter</a>
-              <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
-              <a href="#" className="hover:text-white transition-colors">GitHub</a>
+              <span className="hover:text-white transition-colors cursor-pointer">Twitter</span>
+              <span className="hover:text-white transition-colors cursor-pointer">LinkedIn</span>
+              <span className="hover:text-white transition-colors cursor-pointer">GitHub</span>
             </div>
           </div>
         </div>
