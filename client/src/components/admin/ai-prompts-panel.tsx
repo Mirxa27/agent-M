@@ -153,12 +153,7 @@ export default function AiPromptsPanel() {
   // Update prompt mutation
   const updatePromptMutation = useMutation({
     mutationFn: async ({ id, prompt }: { id: number, prompt: Partial<PromptFormValues> }) => {
-      const res = await apiRequest("PATCH", `/api/admin/ai-prompts/${id}`, prompt);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to update AI prompt");
-      }
-      return res.json();
+      return await apiRequest("PATCH", `/api/admin/ai-prompts/${id}`, prompt);
     },
     onSuccess: () => {
       toast({
@@ -180,11 +175,7 @@ export default function AiPromptsPanel() {
   // Delete prompt mutation
   const deletePromptMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/admin/ai-prompts/${id}`);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to delete AI prompt");
-      }
+      await apiRequest("DELETE", `/api/admin/ai-prompts/${id}`);
       return true;
     },
     onSuccess: () => {
