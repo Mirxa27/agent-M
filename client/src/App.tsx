@@ -13,6 +13,9 @@ import CredentialsPage from "@/pages/credentials-page";
 import FilesPage from "@/pages/files-page";
 import TaskHistoryPage from "@/pages/task-history-page";
 import LoadersDemoPage from "@/pages/loaders-demo-page";
+import SubscriptionPage from "@/pages/subscription-page";
+import PaymentSuccessPage from "@/pages/payment-success";
+import PaymentFailedPage from "@/pages/payment-failed";
 import AdminDashboard from "@/pages/admin/dashboard";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -69,6 +72,11 @@ function Router() {
       <ProtectedRoute path="/credentials" component={CredentialsPage} />
       <ProtectedRoute path="/files" component={FilesPage} />
       <ProtectedRoute path="/task-history" component={TaskHistoryPage} />
+      <ProtectedRoute path="/subscription" component={SubscriptionPage} />
+      
+      {/* Payment Routes */}
+      <Route path="/payment-success" component={PaymentSuccessPage} />
+      <Route path="/payment-failed" component={PaymentFailedPage} />
       
       {/* Admin Routes */}
       <AdminRoute path="/admin" component={AdminDashboard} />
