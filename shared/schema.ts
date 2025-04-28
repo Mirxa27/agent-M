@@ -18,9 +18,10 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
   fullName: text("full_name").notNull(),
-  plan: text("plan").default("free").notNull(),
+  planId: integer("plan_id"),
   planExpiresAt: timestamp("plan_expires_at"),
   role: text("role").default("user").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users)

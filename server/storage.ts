@@ -1203,14 +1203,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const now = new Date();
+    // Get the free plan ID, or use null if no plans exist yet
+    let freePlanId: number | undefined = undefined;
+    try {
+      const [freePlan] = await db
+        .select()
+        .from(plans)
+        .where(eq(plans.name, "Free"))
+        .limit(1);
+      if (freePlan) {
+        freePlanId = freePlan.id;
+      }
+    } catch (error) {
+      console.error("Error finding free plan:", error);
+    }
+
     const [user] = await db
       .insert(users)
       .values({
         ...insertUser,
-        plan: "free",
+        planId: freePlanId,
         planExpiresAt: null,
         role: "user",
+        isActive: true,
       })
       .returning();
     return user;
