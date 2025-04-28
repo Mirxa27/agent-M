@@ -306,6 +306,8 @@ export class MemStorage implements IStorage {
     const newTool: AgentTool = {
       id,
       ...tool,
+      config: tool.config || {}, // Ensure config is not undefined
+      isActive: tool.isActive !== undefined ? tool.isActive : true, // Default to true if not provided
       isSystem: false, // Default to false, only system can set to true
       createdAt: now,
       updatedAt: now
@@ -681,6 +683,12 @@ export class MemStorage implements IStorage {
     return this.aiModels.get(id);
   }
   
+  async getAiModelByName(modelId: string): Promise<AiModel | undefined> {
+    return Array.from(this.aiModels.values()).find(
+      model => model.modelId === modelId
+    );
+  }
+  
   async getAllAiModels(): Promise<AiModel[]> {
     return Array.from(this.aiModels.values());
   }
@@ -938,6 +946,12 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
 
+  // Helper method to get AI model by name
+  async getAiModelByName(modelId: string): Promise<AiModel | undefined> {
+    const [model] = await db.select().from(aiModels).where(eq(aiModels.modelId, modelId));
+    return model;
+  }
+  
   // Agent Tool operations
   async getAgentTool(id: number): Promise<AgentTool | undefined> {
     const [tool] = await db.select().from(agentTools).where(eq(agentTools.id, id));
