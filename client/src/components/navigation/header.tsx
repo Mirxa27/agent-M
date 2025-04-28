@@ -113,19 +113,16 @@ export function Header() {
                     <NavigationMenuItem key={item.href}>
                       <div
                         onClick={() => window.location.href = item.href}
-                        className="cursor-pointer"
+                        className={cn(
+                          navigationMenuTriggerStyle(),
+                          "cursor-pointer",
+                          location === item.href
+                            ? "bg-primary/10 text-primary"
+                            : ""
+                        )}
                       >
-                        <NavigationMenuLink
-                          className={cn(
-                            navigationMenuTriggerStyle(),
-                            location === item.href
-                              ? "bg-primary/10 text-primary"
-                              : ""
-                          )}
-                        >
-                          {item.icon}
-                          {item.label}
-                        </NavigationMenuLink>
+                        {item.icon}
+                        {item.label}
                       </div>
                     </NavigationMenuItem>
                   ))}
@@ -138,19 +135,15 @@ export function Header() {
                           <li>
                             <div 
                               onClick={() => window.location.href = "/admin/dashboard"}
-                              className="cursor-pointer"
+                              className={cn(
+                                "flex items-center select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
+                                location === "/admin/dashboard" ? "bg-primary/10 text-primary" : ""
+                              )}
                             >
-                              <NavigationMenuLink 
-                                className={cn(
-                                  "flex items-center select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                                  location === "/admin/dashboard" ? "bg-primary/10 text-primary" : ""
-                                )}
-                              >
-                                <div className="flex items-center">
-                                  <User className="w-4 h-4 mr-2" />
-                                  <span>Dashboard</span>
-                                </div>
-                              </NavigationMenuLink>
+                              <div className="flex items-center">
+                                <User className="w-4 h-4 mr-2" />
+                                <span>Dashboard</span>
+                              </div>
                             </div>
                           </li>
                         </ul>

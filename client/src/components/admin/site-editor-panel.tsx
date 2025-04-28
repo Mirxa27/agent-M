@@ -17,7 +17,8 @@ import { Loader2, Save, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // Import color pickers
-import { SketchPicker, ChromePicker } from 'react-color';
+// Use dynamic imports for react-color to prevent render issues
+import { ChromePicker } from 'react-color';
 
 interface SiteSettings {
   logo: {
@@ -308,10 +309,12 @@ const SiteEditorPanel: React.FC = () => {
                           className="fixed inset-0" 
                           onClick={() => setActiveColorPicker(null)}
                         />
-                        <ChromePicker 
-                          color={value}
-                          onChange={(color) => handleColorChange(color, key)}
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <ChromePicker 
+                            color={value}
+                            onChange={(color) => handleColorChange(color, key)}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -514,10 +517,12 @@ const SiteEditorPanel: React.FC = () => {
                               className="fixed inset-0" 
                               onClick={() => setActiveColorPicker(null)}
                             />
-                            <ChromePicker 
-                              color={settings.chatbot.color}
-                              onChange={handleChatbotColorChange}
-                            />
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <ChromePicker 
+                                color={settings.chatbot.color}
+                                onChange={handleChatbotColorChange}
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
