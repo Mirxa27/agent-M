@@ -225,6 +225,131 @@ const TranslationsPanel: React.FC = () => {
       description: "Translation added"
     });
   };
+  
+  // AI Translation functionality
+  const handleTranslateText = async () => {
+    if (!translateOptions.text || !translateOptions.targetLanguage) {
+      toast({
+        title: "Error",
+        description: "Please provide text and select a target language",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsTranslating(true);
+    
+    try {
+      const response = await apiRequest<{translatedText: string}>('/api/ai/translate', {
+        method: 'POST',
+        body: JSON.stringify({
+          text: translateOptions.text,
+          sourceLanguage: translateOptions.sourceLanguage,
+          targetLanguage: translateOptions.targetLanguage
+        })
+      });
+      
+      // Update the text field with the translated text
+      if (response.translatedText) {
+        // If editing, update the edit value
+        if (editMode) {
+          setEditMode({
+            ...editMode,
+            value: response.translatedText
+          });
+        }
+        
+        // Otherwise update the translation options with the result
+        setTranslateOptions({
+          ...translateOptions,
+          text: response.translatedText
+        });
+        
+        toast({
+          title: "Translation Complete",
+          description: "Text has been translated successfully"
+        });
+      }
+    } catch (error) {
+      console.error("Translation error:", error);
+      toast({
+        title: "Translation Failed",
+        description: "There was a problem translating the text. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+  
+  // Bulk translation of all text in current section
+  const handleBulkTranslate = async () => {
+    if (!translations[activeSection] || Object.keys(translations[activeSection]).length === 0) {
+      toast({
+        title: "No translations",
+        description: "There are no translations to translate in this section",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!translateOptions.targetLanguage) {
+      toast({
+        title: "Target language required",
+        description: "Please select a target language for translation",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsTranslating(true);
+    
+    try {
+      interface BulkTranslationResponse {
+        translations: {
+          [key: string]: {
+            [key: string]: string
+          }
+        }
+      }
+      
+      const response = await apiRequest<BulkTranslationResponse>('/api/ai/translate-bulk', {
+        method: 'POST',
+        body: JSON.stringify({
+          translations: { [activeSection]: translations[activeSection] },
+          sourceLanguage: translateOptions.sourceLanguage,
+          targetLanguage: translateOptions.targetLanguage
+        })
+      });
+      
+      if (response && response.translations && response.translations[activeSection]) {
+        // Merge the returned translations with the current ones
+        const updatedTranslations = {
+          ...translations,
+          [activeSection]: {
+            ...translations[activeSection],
+            ...response.translations[activeSection]
+          }
+        };
+        
+        setTranslations(updatedTranslations);
+        
+        toast({
+          title: "Bulk Translation Complete",
+          description: `Translated ${Object.keys(response.translations[activeSection]).length} items successfully`
+        });
+      }
+    } catch (error) {
+      console.error("Bulk translation error:", error);
+      toast({
+        title: "Bulk Translation Failed",
+        description: "There was a problem translating the section. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -480,6 +605,24 @@ const TranslationsPanel: React.FC = () => {
             </Tabs>
           </div>
         </CardContent>
+        <CardFooter className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between border-t pt-6">
+          <div className="text-sm text-muted-foreground">
+            {Object.keys(translations[activeSection] || {}).length} {t("admin.translation", {count: Object.keys(translations[activeSection] || {}).length})}
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={handleBulkTranslate} 
+            disabled={isTranslating || !translateOptions.targetLanguage}
+            className="h-auto py-2"
+          >
+            {isTranslating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Wand2 className="mr-2 h-4 w-4" />
+            )}
+            <span className="text-sm">Translate All to {translateOptions.targetLanguage.toUpperCase()}</span>
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );

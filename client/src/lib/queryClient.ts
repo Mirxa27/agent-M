@@ -7,20 +7,28 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
-  method: string,
+export async function apiRequest<T = Response>(
   url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
+  options: RequestInit = {}
+): Promise<T> {
   const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      "Content-Type": "application/json",
+    },
     credentials: "include",
   });
 
   await throwIfResNotOk(res);
-  return res;
+  
+  // For Response type, return the response itself
+  if (typeof Response !== 'undefined' && Response.prototype === Object.getPrototypeOf(Response.prototype)) {
+    return res as unknown as T;
+  }
+  
+  // Otherwise, return parsed JSON
+  return await res.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
