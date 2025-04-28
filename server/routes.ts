@@ -1,0 +1,609 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { setupAuth, hashPassword } from "./auth";
+import { 
+  insertAgentSchema, 
+  insertCredentialSchema, 
+  insertFileSchema, 
+  insertTaskSchema, 
+  insertMessageSchema 
+} from "@shared/schema";
+import { encrypt, decrypt } from "../client/src/lib/crypto";
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication routes
+  setupAuth(app);
+
+  // Authentication middleware
+  const requireAuth = (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    next();
+  };
+
+  // Admin middleware
+  const requireAdmin = (req, res, next) => {
+    if (!req.isAuthenticated() || req.user.role !== "admin") {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+    next();
+  };
+
+  // API routes
+  // Get user profile
+  app.get("/api/profile", requireAuth, (req, res) => {
+    const { password, ...userWithoutPassword } = req.user;
+    res.json(userWithoutPassword);
+  });
+  
+  // Update user profile
+  app.patch("/api/profile", requireAuth, async (req, res) => {
+    try {
+      const updates = {};
+      
+      // Allow updates to specific fields
+      if (req.body.fullName) updates.fullName = req.body.fullName;
+      if (req.body.email) updates.email = req.body.email;
+      
+      // If password is being updated, hash it
+      if (req.body.password) {
+        updates.password = await hashPassword(req.body.password);
+      }
+      
+      const updatedUser = await storage.updateUser(req.user.id, updates);
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Remove password from response
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Agent routes
+  app.get("/api/agents", requireAuth, async (req, res) => {
+    try {
+      const agents = await storage.getAgentsByUserId(req.user.id);
+      res.json(agents);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/agents/:id", requireAuth, async (req, res) => {
+    try {
+      const agent = await storage.getAgent(parseInt(req.params.id));
+      
+      if (!agent) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      
+      // Check ownership
+      if (agent.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      res.json(agent);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/agents", requireAuth, async (req, res) => {
+    try {
+      // Validate request body
+      const validatedData = insertAgentSchema.safeParse({
+        ...req.body,
+        userId: req.user.id
+      });
+      
+      if (!validatedData.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validatedData.error.format() 
+        });
+      }
+      
+      const agent = await storage.createAgent(validatedData.data);
+      res.status(201).json(agent);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.patch("/api/agents/:id", requireAuth, async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.id);
+      const agent = await storage.getAgent(agentId);
+      
+      if (!agent) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      
+      // Check ownership
+      if (agent.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      // Update agent
+      const updatedAgent = await storage.updateAgent(agentId, req.body);
+      res.json(updatedAgent);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.delete("/api/agents/:id", requireAuth, async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.id);
+      const agent = await storage.getAgent(agentId);
+      
+      if (!agent) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      
+      // Check ownership
+      if (agent.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      // Delete agent
+      await storage.deleteAgent(agentId);
+      res.sendStatus(204);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Credential routes
+  app.get("/api/credentials", requireAuth, async (req, res) => {
+    try {
+      const credentials = await storage.getCredentialsByUserId(req.user.id);
+      // Don't include sensitive data in the response
+      const sanitizedCredentials = credentials.map(cred => {
+        const { data, ...rest } = cred;
+        return rest;
+      });
+      res.json(sanitizedCredentials);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/credentials/:id", requireAuth, async (req, res) => {
+    try {
+      const credential = await storage.getCredential(parseInt(req.params.id));
+      
+      if (!credential) {
+        return res.status(404).json({ error: "Credential not found" });
+      }
+      
+      // Check ownership
+      if (credential.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      // Decrypt the credential data
+      const decryptedData = decrypt(credential.data);
+      
+      // Return credential with decrypted data
+      res.json({
+        ...credential,
+        data: JSON.parse(decryptedData)
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/credentials", requireAuth, async (req, res) => {
+    try {
+      // Encrypt the credential data
+      const encryptedData = encrypt(JSON.stringify(req.body.data));
+      
+      // Validate and create credential
+      const validatedData = insertCredentialSchema.safeParse({
+        userId: req.user.id,
+        name: req.body.name,
+        type: req.body.type,
+        data: encryptedData
+      });
+      
+      if (!validatedData.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validatedData.error.format() 
+        });
+      }
+      
+      const credential = await storage.createCredential(validatedData.data);
+      
+      // Don't include sensitive data in the response
+      const { data, ...credentialWithoutData } = credential;
+      res.status(201).json(credentialWithoutData);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.patch("/api/credentials/:id", requireAuth, async (req, res) => {
+    try {
+      const credentialId = parseInt(req.params.id);
+      const credential = await storage.getCredential(credentialId);
+      
+      if (!credential) {
+        return res.status(404).json({ error: "Credential not found" });
+      }
+      
+      // Check ownership
+      if (credential.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      // Update credential
+      const updates: any = {};
+      if (req.body.name) updates.name = req.body.name;
+      if (req.body.type) updates.type = req.body.type;
+      if (req.body.data) {
+        updates.data = encrypt(JSON.stringify(req.body.data));
+      }
+      
+      const updatedCredential = await storage.updateCredential(credentialId, updates);
+      
+      // Don't include sensitive data in the response
+      const { data, ...credentialWithoutData } = updatedCredential;
+      res.json(credentialWithoutData);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.delete("/api/credentials/:id", requireAuth, async (req, res) => {
+    try {
+      const credentialId = parseInt(req.params.id);
+      const credential = await storage.getCredential(credentialId);
+      
+      if (!credential) {
+        return res.status(404).json({ error: "Credential not found" });
+      }
+      
+      // Check ownership
+      if (credential.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      // Delete credential
+      await storage.deleteCredential(credentialId);
+      res.sendStatus(204);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // File/Template routes
+  app.get("/api/files", requireAuth, async (req, res) => {
+    try {
+      const files = await storage.getFilesByUserId(req.user.id);
+      res.json(files);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/templates", requireAuth, async (req, res) => {
+    try {
+      const templates = await storage.getTemplatesByUserId(req.user.id);
+      res.json(templates);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/files/:id", requireAuth, async (req, res) => {
+    try {
+      const file = await storage.getFile(parseInt(req.params.id));
+      
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      
+      // Check ownership
+      if (file.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      res.json(file);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Note: File upload would typically be handled with multipart/form-data and a library like multer
+  // For simplicity in this prototype, we're just storing file metadata
+  app.post("/api/files", requireAuth, async (req, res) => {
+    try {
+      // Validate and create file record
+      const validatedData = insertFileSchema.safeParse({
+        ...req.body,
+        userId: req.user.id
+      });
+      
+      if (!validatedData.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validatedData.error.format() 
+        });
+      }
+      
+      const file = await storage.createFile(validatedData.data);
+      res.status(201).json(file);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.delete("/api/files/:id", requireAuth, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      const file = await storage.getFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      
+      // Check ownership
+      if (file.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      // Delete file
+      await storage.deleteFile(fileId);
+      res.sendStatus(204);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Task routes
+  app.get("/api/tasks", requireAuth, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const tasks = await storage.getTasksByUserId(req.user.id, limit);
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/agents/:agentId/tasks", requireAuth, async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.agentId);
+      const agent = await storage.getAgent(agentId);
+      
+      if (!agent) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      
+      // Check ownership
+      if (agent.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      const tasks = await storage.getTasksByAgentId(agentId);
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/tasks/:id", requireAuth, async (req, res) => {
+    try {
+      const task = await storage.getTask(parseInt(req.params.id));
+      
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      
+      // Check ownership
+      if (task.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      res.json(task);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/tasks", requireAuth, async (req, res) => {
+    try {
+      // Validate agent ownership
+      const agent = await storage.getAgent(req.body.agentId);
+      if (!agent || agent.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized to use this agent" });
+      }
+      
+      // Validate and create task
+      const validatedData = insertTaskSchema.safeParse({
+        ...req.body,
+        userId: req.user.id
+      });
+      
+      if (!validatedData.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validatedData.error.format() 
+        });
+      }
+      
+      const task = await storage.createTask(validatedData.data);
+      res.status(201).json(task);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.patch("/api/tasks/:id", requireAuth, async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      const task = await storage.getTask(taskId);
+      
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      
+      // Check ownership
+      if (task.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      // Update task
+      const updatedTask = await storage.updateTask(taskId, req.body);
+      res.json(updatedTask);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Message routes
+  app.get("/api/tasks/:taskId/messages", requireAuth, async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const task = await storage.getTask(taskId);
+      
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      
+      // Check ownership
+      if (task.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      const messages = await storage.getMessagesByTaskId(taskId);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/tasks/:taskId/messages", requireAuth, async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const task = await storage.getTask(taskId);
+      
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      
+      // Check ownership
+      if (task.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      // Validate and create message
+      const validatedData = insertMessageSchema.safeParse({
+        ...req.body,
+        taskId
+      });
+      
+      if (!validatedData.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validatedData.error.format() 
+        });
+      }
+      
+      const message = await storage.createMessage(validatedData.data);
+      res.status(201).json(message);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Admin routes
+  // Plans
+  app.get("/api/plans", async (req, res) => {
+    try {
+      const plans = await storage.getActivePlans();
+      res.json(plans);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/admin/plans", requireAdmin, async (req, res) => {
+    try {
+      const plans = await storage.getAllPlans();
+      res.json(plans);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/admin/plans", requireAdmin, async (req, res) => {
+    try {
+      const plan = await storage.createPlan(req.body);
+      res.status(201).json(plan);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.patch("/api/admin/plans/:id", requireAdmin, async (req, res) => {
+    try {
+      const planId = parseInt(req.params.id);
+      const updatedPlan = await storage.updatePlan(planId, req.body);
+      
+      if (!updatedPlan) {
+        return res.status(404).json({ error: "Plan not found" });
+      }
+      
+      res.json(updatedPlan);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // AI Providers
+  app.get("/api/admin/ai-providers", requireAdmin, async (req, res) => {
+    try {
+      const providers = await storage.getAllAiProviders();
+      res.json(providers);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/admin/ai-providers", requireAdmin, async (req, res) => {
+    try {
+      const provider = await storage.createAiProvider(req.body);
+      res.status(201).json(provider);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.patch("/api/admin/ai-providers/:id", requireAdmin, async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      const updatedProvider = await storage.updateAiProvider(providerId, req.body);
+      
+      if (!updatedProvider) {
+        return res.status(404).json({ error: "AI Provider not found" });
+      }
+      
+      res.json(updatedProvider);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
