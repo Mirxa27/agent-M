@@ -159,3 +159,45 @@ html.rtl .rtl-flip {
   }
 }
 
+/* Custom Utilities */
+@layer utilities {
+  .shadow-glow {
+    box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.25);
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .shadow-glow:hover {
+    box-shadow: 0 0 15px 4px rgba(255, 255, 255, 0.35);
+  }
+
+  /* Enhanced gradient backgrounds for auth page */
+  .bg-auth-gradient {
+    background: linear-gradient(135deg, hsl(207, 90%, 54%), hsl(224, 76.3%, 38%));
+  }
+
+  /* Responsive text improvements */
+  .text-responsive {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    line-height: 1.5;
+  }
+  
+  /* Desktop-specific styling */
+  @media (min-width: 1400px) {
+    .desktop-xl-text {
+      font-size: 1.25rem;
+      line-height: 1.75;
+    }
+    
+    .desktop-xl-heading {
+      font-size: 3rem;
+      line-height: 1.25;
+    }
+    
+    .desktop-xl-container {
+      max-width: 1400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+}
+
