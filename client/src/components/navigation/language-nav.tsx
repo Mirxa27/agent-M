@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/ui/language-switcher';
+import { AnimatedLogo } from '@/components/ui/animated-logo';
 
 export function LanguageNav() {
   const { t } = useTranslation();
@@ -12,11 +13,7 @@ export function LanguageNav() {
       <div className="hidden md:flex items-center space-x-2">
         <Link href="/">
           <div className="flex items-center space-x-2 cursor-pointer">
-            <img 
-              src="/assets/images/mirxa-logo.svg" 
-              alt="Mirxa Logo" 
-              className="h-8 w-8"
-            />
+            <AnimatedLogo size="sm" />
             <span className="text-lg font-semibold text-primary">
               {t('app.name')}
             </span>
@@ -31,11 +28,7 @@ export function LanguageNav() {
       <div className="md:hidden">
         <Link href="/">
           <div className="flex items-center space-x-2">
-            <img 
-              src="/assets/images/mirxa-logo.svg" 
-              alt="Mirxa Logo" 
-              className="h-8 w-8"
-            />
+            <AnimatedLogo size="sm" />
           </div>
         </Link>
       </div>
