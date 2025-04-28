@@ -221,7 +221,7 @@ export default function PlansPanel() {
         description: "The subscription plan has been successfully deleted.",
       });
       setIsDeleteDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
+      queryClient.invalidateQueries({ queryKey: "/api/admin/plans" });
     },
     onError: (error) => {
       toast({

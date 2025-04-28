@@ -117,7 +117,7 @@ export default function UsersPanel() {
         description: "The user has been successfully created.",
       });
       setIsCreateDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: "/api/admin/users" });
       resetForm();
     },
     onError: (error) => {
@@ -145,7 +145,7 @@ export default function UsersPanel() {
         description: "The user has been successfully updated.",
       });
       setIsEditDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: "/api/admin/users" });
     },
     onError: (error) => {
       toast({
@@ -172,7 +172,7 @@ export default function UsersPanel() {
         description: "The user has been successfully deleted.",
       });
       setIsDeleteDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: "/api/admin/users" });
     },
     onError: (error) => {
       toast({
