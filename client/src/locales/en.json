@@ -53,15 +53,15 @@
     "loggedInAs": "Logged in as",
     "hero": {
       "title": "Next-Generation AI Agent Platform",
-      "description": "Streamline your workflows with intelligent AI agents that work for you",
-      "feature1": "AI Agents that work for you",
-      "feature2": "Secure credential storage",
-      "feature3": "File and template management",
-      "feature4": "Task automation",
-      "feature1Description": "Create customized AI agents that can send emails, update websites, manage documents, and more.",
-      "feature2Description": "Store your API keys, passwords, and other sensitive data with end-to-end encryption.",
-      "feature3Description": "Store and manage files, templates, and documents that your agents can use automatically.",
-      "feature4Description": "Automate repetitive tasks and workflows with natural language instructions."
+      "description": "Streamline your workflows with intelligent AI agents that integrate with your favorite services",
+      "feature1": "AI Browser Assistant",
+      "feature2": "90-Day Credential Storage",
+      "feature3": "Gmail & Service Integrations",
+      "feature4": "Multi-AI Provider Support",
+      "feature1Description": "Our new AI-powered browser can observe, record, and replay your actions to provide intelligent assistance.",
+      "feature2Description": "Enhanced security with configurable credential expiration and multiple authentication methods (API Key, OAuth, Direct Login).",
+      "feature3Description": "Seamlessly connect your agents with Gmail, Outlook, and other services using our secure OAuth integrations.",
+      "feature4Description": "Choose from multiple AI providers including OpenAI, Anthropic, Perplexity, and xAI for your intelligent agents."
     },
     "createAccount": "Create Account"
   },
