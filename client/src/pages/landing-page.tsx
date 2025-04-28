@@ -1,395 +1,351 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Link, Redirect } from "wouter";
-import { Bot, Lock, FileText, Terminal, Star, Zap, Clock, Settings, Shield, CreditCard } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { useState } from "react";
+import { Loader2, Bot, Zap, ShieldCheck, FileText, User, CreditCard, PlugZap, Check } from "lucide-react";
 
 export default function LandingPage() {
-  const { user } = useAuth();
-
-  // If user is already authenticated, redirect to dashboard
+  const { user, isLoading } = useAuth();
+  const [, navigate] = useLocation();
+  const [isScrolled, setIsScrolled] = useState(false);
+  
+  // If already logged in, redirect to dashboard
   if (user) {
-    return <Redirect to="/" />;
+    navigate("/dashboard");
+    return null;
   }
-
+  
+  // Handle scroll events to change navbar appearance
+  if (typeof window !== "undefined") {
+    window.addEventListener("scroll", () => {
+      setIsScrolled(window.scrollY > 10);
+    });
+  }
+  
+  // Features list for the platform
   const features = [
     {
-      icon: <Bot className="h-6 w-6 text-primary" />,
+      icon: <Bot className="h-10 w-10 text-primary" />,
       title: "AI Agents",
-      description: "Create and customize AI agents to automate various tasks across different platforms."
+      description: "Create intelligent agents that can perform complex tasks automatically using multiple AI providers."
     },
     {
-      icon: <Lock className="h-6 w-6 text-primary" />,
+      icon: <ShieldCheck className="h-10 w-10 text-primary" />,
       title: "Secure Credentials",
-      description: "Store your passwords and API keys with end-to-end encryption for maximum security."
+      description: "Store and manage API keys and credentials with end-to-end encryption for maximum security."
     },
     {
-      icon: <FileText className="h-6 w-6 text-primary" />,
-      title: "Templates",
-      description: "Create reusable templates that your AI agents can use for consistent outputs."
+      icon: <FileText className="h-10 w-10 text-primary" />,
+      title: "Template Library",
+      description: "Build a library of templates for your agents to use when performing tasks and generating content."
     },
     {
-      icon: <Terminal className="h-6 w-6 text-primary" />,
-      title: "Multiple AI Providers",
-      description: "Connect to OpenAI, Anthropic, and other AI providers through a unified interface."
-    },
-    {
-      icon: <Star className="h-6 w-6 text-primary" />,
+      icon: <Zap className="h-10 w-10 text-primary" />,
       title: "Task Automation",
-      description: "Automate repetitive tasks with natural language instructions and scheduled execution."
+      description: "Schedule and automate repetitive tasks with detailed history and analytics."
     },
     {
-      icon: <Zap className="h-6 w-6 text-primary" />,
-      title: "Advanced Integration",
-      description: "Seamlessly integrate with email, WordPress, Google Workspace, and more platforms."
+      icon: <PlugZap className="h-10 w-10 text-primary" />,
+      title: "Multiple AI Services",
+      description: "Connect to OpenAI, Anthropic, Perplexity, xAI and other providers from a single interface."
+    },
+    {
+      icon: <CreditCard className="h-10 w-10 text-primary" />,
+      title: "Flexible Plans",
+      description: "Choose from various subscription plans that fit your needs and budget with SAR pricing."
     }
   ];
-
-  const benefits = [
-    {
-      icon: <Clock className="h-6 w-6 text-white" />,
-      title: "Save Time",
-      description: "Automate repetitive tasks and free up hours of your day for more important work."
-    },
-    {
-      icon: <Settings className="h-6 w-6 text-white" />,
-      title: "Increase Efficiency",
-      description: "Streamline workflows and processes with intelligent AI assistants."
-    },
-    {
-      icon: <Shield className="h-6 w-6 text-white" />,
-      title: "Enhanced Security",
-      description: "Keep your credentials and data secure with our end-to-end encryption."
-    },
-    {
-      icon: <CreditCard className="h-6 w-6 text-white" />,
-      title: "Cost Effective",
-      description: "Pay only for what you use with our flexible subscription plans."
-    }
-  ];
-
-  const pricingPlans = [
+  
+  // Pricing plans
+  const plans = [
     {
       name: "Free",
-      price: "0 SAR",
-      description: "For individuals just getting started",
-      features: [
-        "2 AI Agents",
-        "10 Tasks/month",
-        "Basic templates",
-        "Community support"
-      ],
-      isPopular: false,
-      buttonText: "Get Started"
+      price: "0",
+      interval: "forever",
+      features: ["2 AI Agents", "100 Tasks/month", "5 Templates", "1 GB Storage"],
+      buttonText: "Get Started",
+      popular: false
     },
     {
       name: "Professional",
-      price: "99 SAR",
-      period: "/month",
-      description: "For professionals and small teams",
-      features: [
-        "10 AI Agents",
-        "100 Tasks/month",
-        "Advanced templates",
-        "Priority support",
-        "Custom AI configurations"
-      ],
-      isPopular: true,
-      buttonText: "Start Free Trial"
+      price: "199",
+      interval: "per month",
+      features: ["Unlimited Agents", "1,000 Tasks/month", "Unlimited Templates", "10 GB Storage", "API Access", "Priority Support"],
+      buttonText: "Start Free Trial",
+      popular: true
     },
     {
       name: "Enterprise",
-      price: "299 SAR",
-      period: "/month",
-      description: "For businesses with advanced needs",
-      features: [
-        "Unlimited AI Agents",
-        "Unlimited tasks",
-        "Custom template library",
-        "Dedicated support",
-        "Advanced integrations",
-        "Team management"
-      ],
-      isPopular: false,
-      buttonText: "Contact Sales"
+      price: "999",
+      interval: "per month",
+      features: ["Unlimited Everything", "Custom AI Models", "Dedicated Account Manager", "SSO Authentication", "Custom Branding", "24/7 Support"],
+      buttonText: "Contact Sales",
+      popular: false
     }
   ];
-
+  
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center mr-2">
-              <span className="text-white font-bold text-xl">M</span>
+      {/* Navigation */}
+      <header className={`sticky top-0 z-40 w-full transition-all duration-200 ${isScrolled ? "bg-white/80 backdrop-blur-md border-b shadow-sm" : "bg-transparent"}`}>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center">
+              <Link href="/">
+                <a className="flex items-center space-x-2">
+                  <Bot className="h-8 w-8 text-primary" />
+                  <span className="font-bold text-2xl bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
+                    Mirxa.io
+                  </span>
+                </a>
+              </Link>
             </div>
-            <span className="text-2xl font-heading font-bold">Mirxa.io</span>
-          </div>
-          
-          <nav className="hidden md:flex space-x-8">
-            <a href="#features" className="text-gray-600 hover:text-primary">Features</a>
-            <a href="#benefits" className="text-gray-600 hover:text-primary">Benefits</a>
-            <a href="#pricing" className="text-gray-600 hover:text-primary">Pricing</a>
-          </nav>
-          
-          <div className="flex items-center space-x-4">
-            <Link href="/auth">
-              <Button variant="ghost">Login</Button>
-            </Link>
-            <Link href="/auth?tab=register">
-              <Button>Sign Up</Button>
-            </Link>
+            <nav className="hidden md:flex items-center space-x-6">
+              <Link href="#features">
+                <a className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+                  Features
+                </a>
+              </Link>
+              <Link href="#pricing">
+                <a className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+                  Pricing
+                </a>
+              </Link>
+              <Link href="#testimonials">
+                <a className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+                  Testimonials
+                </a>
+              </Link>
+            </nav>
+            <div className="flex items-center space-x-2">
+              <Link href="/auth">
+                <Button variant="ghost">Sign In</Button>
+              </Link>
+              <Link href="/auth">
+                <Button>
+                  <span>Get Started</span>
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Hero section */}
-      <section className="bg-gradient-to-r from-primary-600 to-primary-800 text-white">
-        <div className="container mx-auto px-4 py-20 md:py-32">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6">
-                Your Next-Generation AI Agent Platform
-              </h1>
-              <p className="text-xl text-primary-100 mb-8">
-                Create, manage, and automate tasks with AI agents while keeping your credentials secure.
-                The ultimate platform for productivity and AI-powered automation.
-              </p>
-              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <Link href="/auth?tab=register">
-                  <Button size="lg" className="bg-white text-primary-600 hover:bg-gray-100 w-full sm:w-auto">
-                    Get Started Free
+      <main>
+        {/* Hero Section */}
+        <section className="relative pt-20 pb-20 md:pt-32 md:pb-32 overflow-hidden">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row items-center">
+              <div className="md:w-1/2 md:pr-12 mb-10 md:mb-0">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6">
+                  <span className="bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
+                    Next-Generation
+                  </span>
+                  <br />
+                  AI Agent Platform
+                </h1>
+                <p className="text-xl text-gray-600 mb-8 max-w-lg">
+                  Create, manage, and automate intelligent AI agents that perform complex tasks securely with your credentials and templates.
+                </p>
+                <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                  <Link href="/auth">
+                    <Button size="lg" className="px-8">
+                      Get Started Free
+                    </Button>
+                  </Link>
+                  <Button size="lg" variant="outline" className="px-8">
+                    Watch Demo
                   </Button>
-                </Link>
-                <a href="#features">
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-primary-700 w-full sm:w-auto">
-                    Learn More
-                  </Button>
-                </a>
+                </div>
+              </div>
+              <div className="md:w-1/2 relative">
+                <div className="w-full h-[400px] rounded-xl bg-gradient-to-br from-primary/20 to-primary-foreground/20 relative overflow-hidden">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Bot className="h-32 w-32 text-primary/40" />
+                  </div>
+                  {/* We would add a 3D robot or platform image here */}
+                </div>
               </div>
             </div>
-            <div className="hidden md:block">
-              <div className="bg-primary-500 p-6 rounded-lg shadow-xl">
-                <div className="robot-container perspective-800">
-                  <div className="robot w-64 h-64 mx-auto bg-primary-400 rounded-full flex items-center justify-center">
-                    <div className="relative w-40 h-40">
-                      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-24 bg-primary-300 rounded-xl flex items-center justify-center shadow-md">
-                        <div className="w-16 h-4 bg-primary-200 rounded-md"></div>
-                        <div className="absolute top-6 left-4 w-4 h-4 bg-primary-100 rounded-full"></div>
-                        <div className="absolute top-6 right-4 w-4 h-4 bg-primary-100 rounded-full"></div>
-                      </div>
-                      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-16 h-16 bg-primary-300 rounded-lg shadow-md"></div>
-                      <div className="absolute top-34 left-1/2 transform -translate-x-1/2 w-32 h-8 bg-primary-500 rounded-md shadow-md"></div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" className="py-20 bg-gray-50">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold mb-4">Powerful AI Agent Capabilities</h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Mirxa.io combines advanced AI with secure credential management and template systems to automate your workflows.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {features.map((feature, index) => (
+                <div 
+                  key={index} 
+                  className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                >
+                  <div className="mb-4 p-3 rounded-full w-16 h-16 flex items-center justify-center bg-primary/10">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                  <p className="text-gray-600">{feature.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section id="pricing" className="py-20">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Choose the plan that's right for you, with prices in Saudi Riyal (SAR).
+              </p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {plans.map((plan, index) => (
+                <div 
+                  key={index} 
+                  className={`
+                    rounded-xl shadow-sm border relative overflow-hidden
+                    ${plan.popular ? 'border-primary shadow-md ring-2 ring-primary scale-105 z-10' : 'border-gray-200'}
+                  `}
+                >
+                  {plan.popular && (
+                    <div className="absolute top-0 inset-x-0 bg-primary text-white text-xs font-semibold text-center py-1">
+                      MOST POPULAR
+                    </div>
+                  )}
+                  <div className={`p-8 ${plan.popular ? 'pt-10' : ''}`}>
+                    <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
+                    <div className="flex items-baseline mb-6">
+                      <span className="text-4xl font-bold">{plan.price} SAR</span>
+                      <span className="text-gray-600 ml-2">{plan.interval}</span>
+                    </div>
+                    <ul className="space-y-3 mb-8">
+                      {plan.features.map((feature, i) => (
+                        <li key={i} className="flex items-center">
+                          <Check className="h-5 w-5 text-green-500 mr-3" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Link href="/auth">
+                      <Button 
+                        className="w-full" 
+                        variant={plan.popular ? "default" : "outline"}
+                      >
+                        {plan.buttonText}
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="text-center mt-10 text-gray-500 text-sm">
+              All prices are in Saudi Riyal (SAR). Subscription billed through MyFatoorah payment gateway.
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section id="testimonials" className="py-20 bg-gray-50">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold mb-4">What Our Customers Say</h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Hear from the businesses and individuals who've transformed their workflows with Mirxa.io.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+                  <div className="flex items-center mb-6">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center mr-4">
+                      <User className="h-6 w-6 text-gray-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Customer Name</h4>
+                      <p className="text-sm text-gray-500">Company, Position</p>
                     </div>
                   </div>
+                  <p className="text-gray-600">
+                    "Mirxa.io has completely transformed how we handle our repetitive tasks. The AI agents are intelligent and the security features give us peace of mind."
+                  </p>
                 </div>
-                <div className="text-center mt-6 text-white">
-                  <p className="font-medium">Mirxa AI Assistant</p>
-                  <p className="text-sm text-primary-100 mt-1">Powered by advanced artificial intelligence</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Features section */}
-      <section id="features" className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">Powerful Features</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Mirxa.io combines powerful AI capabilities with security and ease of use to deliver a comprehensive automation platform.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
-                <div className="w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center mb-4">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-heading font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits section */}
-      <section id="benefits" className="py-20 bg-primary-600 text-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">Why Choose Mirxa.io</h2>
-            <p className="text-xl text-primary-100 max-w-3xl mx-auto">
-              Our platform helps you achieve more with less effort, saving time and resources while enhancing your capabilities.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {benefits.map((benefit, index) => (
-              <div key={index} className="bg-primary-700 p-6 rounded-xl border border-primary-500">
-                <div className="w-12 h-12 bg-primary-800 rounded-lg flex items-center justify-center mb-4">
-                  {benefit.icon}
-                </div>
-                <h3 className="text-xl font-heading font-semibold mb-2">{benefit.title}</h3>
-                <p className="text-primary-100">{benefit.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it works section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">How It Works</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Getting started with Mirxa.io is easy. Follow these simple steps to automate your tasks.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4 text-primary font-bold text-2xl">1</div>
-              <h3 className="text-xl font-heading font-semibold mb-2">Create Your Agent</h3>
-              <p className="text-gray-600">Define your AI agent's purpose and capabilities through our intuitive interface.</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4 text-primary font-bold text-2xl">2</div>
-              <h3 className="text-xl font-heading font-semibold mb-2">Add Secure Credentials</h3>
-              <p className="text-gray-600">Securely store your credentials and API keys with end-to-end encryption.</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4 text-primary font-bold text-2xl">3</div>
-              <h3 className="text-xl font-heading font-semibold mb-2">Assign Tasks</h3>
-              <p className="text-gray-600">Create tasks for your agents to execute, either on demand or on a schedule.</p>
+        {/* CTA Section */}
+        <section className="py-20 bg-primary text-white">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="text-3xl font-bold mb-6">Ready to Transform Your Workflow?</h2>
+              <p className="text-xl mb-8 opacity-90">
+                Join thousands of users who are already automating their tasks with Mirxa.io's AI agents.
+              </p>
+              <Link href="/auth">
+                <Button size="lg" variant="secondary" className="px-8">
+                  Get Started Free
+                </Button>
+              </Link>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Pricing section */}
-      <section id="pricing" className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Choose the plan that fits your needs. All plans include access to our core features.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {pricingPlans.map((plan, index) => (
-              <div key={index} className={`bg-white rounded-xl shadow-sm overflow-hidden ${plan.isPopular ? 'ring-2 ring-primary' : ''}`}>
-                {plan.isPopular && (
-                  <div className="bg-primary text-white py-2 text-center text-sm font-medium">
-                    Most Popular
-                  </div>
-                )}
-                <div className="p-6">
-                  <h3 className="text-2xl font-heading font-bold mb-2">{plan.name}</h3>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    {plan.period && <span className="text-gray-500">{plan.period}</span>}
-                  </div>
-                  <p className="text-gray-600 mb-6">{plan.description}</p>
-                  
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start">
-                        <svg className="h-5 w-5 text-primary mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <Button 
-                    className={`w-full ${plan.isPopular ? 'bg-primary hover:bg-primary-600' : ''}`}
-                    variant={plan.isPopular ? 'default' : 'outline'}
-                  >
-                    {plan.buttonText}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Call to action */}
-      <section className="py-16 bg-gradient-to-r from-primary-600 to-primary-800 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">Ready to Transform Your Workflow?</h2>
-          <p className="text-xl text-primary-100 max-w-3xl mx-auto mb-8">
-            Join thousands of users who are already saving time and increasing productivity with Mirxa.io
-          </p>
-          <Link href="/auth?tab=register">
-            <Button size="lg" className="bg-white text-primary-600 hover:bg-gray-100">
-              Get Started Today
-            </Button>
-          </Link>
-        </div>
-      </section>
+        </section>
+      </main>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-gray-300">
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <footer className="bg-gray-900 text-gray-400 py-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center mb-4">
-                <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center mr-2">
-                  <span className="text-white font-bold text-xl">M</span>
-                </div>
-                <span className="text-xl font-heading font-bold text-white">Mirxa.io</span>
+              <div className="flex items-center space-x-2 mb-6">
+                <Bot className="h-8 w-8 text-primary" />
+                <span className="font-bold text-2xl text-white">Mirxa.io</span>
               </div>
-              <p className="text-gray-400">
-                Next-generation AI agent platform with secure credential storage, file management, and task automation.
+              <p className="mb-6">
+                Next-generation AI agent platform with secure credential storage and task automation.
               </p>
             </div>
-            
             <div>
-              <h3 className="text-lg font-semibold mb-4">Features</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white">AI Agents</a></li>
-                <li><a href="#" className="hover:text-white">Secure Credentials</a></li>
-                <li><a href="#" className="hover:text-white">Templates</a></li>
-                <li><a href="#" className="hover:text-white">Multiple AI Providers</a></li>
-                <li><a href="#" className="hover:text-white">Task Automation</a></li>
+              <h3 className="text-white text-lg font-semibold mb-4">Product</h3>
+              <ul className="space-y-3">
+                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">API Access</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Enterprise</a></li>
               </ul>
             </div>
-            
             <div>
-              <h3 className="text-lg font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white">Documentation</a></li>
-                <li><a href="#" className="hover:text-white">API Reference</a></li>
-                <li><a href="#" className="hover:text-white">Blog</a></li>
-                <li><a href="#" className="hover:text-white">Support Center</a></li>
-                <li><a href="#" className="hover:text-white">Community</a></li>
+              <h3 className="text-white text-lg font-semibold mb-4">Company</h3>
+              <ul className="space-y-3">
+                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
               </ul>
             </div>
-            
             <div>
-              <h3 className="text-lg font-semibold mb-4">Company</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white">About Us</a></li>
-                <li><a href="#" className="hover:text-white">Careers</a></li>
-                <li><a href="#" className="hover:text-white">Contact</a></li>
-                <li><a href="#" className="hover:text-white">Legal</a></li>
-                <li><a href="#" className="hover:text-white">Privacy Policy</a></li>
+              <h3 className="text-white text-lg font-semibold mb-4">Legal</h3>
+              <ul className="space-y-3">
+                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
               </ul>
             </div>
           </div>
-          
-          <div className="border-t border-gray-700 pt-8 mt-8 text-center text-gray-400">
-            <p>&copy; {new Date().getFullYear()} Mirxa.io. All rights reserved.</p>
+          <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p>© {new Date().getFullYear()} Mirxa.io. All rights reserved.</p>
+            <div className="mt-4 md:mt-0 flex space-x-6">
+              <a href="#" className="hover:text-white transition-colors">Twitter</a>
+              <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
+              <a href="#" className="hover:text-white transition-colors">GitHub</a>
+            </div>
           </div>
         </div>
       </footer>
