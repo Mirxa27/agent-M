@@ -12,6 +12,7 @@ import TaskHistoryPage from "@/pages/task-history-page";
 import SubscriptionPage from "@/pages/subscription-page";
 import PaymentSuccessPage from "@/pages/payment-success";
 import PaymentFailedPage from "@/pages/payment-failed";
+import AiBrowserPage from "@/pages/ai-browser-page";
 import AdminDashboard from "@/pages/admin/dashboard";
 
 // Admin Components

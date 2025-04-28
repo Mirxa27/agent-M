@@ -105,12 +105,34 @@ export default function CredentialsPage() {
     },
   });
 
+  // Calculate expiration date based on selection
+  const calculateExpirationDate = (period: string): Date | null => {
+    if (period === 'never') return null;
+    
+    const now = new Date();
+    switch (period) {
+      case '30days':
+        return new Date(now.setDate(now.getDate() + 30));
+      case '60days':
+        return new Date(now.setDate(now.getDate() + 60));
+      case '90days':
+        return new Date(now.setDate(now.getDate() + 90));
+      default:
+        return new Date(now.setDate(now.getDate() + 90)); // Default to 90 days
+    }
+  };
+
   // Create credential mutation
   const createCredentialMutation = useMutation({
     mutationFn: async (data: typeof credentialSchema._type) => {
+      // Calculate expiration date
+      const expiresAt = calculateExpirationDate(data.expirationPeriod);
+      
       const transformedData = {
         name: data.name,
         type: data.type,
+        authMethod: data.authMethod,
+        expiresAt: expiresAt, 
         data: {
           apiKey: data.apiKey,
           apiSecret: data.apiSecret || null,
@@ -121,6 +143,24 @@ export default function CredentialsPage() {
             : null,
         },
       };
+      
+      // For OAuth services, we might need to redirect the user
+      if (data.authMethod === 'oauth') {
+        const oauthServices = ['gmail', 'outlook', 'google_drive', 'onedrive', 'dropbox', 'twitter', 'linkedin', 'facebook', 'instagram'];
+        
+        if (oauthServices.includes(data.type)) {
+          // Store partial credential data for after OAuth flow
+          localStorage.setItem('pendingOAuthCredential', JSON.stringify(transformedData));
+          
+          // Create the OAuth URL based on the service type
+          const oauthUrl = `/api/oauth/authorize/${data.type}`;
+          
+          // Redirect to OAuth consent page
+          window.location.href = oauthUrl;
+          return { redirected: true };
+        }
+      }
+      
       const res = await apiRequest("POST", "/api/credentials", transformedData);
       return res.json();
     },
@@ -171,11 +211,13 @@ export default function CredentialsPage() {
     defaultValues: {
       name: "",
       type: "",
+      authMethod: "api_key",
       apiKey: "",
       apiSecret: "",
       baseUrl: "",
       organizationId: "",
       additionalParams: "",
+      expirationPeriod: "90days",
     },
   });
 
@@ -333,6 +375,34 @@ export default function CredentialsPage() {
                             </div>
                           </div>
                         )}
+                        
+                      {/* Authentication Method */}
+                      <div>
+                        <div className="text-sm font-medium mb-1">
+                          Authentication Method
+                        </div>
+                        <div className="text-sm bg-muted p-2 rounded">
+                          {credential.authMethod === 'oauth' 
+                            ? 'OAuth (Connected Account)' 
+                            : credential.authMethod === 'direct_login' 
+                              ? 'Direct Login' 
+                              : 'API Key'}
+                        </div>
+                      </div>
+                      
+                      {/* Expiration Info */}
+                      {credential.expiresAt && (
+                        <div>
+                          <div className="text-sm font-medium mb-1">
+                            Expires On
+                          </div>
+                          <div className="text-sm bg-muted p-2 rounded">
+                            {new Date(credential.expiresAt).toLocaleDateString()} ({
+                              Math.ceil((new Date(credential.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                            } days left)
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -424,6 +494,32 @@ export default function CredentialsPage() {
 
               <FormField
                 control={form.control}
+                name="authMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Authentication Method</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select authentication method" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="api_key">API Key</SelectItem>
+                        <SelectItem value="oauth">OAuth</SelectItem>
+                        <SelectItem value="direct_login">Direct Login</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="apiKey"
                 render={({ field }) => (
                   <FormItem>
@@ -445,6 +541,33 @@ export default function CredentialsPage() {
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="expirationPeriod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Expiration Period</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select expiration period" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="30days">30 Days</SelectItem>
+                        <SelectItem value="60days">60 Days</SelectItem>
+                        <SelectItem value="90days">90 Days (Default)</SelectItem>
+                        <SelectItem value="never">Never Expire</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
