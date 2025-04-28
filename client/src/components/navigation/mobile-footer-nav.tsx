@@ -41,7 +41,7 @@ export function MobileFooterNav() {
       <nav className="grid h-full grid-cols-5">
         {navItems.map((item) => (
           <Link key={item.href} href={item.href}>
-            <a
+            <div
               className={cn(
                 "flex flex-col items-center justify-center h-full",
                 location === item.href
@@ -53,7 +53,7 @@ export function MobileFooterNav() {
                 {item.icon}
               </div>
               <span className="text-xs mt-1">{item.label}</span>
-            </a>
+            </div>
           </Link>
         ))}
       </nav>

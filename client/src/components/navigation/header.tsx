@@ -182,28 +182,22 @@ export function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <div className="w-full" onClick={() => window.location.href = "/dashboard"}>
-                      <div className="flex items-center cursor-pointer">
-                        <Home className="mr-2 h-4 w-4" />
-                        <span>{t("nav.dashboard")}</span>
-                      </div>
+                  <DropdownMenuItem onClick={() => window.location.href = "/dashboard"}>
+                    <div className="flex items-center cursor-pointer">
+                      <Home className="mr-2 h-4 w-4" />
+                      <span>{t("nav.dashboard")}</span>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <div className="w-full" onClick={() => window.location.href = "/agents"}>
-                      <div className="flex items-center cursor-pointer">
-                        <Bot className="mr-2 h-4 w-4" />
-                        <span>{t("nav.agents")}</span>
-                      </div>
+                  <DropdownMenuItem onClick={() => window.location.href = "/agents"}>
+                    <div className="flex items-center cursor-pointer">
+                      <Bot className="mr-2 h-4 w-4" />
+                      <span>{t("nav.agents")}</span>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <div className="w-full" onClick={() => window.location.href = "/subscription"}>
-                      <div className="flex items-center cursor-pointer">
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>{t("nav.subscription")}</span>
-                      </div>
+                  <DropdownMenuItem onClick={() => window.location.href = "/subscription"}>
+                    <div className="flex items-center cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>{t("nav.subscription")}</span>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
