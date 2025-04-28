@@ -429,3 +429,81 @@ export type InsertDashboardPreference = z.infer<
 
 export type Analytics = typeof analytics.$inferSelect;
 export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
+
+// Gamified Chatbot schemas
+export const chatbotMessages = pgTable("chatbot_messages", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  sessionId: text("session_id").notNull(),
+  content: text("content").notNull(),
+  isBot: boolean("is_bot").default(false).notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  metadata: jsonb("metadata"),
+});
+
+export const chatbotGameProgress = pgTable("chatbot_game_progress", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  sessionId: text("session_id").notNull(), // For non-logged in users
+  points: integer("points").default(0).notNull(),
+  level: integer("level").default(1).notNull(),
+  badges: jsonb("badges").default([]).notNull(), // Array of earned badges
+  completedChallenges: jsonb("completed_challenges").default([]).notNull(),
+  streak: integer("streak").default(0).notNull(),
+  lastInteraction: timestamp("last_interaction").defaultNow().notNull(),
+  avatarChoice: text("avatar_choice").default("default"),
+});
+
+export const chatbotChallenges = pgTable("chatbot_challenges", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  type: text("type").notNull(), // 'quiz', 'task', 'feature_discovery'
+  difficulty: text("difficulty").notNull(), // 'easy', 'medium', 'hard'
+  pointsReward: integer("points_reward").default(10).notNull(),
+  badgeReward: text("badge_reward"),
+  requirements: jsonb("requirements").default({}).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Insert schemas
+export const insertChatbotMessageSchema = createInsertSchema(chatbotMessages).pick({
+  userId: true,
+  sessionId: true,
+  content: true,
+  isBot: true,
+  metadata: true,
+});
+
+export const insertChatbotGameProgressSchema = createInsertSchema(chatbotGameProgress).pick({
+  userId: true,
+  sessionId: true,
+  points: true,
+  level: true,
+  badges: true,
+  completedChallenges: true,
+  streak: true,
+  avatarChoice: true,
+});
+
+export const insertChatbotChallengeSchema = createInsertSchema(chatbotChallenges).pick({
+  title: true,
+  description: true,
+  type: true,
+  difficulty: true,
+  pointsReward: true,
+  badgeReward: true,
+  requirements: true,
+  isActive: true,
+});
+
+// Type exports
+export type ChatbotMessage = typeof chatbotMessages.$inferSelect;
+export type InsertChatbotMessage = z.infer<typeof insertChatbotMessageSchema>;
+
+export type ChatbotGameProgress = typeof chatbotGameProgress.$inferSelect;
+export type InsertChatbotGameProgress = z.infer<typeof insertChatbotGameProgressSchema>;
+
+export type ChatbotChallenge = typeof chatbotChallenges.$inferSelect;
+export type InsertChatbotChallenge = z.infer<typeof insertChatbotChallengeSchema>;
