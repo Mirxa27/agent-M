@@ -183,28 +183,28 @@ export function Header() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard">
-                      <a className="w-full flex items-center cursor-pointer">
+                    <div className="w-full" onClick={() => window.location.href = "/dashboard"}>
+                      <div className="flex items-center cursor-pointer">
                         <Home className="mr-2 h-4 w-4" />
-                        <span>Dashboard</span>
-                      </a>
-                    </Link>
+                        <span>{t("nav.dashboard")}</span>
+                      </div>
+                    </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/agents">
-                      <a className="w-full flex items-center cursor-pointer">
+                    <div className="w-full" onClick={() => window.location.href = "/agents"}>
+                      <div className="flex items-center cursor-pointer">
                         <Bot className="mr-2 h-4 w-4" />
-                        <span>My Agents</span>
-                      </a>
-                    </Link>
+                        <span>{t("nav.agents")}</span>
+                      </div>
+                    </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/subscription">
-                      <a className="w-full flex items-center cursor-pointer">
+                    <div className="w-full" onClick={() => window.location.href = "/subscription"}>
+                      <div className="flex items-center cursor-pointer">
                         <Settings className="mr-2 h-4 w-4" />
-                        <span>Subscription</span>
-                      </a>
-                    </Link>
+                        <span>{t("nav.subscription")}</span>
+                      </div>
+                    </div>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
