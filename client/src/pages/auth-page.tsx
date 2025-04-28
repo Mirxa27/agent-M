@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth, loginSchema, registerSchema } from "@/hooks/use-auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Redirect } from "wouter";
+import { Redirect, Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Form, 
@@ -17,7 +17,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, Loader2, Lock, Mail, User } from "lucide-react";
+import { 
+  ArrowRight, 
+  Loader2, 
+  Lock, 
+  Mail, 
+  User, 
+  Bot, 
+  ShieldCheck, 
+  Zap, 
+  PlugZap 
+} from "lucide-react";
 
 export default function AuthPage() {
   const { t } = useTranslation();
@@ -275,19 +285,26 @@ export default function AuthPage() {
       </div>
 
       {/* Right side - Hero image and overview */}
-      <div className="hidden lg:flex w-full md:w-1/2 bg-primary text-white p-8 flex-col justify-center">
-        <div className="max-w-lg mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-4 sm:mb-6">
-            {t("auth.hero.title")}
-          </h2>
+      <div className="hidden lg:flex w-full md:w-1/2 bg-gradient-to-br from-primary to-primary-foreground text-white p-8 flex-col justify-center relative overflow-hidden">
+        {/* Background decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mt-20 -mr-20"></div>
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-white/5 rounded-full -mb-40 -ml-20"></div>
+        
+        <div className="max-w-lg mx-auto relative z-10">
+          <div className="flex items-center mb-6">
+            <Bot className="h-10 w-10 text-white/80 mr-4" />
+            <h2 className="text-3xl sm:text-4xl font-heading font-bold">
+              {t("auth.hero.title")}
+            </h2>
+          </div>
           <p className="text-primary-100 text-base sm:text-lg mb-8">
             {t("auth.hero.description")}
           </p>
           
           <div className="space-y-6 text-primary-100">
             <div className="flex items-start">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary-400/30 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0">
-                <span className="text-lg sm:text-xl">1</span>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0">
+                <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
               <div>
                 <h3 className="text-lg sm:text-xl font-medium text-white mb-1">
@@ -300,8 +317,8 @@ export default function AuthPage() {
             </div>
             
             <div className="flex items-start">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary-400/30 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0">
-                <span className="text-lg sm:text-xl">2</span>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0">
+                <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
               <div>
                 <h3 className="text-lg sm:text-xl font-medium text-white mb-1">
@@ -314,8 +331,8 @@ export default function AuthPage() {
             </div>
             
             <div className="flex items-start">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary-400/30 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0">
-                <span className="text-lg sm:text-xl">3</span>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0">
+                <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
               <div>
                 <h3 className="text-lg sm:text-xl font-medium text-white mb-1">
@@ -328,8 +345,8 @@ export default function AuthPage() {
             </div>
             
             <div className="flex items-start">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary-400/30 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0">
-                <span className="text-lg sm:text-xl">4</span>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mr-4 mt-1 flex-shrink-0">
+                <PlugZap className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
               <div>
                 <h3 className="text-lg sm:text-xl font-medium text-white mb-1">
@@ -352,18 +369,47 @@ export default function AuthPage() {
       </div>
       
       {/* Mobile hero section (shown only on small screens) */}
-      <div className="block md:hidden bg-primary text-white p-6 rounded-lg mx-4 my-6">
-        <h2 className="text-xl font-heading font-bold mb-2">
-          {t("auth.hero.title")}
-        </h2>
-        <p className="text-primary-100 text-sm mb-4">
+      <div className="block md:hidden bg-gradient-to-br from-primary to-primary-foreground text-white p-6 rounded-lg mx-4 my-6">
+        <div className="flex items-center mb-4">
+          <Bot className="h-8 w-8 text-white/80 mr-3" />
+          <h2 className="text-xl font-heading font-bold">
+            {t("auth.hero.title")}
+          </h2>
+        </div>
+        
+        <p className="text-primary-100 text-sm mb-5">
           {t("auth.hero.description")}
         </p>
         
-        <Button variant="secondary" size="sm" className="w-full group">
-          <span>Learn more</span>
-          <ArrowRight className="ml-2 h-3 w-3 transition-transform group-hover:translate-x-1" />
-        </Button>
+        <div className="space-y-3 mb-5">
+          <div className="flex items-center">
+            <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center mr-3">
+              <Bot className="h-4 w-4 text-white" />
+            </div>
+            <p className="text-sm text-white/90">{t("auth.hero.feature1")}</p>
+          </div>
+          
+          <div className="flex items-center">
+            <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center mr-3">
+              <ShieldCheck className="h-4 w-4 text-white" />
+            </div>
+            <p className="text-sm text-white/90">{t("auth.hero.feature2")}</p>
+          </div>
+          
+          <div className="flex items-center">
+            <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center mr-3">
+              <Zap className="h-4 w-4 text-white" />
+            </div>
+            <p className="text-sm text-white/90">{t("auth.hero.feature3")}</p>
+          </div>
+        </div>
+        
+        <Link href="/">
+          <Button variant="secondary" size="sm" className="w-full group">
+            <span>Explore platform</span>
+            <ArrowRight className="ml-2 h-3 w-3 transition-transform group-hover:translate-x-1" />
+          </Button>
+        </Link>
       </div>
     </div>
   );
