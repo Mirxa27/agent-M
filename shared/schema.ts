@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -138,22 +138,91 @@ export const insertMessageSchema = createInsertSchema(messages)
 export const aiProviders = pgTable("ai_providers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  provider: text("provider").notNull(), // e.g., 'openai', 'anthropic'
-  apiKey: text("api_key").notNull(),
+  provider: text("provider").notNull(), // e.g., 'openai', 'anthropic', 'xai'
+  description: text("description"),
   baseUrl: text("base_url"),
-  models: jsonb("models").default([]).notNull(),
+  authType: text("auth_type").default("api_key").notNull(), // 'api_key', 'oauth', 'basic_auth'
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertAiProviderSchema = createInsertSchema(aiProviders)
   .pick({
     name: true,
     provider: true,
-    apiKey: true,
+    description: true,
     baseUrl: true,
-    models: true,
+    authType: true,
     isActive: true,
+  });
+
+// AI Model schema
+export const aiModels = pgTable("ai_models", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").notNull(),
+  name: text("name").notNull(),
+  modelId: text("model_id").notNull(), // The actual model ID used by the provider (e.g., "gpt-4o")
+  description: text("description"),
+  capabilities: jsonb("capabilities").default([]).notNull(), // e.g., ["text", "image", "audio"]
+  contextWindow: integer("context_window"), // Max tokens in context
+  maxOutputTokens: integer("max_output_tokens"),
+  costInputPerK: decimal("cost_input_per_k", { precision: 10, scale: 6 }), // Cost per 1K input tokens
+  costOutputPerK: decimal("cost_output_per_k", { precision: 10, scale: 6 }), // Cost per 1K output tokens
+  isActive: boolean("is_active").default(true).notNull(),
+  isDefault: boolean("is_default").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertAiModelSchema = createInsertSchema(aiModels)
+  .pick({
+    providerId: true,
+    name: true,
+    modelId: true,
+    description: true,
+    capabilities: true, 
+    contextWindow: true,
+    maxOutputTokens: true,
+    costInputPerK: true,
+    costOutputPerK: true,
+    isActive: true,
+    isDefault: true,
+  });
+
+// AI Model Prompts schema
+export const aiPrompts = pgTable("ai_prompts", {
+  id: serial("id").primaryKey(),
+  modelId: integer("model_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  purpose: text("purpose").notNull(), // e.g., "email_writing", "code_generation", "general"
+  systemPrompt: text("system_prompt").notNull(),
+  defaultUserPrompt: text("default_user_prompt"),
+  temperature: decimal("temperature", { precision: 3, scale: 2 }).default("0.7"),
+  topP: decimal("top_p", { precision: 3, scale: 2 }).default("1.0"),
+  frequencyPenalty: decimal("frequency_penalty", { precision: 3, scale: 2 }).default("0.0"),
+  presencePenalty: decimal("presence_penalty", { precision: 3, scale: 2 }).default("0.0"),
+  isActive: boolean("is_active").default(true).notNull(),
+  isDefault: boolean("is_default").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertAiPromptSchema = createInsertSchema(aiPrompts)
+  .pick({
+    modelId: true,
+    name: true,
+    description: true,
+    purpose: true,
+    systemPrompt: true,
+    defaultUserPrompt: true,
+    temperature: true,
+    topP: true,
+    frequencyPenalty: true,
+    presencePenalty: true,
+    isActive: true,
+    isDefault: true,
   });
 
 // Subscription Plan schema
@@ -196,6 +265,12 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export type AiProvider = typeof aiProviders.$inferSelect;
 export type InsertAiProvider = z.infer<typeof insertAiProviderSchema>;
+
+export type AiModel = typeof aiModels.$inferSelect;
+export type InsertAiModel = z.infer<typeof insertAiModelSchema>;
+
+export type AiPrompt = typeof aiPrompts.$inferSelect;
+export type InsertAiPrompt = z.infer<typeof insertAiPromptSchema>;
 
 export type Plan = typeof plans.$inferSelect;
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
