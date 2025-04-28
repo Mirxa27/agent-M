@@ -17,20 +17,20 @@ export function AuthLayout({ children, title, subtitle, showLogo = true }: AuthL
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Side - Form */}
-      <div className="flex flex-col w-full md:w-1/2 p-8 md:p-12 justify-center">
+      <div className="flex flex-col w-full md:w-1/2 p-4 sm:p-6 md:p-8 lg:p-12 justify-center">
         <div className="absolute top-4 right-4">
           <LanguageSwitcher />
         </div>
         
         {showLogo && (
-          <div className="mb-8 flex items-center">
+          <div className="mb-6 md:mb-8 flex items-center">
             <Link href="/">
-              <a className="flex items-center space-x-2">
+              <span className="flex items-center space-x-2 cursor-pointer">
                 <AnimatedLogo size="md" />
                 <span className="font-heading text-xl font-bold text-primary">
                   {t("app.name")}
                 </span>
-              </a>
+              </span>
             </Link>
           </div>
         )}
@@ -48,24 +48,24 @@ export function AuthLayout({ children, title, subtitle, showLogo = true }: AuthL
         <div className="max-w-md">
           <h2 className="text-3xl font-bold mb-4">{t("auth.hero.title")}</h2>
           <p className="mb-6">{t("auth.hero.description")}</p>
-          <ul className="space-y-2">
+          <ul className="space-y-2 sm:space-y-3 md:space-y-4">
             <li className="flex items-center">
-              <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              {t("auth.hero.feature1")}
+              <span className="text-sm sm:text-base">{t("auth.hero.feature1")}</span>
             </li>
             <li className="flex items-center">
-              <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              {t("auth.hero.feature2")}
+              <span className="text-sm sm:text-base">{t("auth.hero.feature2")}</span>
             </li>
             <li className="flex items-center">
-              <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              {t("auth.hero.feature3")}
+              <span className="text-sm sm:text-base">{t("auth.hero.feature3")}</span>
             </li>
           </ul>
         </div>

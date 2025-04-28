@@ -123,16 +123,16 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
         </Sheet>
         
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 md:p-6 pl-4 md:pl-6">
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-5 lg:p-6">
           <div className="max-w-6xl mx-auto w-full">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 sm:mb-5 md:mb-6 lg:mb-8">
               <div className="min-w-0"> {/* Prevent text overflow */}
-                <h1 className="text-2xl font-bold tracking-tight truncate">{title}</h1>
-                {subtitle && <p className="text-muted-foreground mt-1">{subtitle}</p>}
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">{title}</h1>
+                {subtitle && <p className="text-muted-foreground mt-1 text-sm sm:text-base">{subtitle}</p>}
               </div>
               
               {/* Show this button only on mobile */}
-              <div className="mt-4 md:mt-0 md:hidden">
+              <div className="mt-3 md:mt-0 md:hidden">
                 <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
                   <Menu className="h-4 w-4 mr-2" />
                   Menu
@@ -140,7 +140,7 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
               </div>
             </div>
             
-            <div className="w-full min-w-0"> {/* Container to prevent overflow */}
+            <div className="w-full min-w-0 space-y-4 sm:space-y-5 md:space-y-6"> {/* Container to prevent overflow with adaptive spacing */}
               {children}
             </div>
           </div>
