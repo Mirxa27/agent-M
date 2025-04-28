@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/navigation/header";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Users, Bot, Settings, Database, PanelLeft, Tag } from "lucide-react";
+import { Loader2, Users, Bot, Settings, Database, PanelLeft, Tag, Languages, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AdminLayoutProps {
@@ -45,6 +45,8 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
     { href: "/admin/models", label: "AI Models", icon: <Bot className="w-5 h-5 mr-3" /> },
     { href: "/admin/prompts", label: "AI Prompts", icon: <Tag className="w-5 h-5 mr-3" /> },
     { href: "/admin/plans", label: "Plans", icon: <Settings className="w-5 h-5 mr-3" /> },
+    { href: "/admin/translations", label: "Translations", icon: <Languages className="w-5 h-5 mr-3" /> },
+    { href: "/admin/site-editor", label: "Site Editor", icon: <Palette className="w-5 h-5 mr-3" /> },
   ];
 
   return (
