@@ -82,36 +82,43 @@ export default function DashboardPage() {
     queryKey: ["/api/user-activities", { limit: 10 }],
     queryFn: async () => {
       const res = await fetch("/api/user-activities?limit=10");
-      // For now return mock data since the endpoint isn't implemented yet
-      return [
+      
+      // For temporary implementation, use placeholder data
+      const now = new Date();
+      const hourAgo = new Date(now.getTime() - 1000 * 60 * 60);
+      const halfHourAgo = new Date(now.getTime() - 1000 * 60 * 30);
+      
+      const activities: UserActivity[] = [
         {
           id: 1,
-          userId: user?.id,
+          userId: user?.id || 0,
           activityType: "login",
           resourceId: null,
           resourceType: null,
           metadata: {},
-          createdAt: new Date().toISOString()
+          createdAt: now
         },
         {
           id: 2, 
-          userId: user?.id,
+          userId: user?.id || 0,
           activityType: "agent_created",
           resourceId: 1,
           resourceType: "agent",
           metadata: { name: "Email Assistant" },
-          createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString() // 1 hour ago
+          createdAt: hourAgo
         },
         {
           id: 3,
-          userId: user?.id,
+          userId: user?.id || 0,
           activityType: "task_created",
           resourceId: 1,
           resourceType: "task",
           metadata: { title: "Process emails" },
-          createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString() // 30 min ago
+          createdAt: halfHourAgo
         }
-      ] as UserActivity[];
+      ];
+      
+      return activities;
     },
     enabled: !!user
   });
@@ -124,13 +131,17 @@ export default function DashboardPage() {
     queryKey: ["/api/analytics", { period }],
     queryFn: async () => {
       const res = await fetch(`/api/analytics?period=${period}`);
-      // For now return mock data since the endpoint isn't implemented yet
-      return {
+      
+      // For temporary implementation, use placeholder data
+      const now = new Date();
+      const weekAgo = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 7);
+      
+      const analyticsData: Analytics = {
         id: 1,
-        userId: user?.id,
+        userId: user?.id || 0,
         period,
-        periodStart: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(), // 1 week ago
-        periodEnd: new Date().toISOString(),
+        periodStart: weekAgo,
+        periodEnd: now,
         taskCount: 15,
         successfulTaskCount: 12,
         failedTaskCount: 3,
@@ -139,8 +150,10 @@ export default function DashboardPage() {
         mostUsedToolType: "openai",
         averageCompletionTime: 45, // seconds
         metadata: {},
-        createdAt: new Date().toISOString()
-      } as Analytics;
+        createdAt: now
+      };
+      
+      return analyticsData;
     },
     enabled: !!user
   });
@@ -356,7 +369,7 @@ export default function DashboardPage() {
               <CardContent>
                 {recentTasks && recentTasks.length > 0 ? (
                   <div className="space-y-4">
-                    {recentTasks.map((task) => (
+                    {recentTasks.map((task: any) => (
                       <div key={task.id} className="flex items-center justify-between border-b pb-3 last:border-0">
                         <div className="flex items-center gap-2">
                           <Activity className={`h-5 w-5 ${
@@ -420,7 +433,7 @@ export default function DashboardPage() {
               <CardContent>
                 {userActivities && userActivities.length > 0 ? (
                   <div className="space-y-4">
-                    {userActivities.map((activity) => (
+                    {userActivities.map((activity: any) => (
                       <div key={activity.id} className="flex items-start gap-3 border-b pb-3 last:border-0">
                         <div className="rounded-full p-2 bg-primary/10 text-primary">
                           {activity.activityType === "login" && <Users className="h-4 w-4" />}
@@ -433,10 +446,10 @@ export default function DashboardPage() {
                           <p className="font-medium text-sm">
                             {activity.activityType === "login" && "Logged in to the platform"}
                             {activity.activityType === "agent_created" && (
-                              <>Created new agent <span className="font-semibold">{activity.metadata.name}</span></>
+                              <>Created new agent <span className="font-semibold">{(activity.metadata as any)?.name}</span></>
                             )}
                             {activity.activityType === "task_created" && (
-                              <>Created new task <span className="font-semibold">{activity.metadata.title}</span></>
+                              <>Created new task <span className="font-semibold">{(activity.metadata as any)?.title}</span></>
                             )}
                             {activity.activityType === "credential_added" && "Added new credential"}
                             {activity.activityType === "file_uploaded" && "Uploaded new file"}
