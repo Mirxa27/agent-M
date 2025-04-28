@@ -18,7 +18,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 // Credential form schema
@@ -32,22 +38,45 @@ const credentialSchema = z.object({
 type CredentialFormValues = z.infer<typeof credentialSchema>;
 
 // Types for the different credential form fields
-const credentialFormFields: Record<string, { label: string, type: string, required: boolean, placeholder: string }[]> = {
+const credentialFormFields: Record<
+  string,
+  { label: string; type: string; required: boolean; placeholder: string }[]
+> = {
   openai: [
-    { label: "API Key", type: "password", required: true, placeholder: "sk-..." },
+    {
+      label: "API Key",
+      type: "password",
+      required: true,
+      placeholder: "sk-...",
+    },
   ],
   anthropic: [
-    { label: "API Key", type: "password", required: true, placeholder: "sk-ant-..." },
+    {
+      label: "API Key",
+      type: "password",
+      required: true,
+      placeholder: "sk-ant-...",
+    },
   ],
   perplexity: [
-    { label: "API Key", type: "password", required: true, placeholder: "pplx-..." },
+    {
+      label: "API Key",
+      type: "password",
+      required: true,
+      placeholder: "pplx-...",
+    },
   ],
   xai: [
     { label: "API Key", type: "password", required: true, placeholder: "..." },
   ],
   custom: [
     { label: "Key", type: "text", required: true, placeholder: "API Key Name" },
-    { label: "Value", type: "password", required: true, placeholder: "API Key Value" },
+    {
+      label: "Value",
+      type: "password",
+      required: true,
+      placeholder: "API Key Value",
+    },
   ],
 };
 
@@ -58,11 +87,11 @@ interface CredentialFormProps {
   credentialId?: number;
 }
 
-export function CredentialForm({ 
-  onSuccess, 
+export function CredentialForm({
+  onSuccess,
   defaultValues = { name: "", type: "", data: {} },
   isEditing = false,
-  credentialId 
+  credentialId,
 }: CredentialFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -76,18 +105,20 @@ export function CredentialForm({
   });
 
   // If editing, fetch the credential data
-  const { data: existingCredential, isLoading: isLoadingCredential } = useQuery({
-    queryKey: ["/api/credentials", credentialId],
-    queryFn: async () => {
-      if (!isEditing || !credentialId) return null;
-      const response = await fetch(`/api/credentials/${credentialId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch credential");
-      }
-      return response.json();
+  const { data: existingCredential, isLoading: isLoadingCredential } = useQuery(
+    {
+      queryKey: ["/api/credentials", credentialId],
+      queryFn: async () => {
+        if (!isEditing || !credentialId) return null;
+        const response = await fetch(`/api/credentials/${credentialId}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch credential");
+        }
+        return response.json();
+      },
+      enabled: isEditing && !!credentialId,
     },
-    enabled: isEditing && !!credentialId,
-  });
+  );
 
   // Update form when existing credential is loaded
   useEffect(() => {
@@ -127,7 +158,11 @@ export function CredentialForm({
   // Update mutation
   const updateCredential = useMutation({
     mutationFn: async (data: CredentialFormValues) => {
-      const res = await apiRequest("PATCH", `/api/credentials/${credentialId}`, data);
+      const res = await apiRequest(
+        "PATCH",
+        `/api/credentials/${credentialId}`,
+        data,
+      );
       return await res.json();
     },
     onSuccess: () => {
@@ -136,7 +171,9 @@ export function CredentialForm({
         description: "Your credential has been updated successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/credentials"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/credentials", credentialId] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/credentials", credentialId],
+      });
       if (onSuccess) onSuccess();
     },
     onError: (error: Error) => {
@@ -159,9 +196,9 @@ export function CredentialForm({
 
   // Toggle password visibility
   const togglePasswordVisibility = (fieldName: string) => {
-    setShowPassword(prev => ({
+    setShowPassword((prev) => ({
       ...prev,
-      [fieldName]: !prev[fieldName]
+      [fieldName]: !prev[fieldName],
     }));
   };
 
@@ -176,7 +213,9 @@ export function CredentialForm({
 
   // Determine the current form fields based on selected type
   const selectedType = form.watch("type");
-  const currentFields = selectedType ? credentialFormFields[selectedType] || [] : [];
+  const currentFields = selectedType
+    ? credentialFormFields[selectedType] || []
+    : [];
 
   return (
     <Form {...form}>
@@ -230,47 +269,48 @@ export function CredentialForm({
           )}
         />
 
-        {selectedType && currentFields.map((field, index) => (
-          <FormField
-            key={`${field.label}-${index}`}
-            control={form.control}
-            name={`data.${field.label.toLowerCase().replace(/ /g, '_')}`}
-            render={({ field: formField }) => (
-              <FormItem>
-                <FormLabel>{field.label}</FormLabel>
-                <div className="relative">
-                  <FormControl>
-                    <Input
-                      type={showPassword[field.label] ? "text" : field.type}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                      {...formField}
-                    />
-                  </FormControl>
-                  {field.type === "password" && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full px-3 py-2"
-                      onClick={() => togglePasswordVisibility(field.label)}
-                    >
-                      {showPassword[field.label] ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                  )}
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        ))}
+        {selectedType &&
+          currentFields.map((field, index) => (
+            <FormField
+              key={`${field.label}-${index}`}
+              control={form.control}
+              name={`data.${field.label.toLowerCase().replace(/ /g, "_")}`}
+              render={({ field: formField }) => (
+                <FormItem>
+                  <FormLabel>{field.label}</FormLabel>
+                  <div className="relative">
+                    <FormControl>
+                      <Input
+                        type={showPassword[field.label] ? "text" : field.type}
+                        placeholder={field.placeholder}
+                        required={field.required}
+                        {...formField}
+                      />
+                    </FormControl>
+                    {field.type === "password" && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 py-2"
+                        onClick={() => togglePasswordVisibility(field.label)}
+                      >
+                        {showPassword[field.label] ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ))}
 
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className="w-full"
           disabled={createCredential.isPending || updateCredential.isPending}
         >
@@ -279,8 +319,10 @@ export function CredentialForm({
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               {isEditing ? "Updating..." : "Creating..."}
             </>
+          ) : isEditing ? (
+            "Update Credential"
           ) : (
-            isEditing ? "Update Credential" : "Create Credential"
+            "Create Credential"
           )}
         </Button>
       </form>

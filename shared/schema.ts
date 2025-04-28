@@ -1,4 +1,13 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp, decimal } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  boolean,
+  jsonb,
+  timestamp,
+  decimal,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -41,16 +50,15 @@ export const agentTools = pgTable("agent_tools", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertAgentToolSchema = createInsertSchema(agentTools)
-  .pick({
-    name: true,
-    description: true,
-    category: true,
-    type: true,
-    config: true,
-    icon: true,
-    isActive: true,
-  });
+export const insertAgentToolSchema = createInsertSchema(agentTools).pick({
+  name: true,
+  description: true,
+  category: true,
+  type: true,
+  config: true,
+  icon: true,
+  isActive: true,
+});
 
 // Agent schema
 export const agents = pgTable("agents", {
@@ -68,17 +76,16 @@ export const agents = pgTable("agents", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertAgentSchema = createInsertSchema(agents)
-  .pick({
-    userId: true,
-    name: true,
-    description: true,
-    type: true,
-    icon: true,
-    isActive: true,
-    config: true,
-    tools: true,
-  });
+export const insertAgentSchema = createInsertSchema(agents).pick({
+  userId: true,
+  name: true,
+  description: true,
+  type: true,
+  icon: true,
+  isActive: true,
+  config: true,
+  tools: true,
+});
 
 // Credential schema
 export const credentials = pgTable("credentials", {
@@ -91,13 +98,12 @@ export const credentials = pgTable("credentials", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertCredentialSchema = createInsertSchema(credentials)
-  .pick({
-    userId: true,
-    name: true,
-    type: true,
-    data: true,
-  });
+export const insertCredentialSchema = createInsertSchema(credentials).pick({
+  userId: true,
+  name: true,
+  type: true,
+  data: true,
+});
 
 // File/Template schema
 export const files = pgTable("files", {
@@ -116,19 +122,18 @@ export const files = pgTable("files", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertFileSchema = createInsertSchema(files)
-  .pick({
-    userId: true,
-    name: true,
-    type: true,
-    contentType: true,
-    size: true,
-    path: true,
-    isTemplate: true,
-    templateType: true,
-    templateCategory: true,
-    description: true,
-  });
+export const insertFileSchema = createInsertSchema(files).pick({
+  userId: true,
+  name: true,
+  type: true,
+  contentType: true,
+  size: true,
+  path: true,
+  isTemplate: true,
+  templateType: true,
+  templateCategory: true,
+  description: true,
+});
 
 // Task schema
 export const tasks = pgTable("tasks", {
@@ -143,13 +148,12 @@ export const tasks = pgTable("tasks", {
   completedAt: timestamp("completed_at"),
 });
 
-export const insertTaskSchema = createInsertSchema(tasks)
-  .pick({
-    userId: true,
-    agentId: true,
-    title: true,
-    description: true,
-  });
+export const insertTaskSchema = createInsertSchema(tasks).pick({
+  userId: true,
+  agentId: true,
+  title: true,
+  description: true,
+});
 
 // Message schema (for task conversations)
 export const messages = pgTable("messages", {
@@ -160,13 +164,12 @@ export const messages = pgTable("messages", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
-export const insertMessageSchema = createInsertSchema(messages)
-  .pick({
-    taskId: true,
-    role: true,
-    content: true,
-    timestamp: true,
-  });
+export const insertMessageSchema = createInsertSchema(messages).pick({
+  taskId: true,
+  role: true,
+  content: true,
+  timestamp: true,
+});
 
 // Task-File relationship schema
 export const taskFiles = pgTable("task_files", {
@@ -176,11 +179,10 @@ export const taskFiles = pgTable("task_files", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertTaskFileSchema = createInsertSchema(taskFiles)
-  .pick({
-    taskId: true,
-    fileId: true,
-  });
+export const insertTaskFileSchema = createInsertSchema(taskFiles).pick({
+  taskId: true,
+  fileId: true,
+});
 
 // AI Provider schema (for admin)
 export const aiProviders = pgTable("ai_providers", {
@@ -195,15 +197,14 @@ export const aiProviders = pgTable("ai_providers", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertAiProviderSchema = createInsertSchema(aiProviders)
-  .pick({
-    name: true,
-    provider: true,
-    description: true,
-    baseUrl: true,
-    authType: true,
-    isActive: true,
-  });
+export const insertAiProviderSchema = createInsertSchema(aiProviders).pick({
+  name: true,
+  provider: true,
+  description: true,
+  baseUrl: true,
+  authType: true,
+  isActive: true,
+});
 
 // AI Model schema
 export const aiModels = pgTable("ai_models", {
@@ -223,20 +224,19 @@ export const aiModels = pgTable("ai_models", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertAiModelSchema = createInsertSchema(aiModels)
-  .pick({
-    providerId: true,
-    name: true,
-    modelId: true,
-    description: true,
-    capabilities: true, 
-    contextWindow: true,
-    maxOutputTokens: true,
-    costInputPerK: true,
-    costOutputPerK: true,
-    isActive: true,
-    isDefault: true,
-  });
+export const insertAiModelSchema = createInsertSchema(aiModels).pick({
+  providerId: true,
+  name: true,
+  modelId: true,
+  description: true,
+  capabilities: true,
+  contextWindow: true,
+  maxOutputTokens: true,
+  costInputPerK: true,
+  costOutputPerK: true,
+  isActive: true,
+  isDefault: true,
+});
 
 // AI Model Prompts schema
 export const aiPrompts = pgTable("ai_prompts", {
@@ -247,31 +247,38 @@ export const aiPrompts = pgTable("ai_prompts", {
   purpose: text("purpose").notNull(), // e.g., "email_writing", "code_generation", "general"
   systemPrompt: text("system_prompt").notNull(),
   defaultUserPrompt: text("default_user_prompt"),
-  temperature: decimal("temperature", { precision: 3, scale: 2 }).default("0.7"),
+  temperature: decimal("temperature", { precision: 3, scale: 2 }).default(
+    "0.7",
+  ),
   topP: decimal("top_p", { precision: 3, scale: 2 }).default("1.0"),
-  frequencyPenalty: decimal("frequency_penalty", { precision: 3, scale: 2 }).default("0.0"),
-  presencePenalty: decimal("presence_penalty", { precision: 3, scale: 2 }).default("0.0"),
+  frequencyPenalty: decimal("frequency_penalty", {
+    precision: 3,
+    scale: 2,
+  }).default("0.0"),
+  presencePenalty: decimal("presence_penalty", {
+    precision: 3,
+    scale: 2,
+  }).default("0.0"),
   isActive: boolean("is_active").default(true).notNull(),
   isDefault: boolean("is_default").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertAiPromptSchema = createInsertSchema(aiPrompts)
-  .pick({
-    modelId: true,
-    name: true,
-    description: true,
-    purpose: true,
-    systemPrompt: true,
-    defaultUserPrompt: true,
-    temperature: true,
-    topP: true,
-    frequencyPenalty: true,
-    presencePenalty: true,
-    isActive: true,
-    isDefault: true,
-  });
+export const insertAiPromptSchema = createInsertSchema(aiPrompts).pick({
+  modelId: true,
+  name: true,
+  description: true,
+  purpose: true,
+  systemPrompt: true,
+  defaultUserPrompt: true,
+  temperature: true,
+  topP: true,
+  frequencyPenalty: true,
+  presencePenalty: true,
+  isActive: true,
+  isDefault: true,
+});
 
 // Subscription Plan schema
 export const plans = pgTable("plans", {
@@ -283,14 +290,13 @@ export const plans = pgTable("plans", {
   isActive: boolean("is_active").default(true).notNull(),
 });
 
-export const insertPlanSchema = createInsertSchema(plans)
-  .pick({
-    name: true,
-    price: true,
-    interval: true,
-    features: true,
-    isActive: true,
-  });
+export const insertPlanSchema = createInsertSchema(plans).pick({
+  name: true,
+  price: true,
+  interval: true,
+  features: true,
+  isActive: true,
+});
 
 // Type exports
 export type User = typeof users.$inferSelect;
@@ -337,14 +343,15 @@ export const userActivities = pgTable("user_activities", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertUserActivitySchema = createInsertSchema(userActivities)
-  .pick({
+export const insertUserActivitySchema = createInsertSchema(userActivities).pick(
+  {
     userId: true,
     activityType: true,
     resourceId: true,
     resourceType: true,
     metadata: true,
-  });
+  },
+);
 
 // User Dashboard Preferences schema
 export const dashboardPreferences = pgTable("dashboard_preferences", {
@@ -358,15 +365,16 @@ export const dashboardPreferences = pgTable("dashboard_preferences", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertDashboardPreferenceSchema = createInsertSchema(dashboardPreferences)
-  .pick({
-    userId: true,
-    layout: true,
-    favoriteAgents: true,
-    recentTasks: true,
-    widgets: true,
-    theme: true,
-  });
+export const insertDashboardPreferenceSchema = createInsertSchema(
+  dashboardPreferences,
+).pick({
+  userId: true,
+  layout: true,
+  favoriteAgents: true,
+  recentTasks: true,
+  widgets: true,
+  theme: true,
+});
 
 // Analytics schema (for user insights)
 export const analytics = pgTable("analytics", {
@@ -386,21 +394,20 @@ export const analytics = pgTable("analytics", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertAnalyticsSchema = createInsertSchema(analytics)
-  .pick({
-    userId: true,
-    period: true,
-    periodStart: true,
-    periodEnd: true,
-    taskCount: true,
-    successfulTaskCount: true,
-    failedTaskCount: true,
-    tokenUsage: true,
-    mostUsedAgentId: true,
-    mostUsedToolType: true,
-    averageCompletionTime: true,
-    metadata: true,
-  });
+export const insertAnalyticsSchema = createInsertSchema(analytics).pick({
+  userId: true,
+  period: true,
+  periodStart: true,
+  periodEnd: true,
+  taskCount: true,
+  successfulTaskCount: true,
+  failedTaskCount: true,
+  tokenUsage: true,
+  mostUsedAgentId: true,
+  mostUsedToolType: true,
+  averageCompletionTime: true,
+  metadata: true,
+});
 
 export type Plan = typeof plans.$inferSelect;
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
@@ -409,7 +416,9 @@ export type UserActivity = typeof userActivities.$inferSelect;
 export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
 
 export type DashboardPreference = typeof dashboardPreferences.$inferSelect;
-export type InsertDashboardPreference = z.infer<typeof insertDashboardPreferenceSchema>;
+export type InsertDashboardPreference = z.infer<
+  typeof insertDashboardPreferenceSchema
+>;
 
 export type Analytics = typeof analytics.$inferSelect;
 export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;

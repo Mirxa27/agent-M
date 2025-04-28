@@ -1,5 +1,5 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
 import * as schema from "@shared/schema";
 
@@ -21,12 +21,12 @@ export const pool = new Pool({
 });
 
 // Log connection events for monitoring
-pool.on('connect', (client) => {
-  console.log('New database connection established');
+pool.on("connect", (client) => {
+  console.log("New database connection established");
 });
 
-pool.on('error', (err) => {
-  console.error('Unexpected database connection error:', err);
+pool.on("error", (err) => {
+  console.error("Unexpected database connection error:", err);
 });
 
 // Initialize Drizzle ORM with the connection pool and schema
@@ -37,19 +37,19 @@ export async function checkDatabaseConnection() {
   try {
     const client = await pool.connect();
     client.release();
-    console.log('Database connection successful');
+    console.log("Database connection successful");
     return true;
   } catch (error) {
-    console.error('Database connection failed:', error);
+    console.error("Database connection failed:", error);
     return false;
   }
 }
 
 // Handle graceful shutdown to close database connections properly
-process.on('SIGINT', async () => {
-  console.log('Closing database pool connections...');
+process.on("SIGINT", async () => {
+  console.log("Closing database pool connections...");
   await pool.end();
-  console.log('Database pool connections closed');
+  console.log("Database pool connections closed");
   process.exit(0);
 });
 

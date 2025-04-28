@@ -7,28 +7,53 @@ import { Agent, AiModel, AiPrompt } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { 
-  Bot, 
-  Sparkles, 
-  FileText, 
-  Settings, 
-  Timer, 
-  BrainCircuit, 
-  MessageSquare 
+import {
+  Bot,
+  Sparkles,
+  FileText,
+  Settings,
+  Timer,
+  BrainCircuit,
+  MessageSquare,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 
 // Define form schema for agent
@@ -40,19 +65,21 @@ const agentFormSchema = z.object({
   isActive: z.boolean().default(true),
   modelId: z.coerce.number(),
   promptId: z.coerce.number().optional(),
-  config: z.object({
-    maxTokens: z.coerce.number().default(1000),
-    temperature: z.coerce.number().min(0).max(2).default(0.7),
-    topP: z.coerce.number().min(0).max(1).default(1.0),
-    frequencyPenalty: z.coerce.number().min(0).max(2).default(0),
-    presencePenalty: z.coerce.number().min(0).max(2).default(0),
-    autoRetry: z.boolean().default(true),
-    maxRetries: z.coerce.number().default(3),
-    useFiles: z.boolean().default(false),
-    useCredentials: z.boolean().default(false),
-    advancedMode: z.boolean().default(false),
-    customSystemPrompt: z.string().optional(),
-  }).optional(),
+  config: z
+    .object({
+      maxTokens: z.coerce.number().default(1000),
+      temperature: z.coerce.number().min(0).max(2).default(0.7),
+      topP: z.coerce.number().min(0).max(1).default(1.0),
+      frequencyPenalty: z.coerce.number().min(0).max(2).default(0),
+      presencePenalty: z.coerce.number().min(0).max(2).default(0),
+      autoRetry: z.boolean().default(true),
+      maxRetries: z.coerce.number().default(3),
+      useFiles: z.boolean().default(false),
+      useCredentials: z.boolean().default(false),
+      advancedMode: z.boolean().default(false),
+      customSystemPrompt: z.string().optional(),
+    })
+    .optional(),
 });
 
 type AgentFormValues = z.infer<typeof agentFormSchema>;
@@ -62,7 +89,7 @@ export default function AgentCreator() {
   const [selectedType, setSelectedType] = useState<string>("assistant");
   const [advancedMode, setAdvancedMode] = useState(false);
   const [, navigate] = useLocation();
-  
+
   const queryClient = useQueryClient();
 
   // Fetch AI models
@@ -75,7 +102,7 @@ export default function AgentCreator() {
         throw new Error(error.message || "Failed to fetch AI models");
       }
       return res.json();
-    }
+    },
   });
 
   // Fetch AI prompts
@@ -88,7 +115,7 @@ export default function AgentCreator() {
         throw new Error(error.message || "Failed to fetch AI prompts");
       }
       return res.json();
-    }
+    },
   });
 
   // Create agent mutation
@@ -115,7 +142,7 @@ export default function AgentCreator() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Setup form
@@ -139,29 +166,31 @@ export default function AgentCreator() {
         useCredentials: false,
         advancedMode: false,
         customSystemPrompt: "",
-      }
-    }
+      },
+    },
   });
 
   // Get filtered prompts that match the selected model and agent type
   const filteredPrompts = prompts.filter((prompt) => {
     const modelId = form.watch("modelId");
     const type = form.watch("type");
-    
+
     if (!modelId) return false;
-    
+
     return prompt.modelId === modelId && prompt.purpose === type;
   });
 
   // Get default prompt for selected type and model
-  const defaultPrompt = filteredPrompts.find(prompt => prompt.isDefault);
+  const defaultPrompt = filteredPrompts.find((prompt) => prompt.isDefault);
 
   // Reset prompt when model or type changes
   const resetPromptOnChange = (modelId: number, type: string) => {
     // Find default prompt for this model and type
-    const matchingPrompts = prompts.filter(p => p.modelId === modelId && p.purpose === type);
-    const defaultPrompt = matchingPrompts.find(p => p.isDefault);
-    
+    const matchingPrompts = prompts.filter(
+      (p) => p.modelId === modelId && p.purpose === type,
+    );
+    const defaultPrompt = matchingPrompts.find((p) => p.isDefault);
+
     if (defaultPrompt) {
       form.setValue("promptId", defaultPrompt.id);
     } else if (matchingPrompts.length > 0) {
@@ -180,7 +209,7 @@ export default function AgentCreator() {
   const handleTypeChange = (value: string) => {
     setSelectedType(value);
     form.setValue("type", value as any);
-    
+
     // Reset prompt based on new type
     resetPromptOnChange(form.getValues("modelId"), value);
   };
@@ -249,7 +278,10 @@ export default function AgentCreator() {
                   <BrainCircuit className="h-4 w-4" />
                   <span>AI Configuration</span>
                 </TabsTrigger>
-                <TabsTrigger value="advanced" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="advanced"
+                  className="flex items-center gap-2"
+                >
                   <Settings className="h-4 w-4" />
                   <span>Advanced Options</span>
                 </TabsTrigger>
@@ -378,7 +410,10 @@ export default function AgentCreator() {
                         <Select
                           onValueChange={(value) => {
                             field.onChange(parseInt(value));
-                            resetPromptOnChange(parseInt(value), form.getValues("type"));
+                            resetPromptOnChange(
+                              parseInt(value),
+                              form.getValues("type"),
+                            );
                           }}
                           value={field.value?.toString()}
                         >
@@ -389,12 +424,17 @@ export default function AgentCreator() {
                           </FormControl>
                           <SelectContent>
                             {isLoadingModels ? (
-                              <div className="p-2 text-center">Loading models...</div>
+                              <div className="p-2 text-center">
+                                Loading models...
+                              </div>
                             ) : (
                               models
-                                .filter(model => model.isActive)
+                                .filter((model) => model.isActive)
                                 .map((model) => (
-                                  <SelectItem key={model.id} value={model.id.toString()}>
+                                  <SelectItem
+                                    key={model.id}
+                                    value={model.id.toString()}
+                                  >
                                     {model.name}
                                   </SelectItem>
                                 ))
@@ -416,22 +456,35 @@ export default function AgentCreator() {
                       <FormItem>
                         <FormLabel>System Prompt</FormLabel>
                         <Select
-                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          onValueChange={(value) =>
+                            field.onChange(parseInt(value))
+                          }
                           value={field.value?.toString()}
-                          disabled={!form.watch("modelId") || filteredPrompts.length === 0}
+                          disabled={
+                            !form.watch("modelId") ||
+                            filteredPrompts.length === 0
+                          }
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder={defaultPrompt ? `Default ${selectedType} prompt` : "Select a prompt"} />
+                              <SelectValue
+                                placeholder={
+                                  defaultPrompt
+                                    ? `Default ${selectedType} prompt`
+                                    : "Select a prompt"
+                                }
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             {isLoadingPrompts ? (
-                              <div className="p-2 text-center">Loading prompts...</div>
+                              <div className="p-2 text-center">
+                                Loading prompts...
+                              </div>
                             ) : (
                               filteredPrompts.map((prompt) => (
-                                <SelectItem 
-                                  key={prompt.id} 
+                                <SelectItem
+                                  key={prompt.id}
                                   value={prompt.id.toString()}
                                 >
                                   <div className="flex items-center gap-2">
@@ -443,13 +496,15 @@ export default function AgentCreator() {
                                 </SelectItem>
                               ))
                             )}
-                            {form.watch("modelId") && filteredPrompts.length === 0 && (
-                              <div className="p-2 text-center text-sm text-muted-foreground">
-                                No prompts available for this model and agent type.
-                                <br />
-                                Use advanced mode to customize.
-                              </div>
-                            )}
+                            {form.watch("modelId") &&
+                              filteredPrompts.length === 0 && (
+                                <div className="p-2 text-center text-sm text-muted-foreground">
+                                  No prompts available for this model and agent
+                                  type.
+                                  <br />
+                                  Use advanced mode to customize.
+                                </div>
+                              )}
                           </SelectContent>
                         </Select>
                         <FormDescription>
@@ -490,7 +545,8 @@ export default function AgentCreator() {
                               />
                             </FormControl>
                             <FormDescription>
-                              Write a custom system prompt that defines your agent's behavior.
+                              Write a custom system prompt that defines your
+                              agent's behavior.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -503,7 +559,9 @@ export default function AgentCreator() {
                           name="config.temperature"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Temperature: {field.value.toFixed(1)}</FormLabel>
+                              <FormLabel>
+                                Temperature: {field.value.toFixed(1)}
+                              </FormLabel>
                               <FormControl>
                                 <Slider
                                   min={0}
@@ -511,11 +569,14 @@ export default function AgentCreator() {
                                   step={0.1}
                                   className={`${getTemperatureColor(field.value)}`}
                                   value={[field.value]}
-                                  onValueChange={(vals) => field.onChange(vals[0])}
+                                  onValueChange={(vals) =>
+                                    field.onChange(vals[0])
+                                  }
                                 />
                               </FormControl>
                               <FormDescription>
-                                Higher values increase creativity (but may reduce accuracy)
+                                Higher values increase creativity (but may
+                                reduce accuracy)
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -527,14 +588,18 @@ export default function AgentCreator() {
                           name="config.topP"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Top P: {field.value.toFixed(1)}</FormLabel>
+                              <FormLabel>
+                                Top P: {field.value.toFixed(1)}
+                              </FormLabel>
                               <FormControl>
                                 <Slider
                                   min={0.1}
                                   max={1}
                                   step={0.1}
                                   value={[field.value]}
-                                  onValueChange={(vals) => field.onChange(vals[0])}
+                                  onValueChange={(vals) =>
+                                    field.onChange(vals[0])
+                                  }
                                 />
                               </FormControl>
                               <FormDescription>
@@ -557,7 +622,9 @@ export default function AgentCreator() {
                                   max={4000}
                                   step={100}
                                   value={[field.value]}
-                                  onValueChange={(vals) => field.onChange(vals[0])}
+                                  onValueChange={(vals) =>
+                                    field.onChange(vals[0])
+                                  }
                                 />
                               </FormControl>
                               <FormDescription>
@@ -574,14 +641,18 @@ export default function AgentCreator() {
                             name="config.frequencyPenalty"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Frequency Penalty: {field.value.toFixed(1)}</FormLabel>
+                                <FormLabel>
+                                  Frequency Penalty: {field.value.toFixed(1)}
+                                </FormLabel>
                                 <FormControl>
                                   <Slider
                                     min={0}
                                     max={2}
                                     step={0.1}
                                     value={[field.value]}
-                                    onValueChange={(vals) => field.onChange(vals[0])}
+                                    onValueChange={(vals) =>
+                                      field.onChange(vals[0])
+                                    }
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -594,14 +665,18 @@ export default function AgentCreator() {
                             name="config.presencePenalty"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Presence Penalty: {field.value.toFixed(1)}</FormLabel>
+                                <FormLabel>
+                                  Presence Penalty: {field.value.toFixed(1)}
+                                </FormLabel>
                                 <FormControl>
                                   <Slider
                                     min={0}
                                     max={2}
                                     step={0.1}
                                     value={[field.value]}
-                                    onValueChange={(vals) => field.onChange(vals[0])}
+                                    onValueChange={(vals) =>
+                                      field.onChange(vals[0])
+                                    }
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -624,7 +699,9 @@ export default function AgentCreator() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                           <div className="space-y-0.5">
-                            <FormLabel className="text-base">File Access</FormLabel>
+                            <FormLabel className="text-base">
+                              File Access
+                            </FormLabel>
                             <FormDescription>
                               Allow agent to read and use uploaded files
                             </FormDescription>
@@ -645,7 +722,9 @@ export default function AgentCreator() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                           <div className="space-y-0.5">
-                            <FormLabel className="text-base">Credential Access</FormLabel>
+                            <FormLabel className="text-base">
+                              Credential Access
+                            </FormLabel>
                             <FormDescription>
                               Allow agent to use stored credentials
                             </FormDescription>
@@ -668,7 +747,9 @@ export default function AgentCreator() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                           <div className="space-y-0.5">
-                            <FormLabel className="text-base">Auto Retry</FormLabel>
+                            <FormLabel className="text-base">
+                              Auto Retry
+                            </FormLabel>
                             <FormDescription>
                               Automatically retry failed agent tasks
                             </FormDescription>
@@ -689,7 +770,9 @@ export default function AgentCreator() {
                       render={({ field }) => (
                         <FormItem className="flex flex-col justify-between rounded-lg border p-4 h-full">
                           <div className="space-y-0.5">
-                            <FormLabel className="text-base">Max Retries</FormLabel>
+                            <FormLabel className="text-base">
+                              Max Retries
+                            </FormLabel>
                             <FormDescription>
                               Maximum number of automatic retry attempts
                             </FormDescription>
@@ -701,7 +784,9 @@ export default function AgentCreator() {
                                 min={0}
                                 max={10}
                                 {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                onChange={(e) =>
+                                  field.onChange(parseInt(e.target.value))
+                                }
                                 disabled={!form.watch("config.autoRetry")}
                               />
                             </FormControl>
@@ -717,7 +802,9 @@ export default function AgentCreator() {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-base">Active Status</FormLabel>
+                          <FormLabel className="text-base">
+                            Active Status
+                          </FormLabel>
                           <FormDescription>
                             Enable or disable this agent
                           </FormDescription>
@@ -766,10 +853,7 @@ export default function AgentCreator() {
                   Next
                 </Button>
               ) : (
-                <Button
-                  type="submit"
-                  disabled={createAgentMutation.isPending}
-                >
+                <Button type="submit" disabled={createAgentMutation.isPending}>
                   {createAgentMutation.isPending && (
                     <Timer className="mr-2 h-4 w-4 animate-spin" />
                   )}

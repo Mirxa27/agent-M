@@ -4,29 +4,29 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import { AuthProvider } from "@/hooks/use-auth";
 import { AppRoutes } from "@/components/router/app-routes";
 
 function App() {
   const { i18n } = useTranslation();
-  
+
   // Create a language change handler that updates the HTML element's class
   const handleLanguageChange = (lng: string) => {
-    document.documentElement.className = lng.startsWith('ar') ? 'rtl' : 'ltr';
+    document.documentElement.className = lng.startsWith("ar") ? "rtl" : "ltr";
   };
 
   // Set initial direction based on current language
   useEffect(() => {
     const currentLng = i18n.language;
     handleLanguageChange(currentLng);
-    
+
     // Add language change listener
-    i18n.on('languageChanged', handleLanguageChange);
-    
+    i18n.on("languageChanged", handleLanguageChange);
+
     // Cleanup
     return () => {
-      i18n.off('languageChanged', handleLanguageChange);
+      i18n.off("languageChanged", handleLanguageChange);
     };
   }, [i18n]);
 

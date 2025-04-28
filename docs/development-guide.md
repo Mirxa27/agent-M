@@ -29,33 +29,39 @@ This guide is designed to help developers understand the Mirxa AI Platform codeb
 ### Setup Steps
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/yourusername/mirxa-ai.git
    cd mirxa-ai
    ```
 
 2. Install dependencies:
+
    ```
    npm install
    ```
 
 3. Create a `.env` file in the root directory:
+
    ```
    DATABASE_URL=postgresql://username:password@localhost:5432/mirxa
    SESSION_SECRET=your_local_development_secret
    ```
 
 4. Initialize the database:
+
    ```
    npm run db:push
    ```
 
 5. Create an admin user:
+
    ```
    node create-admin.js
    ```
 
 6. Start the development server:
+
    ```
    npm run dev
    ```
@@ -65,6 +71,7 @@ This guide is designed to help developers understand the Mirxa AI Platform codeb
 ### Development Tools
 
 - **VS Code**: Recommended editor with the following extensions:
+
   - ESLint
   - Prettier
   - TypeScript
@@ -216,6 +223,7 @@ The backend uses a centralized error handling middleware that:
 The database schema is defined in `shared/schema.ts` using Drizzle ORM.
 
 Key tables include:
+
 - `users`: User accounts and profile information
 - `plans`: Subscription plans and features
 - `agents`: AI agent configurations
@@ -245,13 +253,13 @@ await db.transaction(async (tx) => {
   await tx.insert(tasks).values({
     title: "New Task",
     userId: 1,
-    agentId: 2
+    agentId: 2,
   });
-  
+
   await tx.insert(messages).values({
     taskId: taskId,
     role: "user",
-    content: "Initial message"
+    content: "Initial message",
   });
 });
 ```
@@ -263,6 +271,7 @@ await db.transaction(async (tx) => {
 Unit tests are written with Vitest and React Testing Library.
 
 To run unit tests:
+
 ```
 npm run test
 ```
@@ -272,6 +281,7 @@ npm run test
 Integration tests are written with Supertest for API testing.
 
 To run integration tests:
+
 ```
 npm run test:integration
 ```
@@ -281,6 +291,7 @@ npm run test:integration
 End-to-end tests are written with Playwright.
 
 To run e2e tests:
+
 ```
 npm run test:e2e
 ```
@@ -298,6 +309,7 @@ npm run test:e2e
 ### Build Process
 
 The application is built for production using:
+
 ```
 npm run build
 ```

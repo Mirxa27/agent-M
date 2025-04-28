@@ -66,20 +66,22 @@ export default function AiProvidersPanel() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<AiProvider | null>(null);
-  
+  const [selectedProvider, setSelectedProvider] = useState<AiProvider | null>(
+    null,
+  );
+
   const queryClient = useQueryClient();
 
   // Fetch all AI providers
-  const { 
-    data: providers = [], 
+  const {
+    data: providers = [],
     isLoading,
-    error 
+    error,
   } = useQuery({
     queryKey: ["/api/admin/ai-providers"],
     queryFn: async () => {
       return await apiRequest("GET", "/api/admin/ai-providers");
-    }
+    },
   });
 
   // Create provider mutation
@@ -100,7 +102,7 @@ export default function AiProvidersPanel() {
         provider: "",
         isActive: true,
         baseUrl: "",
-        authType: "apiKey"
+        authType: "apiKey",
       });
     },
     onError: (error) => {
@@ -109,13 +111,23 @@ export default function AiProvidersPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Update provider mutation
   const updateProviderMutation = useMutation({
-    mutationFn: async ({ id, provider }: { id: number, provider: Partial<ProviderFormValues> }) => {
-      return await apiRequest("PATCH", `/api/admin/ai-providers/${id}`, provider);
+    mutationFn: async ({
+      id,
+      provider,
+    }: {
+      id: number;
+      provider: Partial<ProviderFormValues>;
+    }) => {
+      return await apiRequest(
+        "PATCH",
+        `/api/admin/ai-providers/${id}`,
+        provider,
+      );
     },
     onSuccess: () => {
       toast({
@@ -131,7 +143,7 @@ export default function AiProvidersPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete provider mutation
@@ -154,7 +166,7 @@ export default function AiProvidersPanel() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Create form
@@ -166,8 +178,8 @@ export default function AiProvidersPanel() {
       provider: "",
       isActive: true,
       baseUrl: "",
-      authType: "apiKey"
-    }
+      authType: "apiKey",
+    },
   });
 
   // Edit form
@@ -179,8 +191,8 @@ export default function AiProvidersPanel() {
       provider: "",
       isActive: true,
       baseUrl: "",
-      authType: "apiKey"
-    }
+      authType: "apiKey",
+    },
   });
 
   // Handle create submission
@@ -191,9 +203,9 @@ export default function AiProvidersPanel() {
   // Handle edit submission
   const onEditSubmit = (values: ProviderFormValues) => {
     if (selectedProvider) {
-      updateProviderMutation.mutate({ 
-        id: selectedProvider.id, 
-        provider: values
+      updateProviderMutation.mutate({
+        id: selectedProvider.id,
+        provider: values,
       });
     }
   };
@@ -214,7 +226,7 @@ export default function AiProvidersPanel() {
       provider: provider.provider,
       isActive: provider.isActive,
       baseUrl: provider.baseUrl,
-      authType: provider.authType
+      authType: provider.authType,
     });
     setIsEditDialogOpen(true);
   };
@@ -226,10 +238,12 @@ export default function AiProvidersPanel() {
   };
 
   // Filter providers by search query
-  const filteredProviders = providers.filter(provider => 
-    provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    provider.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (provider.description && provider.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredProviders = providers.filter(
+    (provider) =>
+      provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      provider.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (provider.description &&
+        provider.description.toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
   if (error) {
@@ -240,7 +254,8 @@ export default function AiProvidersPanel() {
         </CardHeader>
         <CardContent>
           <div className="text-red-500">
-            Error loading AI providers: {error instanceof Error ? error.message : "Unknown error"}
+            Error loading AI providers:{" "}
+            {error instanceof Error ? error.message : "Unknown error"}
           </div>
         </CardContent>
       </Card>
@@ -295,20 +310,29 @@ export default function AiProvidersPanel() {
                 <TableBody>
                   {filteredProviders.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                        {searchQuery ? "No providers match your search" : "No AI providers found"}
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-6 text-muted-foreground"
+                      >
+                        {searchQuery
+                          ? "No providers match your search"
+                          : "No AI providers found"}
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredProviders.map((provider) => (
                       <TableRow key={provider.id}>
-                        <TableCell className="font-medium">{provider.name}</TableCell>
+                        <TableCell className="font-medium">
+                          {provider.name}
+                        </TableCell>
                         <TableCell>{provider.provider}</TableCell>
                         <TableCell className="max-w-xs truncate">
                           {provider.description || "-"}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={provider.isActive ? "success" : "outline"}>
+                          <Badge
+                            variant={provider.isActive ? "success" : "outline"}
+                          >
                             {provider.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
@@ -351,7 +375,10 @@ export default function AiProvidersPanel() {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onCreateSubmit)} className="space-y-6">
+            <form
+              onSubmit={form.handleSubmit(onCreateSubmit)}
+              className="space-y-6"
+            >
               <FormField
                 control={form.control}
                 name="name"
@@ -368,7 +395,7 @@ export default function AiProvidersPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="provider"
@@ -379,13 +406,14 @@ export default function AiProvidersPanel() {
                       <Input placeholder="e.g., openai" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Unique identifier used in the system (lowercase, no spaces)
+                      Unique identifier used in the system (lowercase, no
+                      spaces)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="description"
@@ -393,9 +421,9 @@ export default function AiProvidersPanel() {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Description of the AI provider" 
-                        {...field} 
+                      <Textarea
+                        placeholder="Description of the AI provider"
+                        {...field}
                         value={field.value || ""}
                       />
                     </FormControl>
@@ -403,7 +431,7 @@ export default function AiProvidersPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -411,8 +439,8 @@ export default function AiProvidersPanel() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Authentication Type</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -431,7 +459,7 @@ export default function AiProvidersPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="baseUrl"
@@ -439,9 +467,9 @@ export default function AiProvidersPanel() {
                     <FormItem>
                       <FormLabel>Base URL (Optional)</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="e.g., https://api.example.com/v1" 
-                          {...field} 
+                        <Input
+                          placeholder="e.g., https://api.example.com/v1"
+                          {...field}
                           value={field.value || ""}
                         />
                       </FormControl>
@@ -450,7 +478,7 @@ export default function AiProvidersPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="isActive"
@@ -471,17 +499,17 @@ export default function AiProvidersPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsCreateDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={createProviderMutation.isPending}
                 >
                   {createProviderMutation.isPending && (
@@ -505,7 +533,10 @@ export default function AiProvidersPanel() {
             </DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
+            <form
+              onSubmit={editForm.handleSubmit(onEditSubmit)}
+              className="space-y-6"
+            >
               <FormField
                 control={editForm.control}
                 name="name"
@@ -522,7 +553,7 @@ export default function AiProvidersPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={editForm.control}
                 name="provider"
@@ -533,13 +564,14 @@ export default function AiProvidersPanel() {
                       <Input placeholder="e.g., openai" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Unique identifier used in the system (lowercase, no spaces)
+                      Unique identifier used in the system (lowercase, no
+                      spaces)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={editForm.control}
                 name="description"
@@ -547,9 +579,9 @@ export default function AiProvidersPanel() {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Description of the AI provider" 
-                        {...field} 
+                      <Textarea
+                        placeholder="Description of the AI provider"
+                        {...field}
                         value={field.value || ""}
                       />
                     </FormControl>
@@ -557,7 +589,7 @@ export default function AiProvidersPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={editForm.control}
@@ -565,8 +597,8 @@ export default function AiProvidersPanel() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Authentication Type</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -585,7 +617,7 @@ export default function AiProvidersPanel() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="baseUrl"
@@ -593,9 +625,9 @@ export default function AiProvidersPanel() {
                     <FormItem>
                       <FormLabel>Base URL (Optional)</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="e.g., https://api.example.com/v1" 
-                          {...field} 
+                        <Input
+                          placeholder="e.g., https://api.example.com/v1"
+                          {...field}
                           value={field.value || ""}
                         />
                       </FormControl>
@@ -604,7 +636,7 @@ export default function AiProvidersPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={editForm.control}
                 name="isActive"
@@ -625,17 +657,17 @@ export default function AiProvidersPanel() {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsEditDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={updateProviderMutation.isPending}
                 >
                   {updateProviderMutation.isPending && (
@@ -655,8 +687,9 @@ export default function AiProvidersPanel() {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the provider "{selectedProvider?.name}"? 
-              This action cannot be undone and will remove all associated AI models.
+              Are you sure you want to delete the provider "
+              {selectedProvider?.name}"? This action cannot be undone and will
+              remove all associated AI models.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">

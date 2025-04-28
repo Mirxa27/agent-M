@@ -1,5 +1,9 @@
 import React, { useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
@@ -9,7 +13,11 @@ interface ColorPickerProps {
   label?: string;
 }
 
-export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label }) => {
+export const ColorPicker: React.FC<ColorPickerProps> = ({
+  value,
+  onChange,
+  label,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,13 +29,13 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label
       {label && <Label>{label}</Label>}
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full justify-start"
             onClick={() => setIsOpen(true)}
           >
-            <div 
-              className="w-4 h-4 rounded mr-2" 
+            <div
+              className="w-4 h-4 rounded mr-2"
               style={{ backgroundColor: value }}
             />
             {value}

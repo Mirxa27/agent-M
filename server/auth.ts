@@ -78,19 +78,23 @@ export function setupAuth(app: Express) {
       // Validate the request body
       const validatedData = insertUserSchema.safeParse(req.body);
       if (!validatedData.success) {
-        return res.status(400).json({ 
-          error: "Validation failed", 
-          details: validatedData.error.format() 
+        return res.status(400).json({
+          error: "Validation failed",
+          details: validatedData.error.format(),
         });
       }
 
       // Check if username or email already exists
-      const existingUsername = await storage.getUserByUsername(validatedData.data.username);
+      const existingUsername = await storage.getUserByUsername(
+        validatedData.data.username,
+      );
       if (existingUsername) {
         return res.status(400).json({ error: "Username already exists" });
       }
 
-      const existingEmail = await storage.getUserByEmail(validatedData.data.email);
+      const existingEmail = await storage.getUserByEmail(
+        validatedData.data.email,
+      );
       if (existingEmail) {
         return res.status(400).json({ error: "Email already exists" });
       }
@@ -124,10 +128,10 @@ export function setupAuth(app: Express) {
       if (!user) {
         return res.status(401).json({ error: "Invalid username or password" });
       }
-      
+
       req.login(user, (err) => {
         if (err) return next(err);
-        
+
         // Remove password from response
         const { password, ...userWithoutPassword } = user;
         res.status(200).json(userWithoutPassword);
@@ -148,7 +152,7 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Not authenticated" });
     }
-    
+
     // Remove password from response
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);

@@ -24,59 +24,55 @@ export function LoadingScreen({
 }: LoadingScreenProps) {
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
       opacity: 1,
-      transition: { 
+      transition: {
         duration: 0.3,
         when: "beforeChildren",
-        staggerChildren: 0.2
-      }
-    }
+        staggerChildren: 0.2,
+      },
+    },
   };
 
   const textVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { duration: 0.5 }
-    }
+      transition: { duration: 0.5 },
+    },
   };
 
   if (variant === "inline") {
     return (
-      <div className={cn("flex items-center justify-center p-4", className)} {...props}>
-        <AnimatedLoader 
-          variant={loaderVariant} 
-          size="sm"
-          text={text}
-        />
+      <div
+        className={cn("flex items-center justify-center p-4", className)}
+        {...props}
+      >
+        <AnimatedLoader variant={loaderVariant} size="sm" text={text} />
       </div>
     );
   }
 
   return (
-    <motion.div 
+    <motion.div
       className={cn(
-        "flex flex-col items-center justify-center", 
+        "flex flex-col items-center justify-center",
         variant === "fullscreen" ? "fixed inset-0 z-50 bg-background" : "h-96",
-        className
+        className,
       )}
       initial="hidden"
       animate="visible"
       variants={containerVariants}
       {...props}
     >
-      <AnimatedLoader 
-        variant={loaderVariant} 
-        size={loaderSize}
-      />
-      
-      <motion.div 
+      <AnimatedLoader variant={loaderVariant} size={loaderSize} />
+
+      <motion.div
         className="mt-8 text-center space-y-4"
         variants={textVariants}
       >
-        <motion.h2 
+        <motion.h2
           className="text-xl font-medium text-foreground"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -84,10 +80,10 @@ export function LoadingScreen({
         >
           {text}
         </motion.h2>
-        
+
         {showProgress && (
           <div className="w-64 h-2 bg-muted rounded-full overflow-hidden">
-            <motion.div 
+            <motion.div
               className="h-full bg-primary"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}

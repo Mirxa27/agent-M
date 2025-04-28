@@ -2,30 +2,67 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Agent } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, Bot, Trash2, Settings, PlayCircle, MoreHorizontal, Activity, Code } from "lucide-react";
-import { 
-  Dialog, 
-  DialogTrigger, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import {
+  PlusCircle,
+  Bot,
+  Trash2,
+  Settings,
+  PlayCircle,
+  MoreHorizontal,
+  Activity,
+  Code,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format, formatDistanceToNow } from "date-fns";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage, Form } from "@/components/ui/form";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+  Form,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -57,16 +94,13 @@ export default function AgentsPage() {
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
 
   // Fetch agents
-  const { 
-    data: agents,
-    isLoading 
-  } = useQuery({
+  const { data: agents, isLoading } = useQuery({
     queryKey: ["/api/agents"],
     queryFn: async () => {
       const res = await fetch("/api/agents");
       if (!res.ok) throw new Error("Failed to fetch agents");
       return res.json() as Promise<Agent[]>;
-    }
+    },
   });
 
   // Create agent mutation
@@ -94,17 +128,27 @@ export default function AgentsPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Update agent mutation
   const updateAgentMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number, data: z.infer<typeof agentSchema> }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: z.infer<typeof agentSchema>;
+    }) => {
       const transformedData = {
         ...data,
         config: data.config ? JSON.parse(data.config) : {},
       };
-      const res = await apiRequest("PATCH", `/api/agents/${id}`, transformedData);
+      const res = await apiRequest(
+        "PATCH",
+        `/api/agents/${id}`,
+        transformedData,
+      );
       return res.json();
     },
     onSuccess: () => {
@@ -123,7 +167,7 @@ export default function AgentsPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete agent mutation
@@ -146,7 +190,7 @@ export default function AgentsPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Create form setup
@@ -158,8 +202,8 @@ export default function AgentsPage() {
       description: "",
       isActive: true,
       icon: "robot",
-      config: "{}"
-    }
+      config: "{}",
+    },
   });
 
   // Edit form setup
@@ -171,8 +215,8 @@ export default function AgentsPage() {
       description: "",
       isActive: true,
       icon: "robot",
-      config: "{}"
-    }
+      config: "{}",
+    },
   });
 
   const handleCreateSubmit = (data: z.infer<typeof agentSchema>) => {
@@ -187,21 +231,21 @@ export default function AgentsPage() {
 
   const handleEditClick = (agent: Agent) => {
     setSelectedAgent(agent);
-    
+
     // Prepare config as string for the form
-    const configStr = agent.config 
-      ? JSON.stringify(agent.config, null, 2) 
+    const configStr = agent.config
+      ? JSON.stringify(agent.config, null, 2)
       : "{}";
-    
+
     editForm.reset({
       name: agent.name,
       type: agent.type,
       description: agent.description,
       isActive: agent.isActive,
       icon: agent.icon,
-      config: configStr
+      config: configStr,
     });
-    
+
     setIsEditDialogOpen(true);
   };
 
@@ -231,8 +275,8 @@ export default function AgentsPage() {
             Create and manage your intelligent AI agents
           </p>
         </div>
-        <Button 
-          onClick={() => setIsCreateDialogOpen(true)} 
+        <Button
+          onClick={() => setIsCreateDialogOpen(true)}
           className="mt-4 md:mt-0"
         >
           <PlusCircle className="mr-2 h-4 w-4" /> Create Agent
@@ -258,22 +302,30 @@ export default function AgentsPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {agents.map(agent => {
-            const IconComponent = typeIcons[agent.type as keyof typeof typeIcons] || Bot;
-            
+          {agents.map((agent) => {
+            const IconComponent =
+              typeIcons[agent.type as keyof typeof typeIcons] || Bot;
+
             return (
-              <Card key={agent.id} className={`flex flex-col ${!agent.isActive ? 'opacity-70' : ''}`}>
+              <Card
+                key={agent.id}
+                className={`flex flex-col ${!agent.isActive ? "opacity-70" : ""}`}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <div className={`w-8 h-8 flex items-center justify-center rounded-md bg-primary/10 border border-primary/20`}>
+                      <div
+                        className={`w-8 h-8 flex items-center justify-center rounded-md bg-primary/10 border border-primary/20`}
+                      >
                         <IconComponent className={`h-4 w-4 text-primary`} />
                       </div>
                       <div>
                         <CardTitle className="flex items-center gap-2">
                           {agent.name}
                           {!agent.isActive && (
-                            <Badge variant="outline" className="text-xs">Inactive</Badge>
+                            <Badge variant="outline" className="text-xs">
+                              Inactive
+                            </Badge>
                           )}
                         </CardTitle>
                         <CardDescription className="capitalize">
@@ -290,16 +342,22 @@ export default function AgentsPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => window.location.href = `/agents/${agent.id}/execute`}>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            (window.location.href = `/agents/${agent.id}/execute`)
+                          }
+                        >
                           <PlayCircle className="mr-2 h-4 w-4" />
                           Execute
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEditClick(agent)}>
+                        <DropdownMenuItem
+                          onClick={() => handleEditClick(agent)}
+                        >
                           <Settings className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => handleDeleteClick(agent)}
                           className="text-destructive"
                         >
@@ -311,19 +369,25 @@ export default function AgentsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="pb-3 flex-grow">
-                  <p className="text-sm text-muted-foreground line-clamp-3">{agent.description}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-3">
+                    {agent.description}
+                  </p>
                   <div className="mt-4 text-xs text-muted-foreground">
                     <div className="flex justify-between">
                       <span>Created:</span>
-                      <span>{formatDistanceToNow(new Date(agent.createdAt), { addSuffix: true })}</span>
+                      <span>
+                        {formatDistanceToNow(new Date(agent.createdAt), {
+                          addSuffix: true,
+                        })}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="pt-2">
-                  <Button 
+                  <Button
                     asChild
-                    variant="outline" 
-                    size="sm" 
+                    variant="outline"
+                    size="sm"
                     className="w-full"
                   >
                     <Link href={`/agents/${agent.id}/execute`}>
@@ -347,9 +411,12 @@ export default function AgentsPage() {
               Create a new AI agent to handle specific tasks.
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...createForm}>
-            <form onSubmit={createForm.handleSubmit(handleCreateSubmit)} className="space-y-4">
+            <form
+              onSubmit={createForm.handleSubmit(handleCreateSubmit)}
+              className="space-y-4"
+            >
               <FormField
                 control={createForm.control}
                 name="name"
@@ -363,15 +430,15 @@ export default function AgentsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={createForm.control}
                 name="type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -381,8 +448,12 @@ export default function AgentsPage() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="assistant">Assistant</SelectItem>
-                        <SelectItem value="content">Content Generator</SelectItem>
-                        <SelectItem value="workflow">Workflow Automation</SelectItem>
+                        <SelectItem value="content">
+                          Content Generator
+                        </SelectItem>
+                        <SelectItem value="workflow">
+                          Workflow Automation
+                        </SelectItem>
                         <SelectItem value="custom">Custom Agent</SelectItem>
                       </SelectContent>
                     </Select>
@@ -390,7 +461,7 @@ export default function AgentsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={createForm.control}
                 name="description"
@@ -398,16 +469,16 @@ export default function AgentsPage() {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="Describe what this agent does..."
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={createForm.control}
                 name="isActive"
@@ -428,7 +499,7 @@ export default function AgentsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={createForm.control}
                 name="config"
@@ -436,11 +507,11 @@ export default function AgentsPage() {
                   <FormItem>
                     <FormLabel>Configuration (JSON)</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder='{}'
+                      <Textarea
+                        placeholder="{}"
                         className="font-mono"
                         rows={5}
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormDescription>
@@ -450,19 +521,16 @@ export default function AgentsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsCreateDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={createAgentMutation.isPending}
-                >
+                <Button type="submit" disabled={createAgentMutation.isPending}>
                   {createAgentMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
@@ -483,9 +551,12 @@ export default function AgentsPage() {
               Update your AI agent settings.
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-4">
+            <form
+              onSubmit={editForm.handleSubmit(handleEditSubmit)}
+              className="space-y-4"
+            >
               <FormField
                 control={editForm.control}
                 name="name"
@@ -499,15 +570,15 @@ export default function AgentsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={editForm.control}
                 name="type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -517,8 +588,12 @@ export default function AgentsPage() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="assistant">Assistant</SelectItem>
-                        <SelectItem value="content">Content Generator</SelectItem>
-                        <SelectItem value="workflow">Workflow Automation</SelectItem>
+                        <SelectItem value="content">
+                          Content Generator
+                        </SelectItem>
+                        <SelectItem value="workflow">
+                          Workflow Automation
+                        </SelectItem>
                         <SelectItem value="custom">Custom Agent</SelectItem>
                       </SelectContent>
                     </Select>
@@ -526,7 +601,7 @@ export default function AgentsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={editForm.control}
                 name="description"
@@ -540,7 +615,7 @@ export default function AgentsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={editForm.control}
                 name="isActive"
@@ -561,7 +636,7 @@ export default function AgentsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={editForm.control}
                 name="config"
@@ -569,11 +644,7 @@ export default function AgentsPage() {
                   <FormItem>
                     <FormLabel>Configuration (JSON)</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        className="font-mono"
-                        rows={5}
-                        {...field} 
-                      />
+                      <Textarea className="font-mono" rows={5} {...field} />
                     </FormControl>
                     <FormDescription>
                       Advanced configuration settings in JSON format
@@ -582,19 +653,16 @@ export default function AgentsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsEditDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={updateAgentMutation.isPending}
-                >
+                <Button type="submit" disabled={updateAgentMutation.isPending}>
                   {updateAgentMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
@@ -612,18 +680,19 @@ export default function AgentsPage() {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the agent "{selectedAgent?.name}"? This action cannot be undone.
+              Are you sure you want to delete the agent "{selectedAgent?.name}"?
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleDeleteConfirm}
               disabled={deleteAgentMutation.isPending}
             >

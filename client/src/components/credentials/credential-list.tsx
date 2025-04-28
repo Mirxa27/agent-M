@@ -5,19 +5,48 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { CredentialForm } from "./credential-form";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Provider icon mapping
 const ProviderIconMap: Record<string, string> = {
-  'openai': '🤖',
-  'anthropic': '🧠',
-  'perplexity': '🔍',
-  'xai': '🔮',
-  'custom': '🔑'
+  openai: "🤖",
+  anthropic: "🧠",
+  perplexity: "🔍",
+  xai: "🔮",
+  custom: "🔑",
 };
 
 export function CredentialList() {
@@ -31,11 +60,16 @@ export function CredentialList() {
     name: string;
     type: string;
   };
-  
-  const [selectedCredential, setSelectedCredential] = useState<Credential | null>(null);
-  
+
+  const [selectedCredential, setSelectedCredential] =
+    useState<Credential | null>(null);
+
   // Fetch credentials
-  const { data: credentials, isLoading, error } = useQuery({
+  const {
+    data: credentials,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["/api/credentials"],
     queryFn: async () => {
       const response = await fetch("/api/credentials");
@@ -43,9 +77,9 @@ export function CredentialList() {
         throw new Error("Failed to fetch credentials");
       }
       return response.json();
-    }
+    },
   });
-  
+
   // Delete mutation
   const deleteCredential = useMutation({
     mutationFn: async (id: number) => {
@@ -54,7 +88,7 @@ export function CredentialList() {
     onSuccess: () => {
       toast({
         title: "Credential deleted",
-        description: "The credential has been deleted successfully."
+        description: "The credential has been deleted successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/credentials"] });
       setDeleteDialogOpen(false);
@@ -63,30 +97,30 @@ export function CredentialList() {
       toast({
         title: "Failed to delete credential",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
-  
+
   // Handle edit
   const handleEdit = (credential: Credential) => {
     setSelectedCredential(credential);
     setEditDialogOpen(true);
   };
-  
+
   // Handle delete
   const handleDelete = (credential: Credential) => {
     setSelectedCredential(credential);
     setDeleteDialogOpen(true);
   };
-  
+
   // Confirm delete
   const confirmDelete = () => {
     if (selectedCredential) {
       deleteCredential.mutate(selectedCredential.id);
     }
   };
-  
+
   // Show loading state
   if (isLoading) {
     return (
@@ -95,16 +129,18 @@ export function CredentialList() {
       </div>
     );
   }
-  
+
   // Show error state
   if (error) {
     return (
       <div className="text-center p-8 text-destructive">
         <p>Error loading credentials</p>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="mt-4"
-          onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/credentials"] })}
+          onClick={() =>
+            queryClient.invalidateQueries({ queryKey: ["/api/credentials"] })
+          }
         >
           Try Again
         </Button>
@@ -136,9 +172,7 @@ export function CredentialList() {
                   Create a new credential for your AI agents to use.
                 </DialogDescription>
               </DialogHeader>
-              <CredentialForm 
-                onSuccess={() => setCreateDialogOpen(false)} 
-              />
+              <CredentialForm onSuccess={() => setCreateDialogOpen(false)} />
             </DialogContent>
           </Dialog>
         </CardHeader>
@@ -151,11 +185,15 @@ export function CredentialList() {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center space-x-2">
                         <span className="text-xl">
-                          {ProviderIconMap[credential.type] || '🔑'}
+                          {ProviderIconMap[credential.type] || "🔑"}
                         </span>
                         <div>
-                          <CardTitle className="text-base">{credential.name}</CardTitle>
-                          <CardDescription className="capitalize">{credential.type}</CardDescription>
+                          <CardTitle className="text-base">
+                            {credential.name}
+                          </CardTitle>
+                          <CardDescription className="capitalize">
+                            {credential.type}
+                          </CardDescription>
                         </div>
                       </div>
                       <DropdownMenu>
@@ -167,11 +205,13 @@ export function CredentialList() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleEdit(credential)}>
+                          <DropdownMenuItem
+                            onClick={() => handleEdit(credential)}
+                          >
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => handleDelete(credential)}
                           >
@@ -198,7 +238,8 @@ export function CredentialList() {
               <Key className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No credentials yet</h3>
               <p className="text-muted-foreground mb-4">
-                Add credentials to securely store API keys and access tokens for your agents.
+                Add credentials to securely store API keys and access tokens for
+                your agents.
               </p>
               <DialogTrigger asChild>
                 <Button onClick={() => setCreateDialogOpen(true)}>
@@ -210,7 +251,7 @@ export function CredentialList() {
           )}
         </CardContent>
       </Card>
-      
+
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
@@ -221,12 +262,12 @@ export function CredentialList() {
             </DialogDescription>
           </DialogHeader>
           {selectedCredential && (
-            <CredentialForm 
+            <CredentialForm
               onSuccess={() => setEditDialogOpen(false)}
               defaultValues={{
                 name: selectedCredential.name,
                 type: selectedCredential.type,
-                data: {} // The actual data will be fetched when needed
+                data: {}, // The actual data will be fetched when needed
               }}
               isEditing={true}
               credentialId={selectedCredential.id}
@@ -234,20 +275,20 @@ export function CredentialList() {
           )}
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the credential and remove it from any agents using it.
-              This action cannot be undone.
+              This will permanently delete the credential and remove it from any
+              agents using it. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDelete}
               disabled={deleteCredential.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

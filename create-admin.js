@@ -1,7 +1,7 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { scrypt, randomBytes } from 'crypto';
-import { promisify } from 'util';
-import ws from 'ws';
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+import ws from "ws";
 
 // Configure neon for WebSockets
 neonConfig.webSocketConstructor = ws;
@@ -18,23 +18,23 @@ async function createAdminUser() {
   try {
     // Database connection
     if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL not found in environment variables');
+      throw new Error("DATABASE_URL not found in environment variables");
     }
 
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    
+
     // Define admin user details
-    const adminUsername = 'admin';
-    const adminPassword = 'tU5&RhL+hzm(';
-    const adminEmail = 'admin@mirxa.io';
-    const adminFullName = 'Mirxa Administrator';
+    const adminUsername = "admin";
+    const adminPassword = "tU5&RhL+hzm(";
+    const adminEmail = "admin@mirxa.io";
+    const adminFullName = "Mirxa Administrator";
 
     // Check if admin already exists
-    const checkQuery = 'SELECT * FROM users WHERE username = $1';
+    const checkQuery = "SELECT * FROM users WHERE username = $1";
     const existingUser = await pool.query(checkQuery, [adminUsername]);
-    
+
     if (existingUser.rows.length > 0) {
-      console.log('Admin user already exists!');
+      console.log("Admin user already exists!");
       process.exit(0);
     }
 
@@ -47,26 +47,26 @@ async function createAdminUser() {
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
-    
+
     const res = await pool.query(insertQuery, [
       adminUsername,
       hashedPassword,
       adminEmail,
       adminFullName,
-      'admin'
+      "admin",
     ]);
 
     const user = res.rows[0];
-    
-    console.log('✅ Admin user created successfully');
-    console.log('Username:', adminUsername);
-    console.log('Password:', adminPassword);
-    console.log('Email:', adminEmail);
-    
+
+    console.log("✅ Admin user created successfully");
+    console.log("Username:", adminUsername);
+    console.log("Password:", adminPassword);
+    console.log("Email:", adminEmail);
+
     await pool.end();
     process.exit(0);
   } catch (error) {
-    console.error('Error creating admin user:', error);
+    console.error("Error creating admin user:", error);
     process.exit(1);
   }
 }

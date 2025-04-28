@@ -11,23 +11,33 @@ interface MainLayoutProps {
   noPadding?: boolean;
 }
 
-export function MainLayout({ children, className, hideNav, noPadding = false }: MainLayoutProps) {
+export function MainLayout({
+  children,
+  className,
+  hideNav,
+  noPadding = false,
+}: MainLayoutProps) {
   const { user } = useAuth();
-  
+
   return (
     <div className="min-h-screen flex flex-col">
       {!hideNav && <Header />}
-      
-      <main className={cn("flex-1 w-full max-w-full overflow-x-hidden", className)}>
-        <div className={cn(
-          "min-w-0 w-full", 
-          !noPadding && "p-3 sm:p-4 md:p-5 lg:p-6 space-y-4 sm:space-y-5 md:space-y-6"
-        )}> 
+
+      <main
+        className={cn("flex-1 w-full max-w-full overflow-x-hidden", className)}
+      >
+        <div
+          className={cn(
+            "min-w-0 w-full",
+            !noPadding &&
+              "p-3 sm:p-4 md:p-5 lg:p-6 space-y-4 sm:space-y-5 md:space-y-6",
+          )}
+        >
           {/* Ensures content won't overflow horizontally and adds adaptive padding */}
           {children}
         </div>
       </main>
-      
+
       {!hideNav && user && <MobileFooterNav />}
     </div>
   );

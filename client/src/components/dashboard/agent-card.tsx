@@ -1,17 +1,11 @@
 import { Agent } from "@shared/schema";
 import { Link } from "wouter";
-import { 
-  MoreVertical,
-  Settings,
-  MessageSquare,
-  Zap,
-  Key
-} from "lucide-react";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import { MoreVertical, Settings, MessageSquare, Zap, Key } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 interface AgentCardProps {
@@ -51,8 +45,12 @@ export default function AgentCard({ agent, onNewTask }: AgentCardProps) {
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center">
-            <span className={`w-10 h-10 rounded-lg ${getColorByType(agent.type)} flex items-center justify-center text-white mr-3`}>
-              <i className={`fa-${agent.type === "wordpress" ? "brands" : "solid"} fa-${getIconByType(agent.type)}`}></i>
+            <span
+              className={`w-10 h-10 rounded-lg ${getColorByType(agent.type)} flex items-center justify-center text-white mr-3`}
+            >
+              <i
+                className={`fa-${agent.type === "wordpress" ? "brands" : "solid"} fa-${getIconByType(agent.type)}`}
+              ></i>
             </span>
             <div>
               <h3 className="font-medium text-dark-900">{agent.name}</h3>
@@ -72,15 +70,15 @@ export default function AgentCard({ agent, onNewTask }: AgentCardProps) {
               <DropdownMenuItem>
                 {agent.isActive ? "Deactivate Agent" : "Activate Agent"}
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600">Delete Agent</DropdownMenuItem>
+              <DropdownMenuItem className="text-red-600">
+                Delete Agent
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        
-        <p className="text-sm text-gray-500 mb-4">
-          {agent.description}
-        </p>
-        
+
+        <p className="text-sm text-gray-500 mb-4">{agent.description}</p>
+
         <div className="flex items-center text-xs text-gray-500">
           <span className="flex items-center">
             <Zap className="h-3 w-3 mr-1" />
@@ -93,16 +91,16 @@ export default function AgentCard({ agent, onNewTask }: AgentCardProps) {
           </span>
         </div>
       </div>
-      
+
       <div className="bg-gray-50 px-6 py-4 flex justify-between">
-        <Link 
+        <Link
           to={`/agents/${agent.id}/configure`}
           className="text-sm text-gray-700 font-medium hover:text-primary-600 flex items-center"
         >
           <Settings className="h-4 w-4 mr-1.5" />
           Configure
         </Link>
-        <button 
+        <button
           onClick={() => onNewTask && onNewTask(agent.id)}
           className="text-sm text-primary-600 font-medium hover:text-primary-700 flex items-center"
         >

@@ -78,12 +78,14 @@ For production deployments, use your hosting provider's secrets management:
 To prepare the application for deployment:
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/yourusername/mirxa-ai.git
    cd mirxa-ai
    ```
 
 2. Install dependencies:
+
    ```
    npm install
    ```
@@ -106,6 +108,7 @@ Replit provides a simple way to deploy fullstack JavaScript applications:
 ### Replit-Specific Configuration
 
 1. Update the `.replit` file to run the correct start command:
+
    ```
    run = "npm run start"
    ```
@@ -218,6 +221,7 @@ For serverless deployment, the application architecture needs to be adapted:
 Docker allows for consistent deployment across environments:
 
 1. Create a `Dockerfile` in the project root:
+
    ```Dockerfile
    FROM node:18-alpine AS builder
    WORKDIR /app
@@ -240,8 +244,9 @@ Docker allows for consistent deployment across environments:
    ```
 
 2. Create a `docker-compose.yml` file for local testing:
+
    ```yaml
-   version: '3'
+   version: "3"
    services:
      app:
        build: .
@@ -289,14 +294,17 @@ After deploying, create an initial admin user:
 
 1. Access your deployed environment (SSH, console, etc.)
 2. Run the admin creation script:
+
    ```
    node create-admin.js
    ```
-   
+
    Or manually using the provided `hashPassword.js` utility:
+
    ```
    node hashPassword.js your_admin_password
    ```
+
    Then insert the user with the hashed password into the database.
 
 ## Continuous Integration/Deployment
@@ -310,7 +318,7 @@ name: Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -320,7 +328,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - run: npm ci
       - run: npm run test
 
@@ -332,7 +340,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - run: npm ci
       - run: npm run build
       # Deploy steps depend on your hosting provider
@@ -396,16 +404,19 @@ Consider setting up:
 ### Common Deployment Issues
 
 1. **Database Connection Errors**:
+
    - Verify the `DATABASE_URL` is correct
    - Check database server is accessible from application server
    - Verify database user permissions
 
 2. **Build Failures**:
+
    - Check Node.js version compatibility
    - Verify all dependencies are installed
    - Check for TypeScript errors
 
 3. **Runtime Errors**:
+
    - Check server logs for error messages
    - Verify environment variables are set correctly
    - Check for network connectivity issues
