@@ -186,7 +186,7 @@ html.rtl .rtl-flip {
     background-size: 200% 200%;
     animation: gradientShift 15s ease infinite;
   }
-  
+
   @keyframes gradientShift {
     0% {
       background-position: 0% 50%;

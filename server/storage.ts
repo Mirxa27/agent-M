@@ -371,12 +371,12 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
     const now = new Date();
-    
+
     // Get the free plan or first plan available
     let freePlanId: number | null = null;
     if (this.plans.size > 0) {
       const freePlan = Array.from(this.plans.values()).find(
-        plan => plan.name.toLowerCase() === "free"
+        (plan) => plan.name.toLowerCase() === "free",
       );
       if (freePlan) {
         freePlanId = freePlan.id;
@@ -385,7 +385,7 @@ export class MemStorage implements IStorage {
         freePlanId = Array.from(this.plans.values())[0].id;
       }
     }
-    
+
     const user: User = {
       id,
       ...insertUser,
