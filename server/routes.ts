@@ -893,6 +893,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment Routes
+  // Create a payment session for a subscription
+  app.post("/api/payments/create-session", requireAuth, async (req, res) => {
+    try {
+      const { planId } = req.body;
+      
+      if (!planId) {
+        return res.status(400).json({ error: "Plan ID is required" });
+      }
+      
+      // Verify the plan exists
+      const plan = await storage.getPlan(parseInt(planId));
+      if (!plan) {
+        return res.status(404).json({ error: "Plan not found" });
+      }
+      
+      // Create payment session using MyFatoorah
+      const paymentSession = await paymentService.createPaymentSession(
+        req.user.id, 
+        parseInt(planId)
+      );
+      
+      res.json(paymentSession);
+    } catch (error) {
+      console.error("Payment session creation error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Payment verification callback endpoint
+  app.get("/api/payments/callback", async (req, res) => {
+    try {
+      const paymentId = req.query.paymentId;
+      
+      if (!paymentId) {
+        return res.redirect("/payment-failed?reason=no-payment-id");
+      }
+      
+      // Verify the payment with MyFatoorah
+      const verification = await paymentService.verifyPayment(paymentId.toString());
+      
+      if (!verification.isValid) {
+        return res.redirect("/payment-failed?reason=verification-failed");
+      }
+      
+      // At this point, payment is verified
+      // In a real system we'd use a payment-specific user ID stored in the payment session
+      // For simplicity, we'll redirect to a success page
+      // The actual subscription update would be handled by a webhook or background process
+      
+      res.redirect("/payment-success");
+    } catch (error) {
+      console.error("Payment callback error:", error);
+      res.redirect(`/payment-failed?reason=${encodeURIComponent(error.message)}`);
+    }
+  });
+  
+  // Payment error callback endpoint
+  app.get("/api/payments/error", (req, res) => {
+    res.redirect("/payment-failed?reason=gateway-error");
+  });
+  
+  // Webhook for payment notifications (would be configured in MyFatoorah dashboard)
+  app.post("/api/payments/webhook", async (req, res) => {
+    try {
+      // In a production environment, we would:
+      // 1. Verify the webhook signature
+      // 2. Process payment status updates
+      // 3. Update user subscriptions
+      
+      // For simplicity in this prototype, we acknowledge receipt
+      res.status(200).send("Webhook received");
+    } catch (error) {
+      console.error("Payment webhook error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Check subscription status
+  app.get("/api/subscription", requireAuth, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Get the plan details if the user has one
+      let plan = null;
+      if (user.plan) {
+        plan = await storage.getPlanByName(user.plan);
+      }
+      
+      res.json({
+        plan: user.plan || "free",
+        planExpiresAt: user.planExpiresAt,
+        planDetails: plan
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

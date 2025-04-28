@@ -1,14 +1,24 @@
 import { storage } from "../storage";
-import MyFatoorah from "myfatoorah-javascript";
+import axios from "axios";
 import { User, Plan } from "@shared/schema";
 
-// Initialize MyFatoorah with API key
+// Initialize MyFatoorah configuration
 if (!process.env.MYFATOORAH_API_KEY) {
   throw new Error("MYFATOORAH_API_KEY environment variable must be set");
 }
 
-// Use the API key from environment variables
-const myfatoorah = new MyFatoorah(process.env.MYFATOORAH_API_KEY);
+// MyFatoorah API configuration
+const MYFATOORAH_BASE_URL = "https://apitest.myfatoorah.com"; // Use test URL for now, replace with live URL in production
+const MYFATOORAH_API_KEY = process.env.MYFATOORAH_API_KEY;
+
+// Create axios instance for MyFatoorah API
+const myfatoorahClient = axios.create({
+  baseURL: MYFATOORAH_BASE_URL,
+  headers: {
+    'Authorization': `Bearer ${MYFATOORAH_API_KEY}`,
+    'Content-Type': 'application/json'
+  }
+});
 
 /**
  * Service for handling payments using MyFatoorah
@@ -40,15 +50,15 @@ export class PaymentService {
       throw new Error("User email is required for payment processing");
     }
     
-    // Create a payment link
+    // Create a payment link using MyFatoorah's InitiatePayment endpoint
     const payload = {
       CustomerName: user.fullName || user.username,
-      NotificationOption: "LNK",
+      NotificationOption: "LNK", // Link notification
       MobileCountryCode: "+966",
       CustomerMobile: "", // Would be filled from user profile in a real implementation
       CustomerEmail: user.email,
       InvoiceValue: plan.price,
-      DisplayCurrencyIso: "SAR", // Saudi Riyal
+      DisplayCurrencyIso: "SAR", // Saudi Riyal as requested
       CallBackUrl: `${process.env.APP_URL || "http://localhost:5000"}/api/payments/callback`,
       ErrorUrl: `${process.env.APP_URL || "http://localhost:5000"}/api/payments/error`,
       Language: "en",
@@ -61,18 +71,25 @@ export class PaymentService {
       ]
     };
     
-    // Setup MyFatoorah API request
+    // Make request to MyFatoorah API
     try {
-      const response = await myfatoorah.executePayment(payload);
+      const response = await myfatoorahClient.post('/v2/InitiatePayment', payload);
+      
+      if (!response.data || !response.data.Data) {
+        throw new Error("Invalid response from payment gateway");
+      }
       
       // Return the payment session details
       return {
-        sessionId: response.InvoiceId.toString(),
-        paymentUrl: response.InvoiceURL
+        sessionId: response.data.Data.InvoiceId.toString(),
+        paymentUrl: response.data.Data.InvoiceURL
       };
     } catch (error) {
       console.error('MyFatoorah payment creation error:', error);
-      throw new Error(`Payment processing failed: ${error.message}`);
+      if (error.response && error.response.data) {
+        console.error('MyFatoorah error details:', error.response.data);
+      }
+      throw new Error("Payment processing failed. Please try again later.");
     }
   }
   
@@ -91,16 +108,26 @@ export class PaymentService {
     amount?: number;
   }> {
     try {
-      const response = await myfatoorah.getPaymentStatus(paymentId);
+      // Get payment status from MyFatoorah API using the Key-Value pair endpoint
+      const response = await myfatoorahClient.post('/v2/GetPaymentStatus', {
+        Key: paymentId,
+        KeyType: "PaymentId" // Use PaymentId to search by the payment session ID
+      });
       
-      if (response.InvoiceStatus === "Paid") {
+      if (!response.data || !response.data.Data) {
+        return { isValid: false };
+      }
+      
+      const paymentData = response.data.Data;
+      
+      if (paymentData.InvoiceStatus === "Paid") {
         return {
           isValid: true,
-          invoiceId: response.InvoiceId,
-          invoiceReference: response.InvoiceReference,
-          transactionId: response.TransactionId,
-          paymentMethod: response.PaymentGateway,
-          amount: response.InvoiceValue
+          invoiceId: paymentData.InvoiceId,
+          invoiceReference: paymentData.InvoiceReference,
+          transactionId: paymentData.InvoiceTransactions[0]?.TransactionId,
+          paymentMethod: paymentData.InvoiceTransactions[0]?.PaymentGateway,
+          amount: paymentData.InvoiceValue
         };
       } else {
         return {
@@ -109,6 +136,9 @@ export class PaymentService {
       }
     } catch (error) {
       console.error('MyFatoorah payment verification error:', error);
+      if (error.response && error.response.data) {
+        console.error('MyFatoorah error details:', error.response.data);
+      }
       return {
         isValid: false
       };
