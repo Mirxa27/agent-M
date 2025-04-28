@@ -297,13 +297,16 @@ export default function CredentialsPage() {
                         </div>
                       </div>
 
-                      {credential.data && typeof credential.data === 'object' && credential.data.baseUrl && (
+                      {credential.data && typeof credential.data === 'object' && 
+                       typeof credential.data === 'object' && 
+                       'baseUrl' in credential.data && 
+                       credential.data.baseUrl && (
                         <div>
                           <div className="text-sm font-medium mb-1">
                             Base URL
                           </div>
                           <div className="text-sm bg-muted p-2 rounded font-mono truncate">
-                            {credential.data.baseUrl}
+                            {String(credential.data.baseUrl)}
                           </div>
                         </div>
                       )}
