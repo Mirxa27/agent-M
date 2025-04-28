@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { AgentTool } from "@shared/schema";
-import { AgentToolTemplate, AGENT_TOOL_TEMPLATES, TOOL_CATEGORIES, getAllToolTemplates, getToolTemplatesByCategory } from "@shared/agent-tools-templates";
+import { AgentToolTemplate, TOOL_TEMPLATES, TOOL_CATEGORIES, getAllTemplates, getTemplatesByCategory } from "@shared/agent-tools-templates";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -299,10 +299,10 @@ export default function AgentToolsPanel() {
 
   // Get available templates based on tab and filters
   const getTemplates = () => {
-    let templates = getAllToolTemplates();
+    let templates = getAllTemplates();
     
     if (activeTab !== "all") {
-      templates = getToolTemplatesByCategory(activeTab);
+      templates = getTemplatesByCategory(activeTab);
     }
     
     if (searchQuery) {
@@ -321,10 +321,10 @@ export default function AgentToolsPanel() {
   const availableTemplates = getTemplates();
 
   // Check if template is already added
-  const isTemplateAdded = (templateId: string) => {
+  const isTemplateAdded = (templateName: string) => {
     return tools?.some(tool => 
-      tool.name === templateId || 
-      (tool.config && typeof tool.config === 'object' && 'templateId' in tool.config && tool.config.templateId === templateId)
+      tool.name === templateName || 
+      (tool.config && typeof tool.config === 'object' && 'templateName' in tool.config && tool.config.templateName === templateName)
     ) || false;
   };
 
@@ -371,11 +371,10 @@ export default function AgentToolsPanel() {
           <TabsTrigger value={TOOL_CATEGORIES.CONTENT_GENERATION}>Content Generation</TabsTrigger>
           <TabsTrigger value={TOOL_CATEGORIES.DATA_PROCESSING}>Data Processing</TabsTrigger>
           <TabsTrigger value={TOOL_CATEGORIES.COMMUNICATION}>Communication</TabsTrigger>
-          <TabsTrigger value={TOOL_CATEGORIES.RESEARCH}>Research</TabsTrigger>
-          <TabsTrigger value={TOOL_CATEGORIES.DEVELOPMENT}>Development</TabsTrigger>
-          <TabsTrigger value={TOOL_CATEGORIES.WEB_INTERACTION}>Web Interaction</TabsTrigger>
-          <TabsTrigger value={TOOL_CATEGORIES.PRODUCTIVITY}>Productivity</TabsTrigger>
-          <TabsTrigger value={TOOL_CATEGORIES.ANALYTICS}>Analytics</TabsTrigger>
+          <TabsTrigger value={TOOL_CATEGORIES.KNOWLEDGE}>Knowledge</TabsTrigger>
+          <TabsTrigger value={TOOL_CATEGORIES.UTILITIES}>Utilities</TabsTrigger>
+          <TabsTrigger value={TOOL_CATEGORIES.INTEGRATIONS}>Integrations</TabsTrigger>
+          <TabsTrigger value={TOOL_CATEGORIES.CUSTOM}>Custom</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-0">
@@ -409,10 +408,10 @@ export default function AgentToolsPanel() {
                     </div>
                     {availableTemplates.map(template => {
                       const IconComponent = getIconByName(template.icon);
-                      const isAdded = isTemplateAdded(template.id);
+                      const isAdded = isTemplateAdded(template.name);
                       
                       return (
-                        <Card key={template.id} className="hover:shadow-md transition-shadow duration-200">
+                        <Card key={template.name} className="hover:shadow-md transition-shadow duration-200">
                           <CardHeader className="pb-2">
                             <div className="flex justify-between items-start">
                               <div className="flex items-center gap-2">
