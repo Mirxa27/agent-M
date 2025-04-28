@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword } from "./auth";
-import { db } from "./db";
+import { db, checkDatabaseConnection } from "./db";
 import { eq, count } from "drizzle-orm";
 import { 
   insertAgentSchema, 
@@ -28,6 +28,34 @@ import {
 } from "./services/openai-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint - no auth required, useful for deployment monitoring
+  app.get("/api/health", async (req, res) => {
+    try {
+      const dbStatus = await checkDatabaseConnection();
+      if (!dbStatus) {
+        return res.status(500).json({
+          status: "error",
+          database: "disconnected",
+          message: "Database connection failed"
+        });
+      }
+      
+      return res.status(200).json({
+        status: "ok",
+        database: "connected",
+        server: "running",
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Health check error:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Health check failed",
+        details: error.message
+      });
+    }
+  });
+  
   // Set up authentication routes
   setupAuth(app);
 
