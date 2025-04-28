@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword } from "./auth";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { 
   insertAgentSchema, 
   insertCredentialSchema, 
@@ -699,8 +699,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const modelId = parseInt(req.params.id);
       
       // Check if any prompts are using this model
-      const [prompt] = await db.select().from(aiPrompts).where(eq(aiPrompts.modelId, modelId));
-      if (prompt) {
+      const promptCount = await db.select({ count: count() })
+        .from(aiPrompts)
+        .where(eq(aiPrompts.modelId, modelId));
+        
+      if (promptCount[0].count > 0) {
         return res.status(400).json({ 
           error: "Cannot delete model while prompts are using it" 
         });

@@ -13,7 +13,7 @@ import CredentialsPage from "@/pages/credentials-page";
 import FilesPage from "@/pages/files-page";
 import TaskHistoryPage from "@/pages/task-history-page";
 import AdminDashboard from "@/pages/admin/dashboard";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 // Custom route component for admin routes
