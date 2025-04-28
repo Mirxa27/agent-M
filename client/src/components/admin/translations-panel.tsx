@@ -240,8 +240,7 @@ const TranslationsPanel: React.FC = () => {
     setIsTranslating(true);
     
     try {
-      const response = await apiRequest<{translatedText: string}>('/api/ai/translate', {
-        method: 'POST',
+      const response = await apiRequest<{translatedText: string}>('POST', '/api/ai/translate', {
         body: JSON.stringify({
           text: translateOptions.text,
           sourceLanguage: translateOptions.sourceLanguage,
@@ -313,8 +312,7 @@ const TranslationsPanel: React.FC = () => {
         }
       }
       
-      const response = await apiRequest<BulkTranslationResponse>('/api/ai/translate-bulk', {
-        method: 'POST',
+      const response = await apiRequest<BulkTranslationResponse>('POST', '/api/ai/translate-bulk', {
         body: JSON.stringify({
           translations: { [activeSection]: translations[activeSection] },
           sourceLanguage: translateOptions.sourceLanguage,
