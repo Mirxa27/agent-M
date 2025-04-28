@@ -33,6 +33,14 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<Omit<User, 'id'>>): Promise<User | undefined>;
   
+  // Agent tools operations
+  getAgentTool(id: number): Promise<AgentTool | undefined>;
+  getAllAgentTools(): Promise<AgentTool[]>;
+  getAgentToolsByCategory(category: string): Promise<AgentTool[]>;
+  createAgentTool(tool: InsertAgentTool): Promise<AgentTool>;
+  updateAgentTool(id: number, updates: Partial<Omit<AgentTool, 'id'>>): Promise<AgentTool | undefined>;
+  deleteAgentTool(id: number): Promise<boolean>;
+  
   // Agent operations
   getAgent(id: number): Promise<Agent | undefined>;
   getAgentsByUserId(userId: number): Promise<Agent[]>;
@@ -85,6 +93,7 @@ export interface IStorage {
   
   // AI Model operations (admin only)
   getAiModel(id: number): Promise<AiModel | undefined>;
+  getAiModelByName(modelId: string): Promise<AiModel | undefined>;
   getAllAiModels(): Promise<AiModel[]>;
   getAiModelsByProviderId(providerId: number): Promise<AiModel[]>;
   createAiModel(model: InsertAiModel): Promise<AiModel>;
@@ -114,6 +123,7 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
+  private agentTools: Map<number, AgentTool>;
   private agents: Map<number, Agent>;
   private credentials: Map<number, Credential>;
   private files: Map<number, File>;
@@ -128,6 +138,7 @@ export class MemStorage implements IStorage {
   sessionStore: SessionStore;
   
   private userIdCounter: number;
+  private agentToolIdCounter: number;
   private agentIdCounter: number;
   private credentialIdCounter: number;
   private fileIdCounter: number;

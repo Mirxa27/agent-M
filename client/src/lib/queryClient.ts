@@ -7,27 +7,38 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest<T = Response>(
+/**
+ * Makes an API request with proper error handling
+ * @param method HTTP method (GET, POST, PATCH, DELETE)
+ * @param url API endpoint URL
+ * @param data Data to send (for POST, PATCH requests)
+ * @returns Promise resolving to response or JSON data
+ */
+export async function apiRequest<T = any>(
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   url: string,
-  options: RequestInit = {}
+  data?: any
 ): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
+  const options: RequestInit = {
+    method,
     headers: {
-      ...(options.headers || {}),
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
-    credentials: "include",
-  });
+    credentials: 'include',
+  };
 
+  if (data !== undefined && method !== 'GET') {
+    options.body = JSON.stringify(data);
+  }
+
+  const res = await fetch(url, options);
   await throwIfResNotOk(res);
   
   // For Response type, return the response itself
-  if (typeof Response !== 'undefined' && Response.prototype === Object.getPrototypeOf(Response.prototype)) {
-    return res as unknown as T;
+  if (method === 'DELETE' || res.status === 204) {
+    return {} as T;
   }
   
-  // Otherwise, return parsed JSON
   return await res.json();
 }
 
@@ -37,10 +48,14 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Handle queryKey being either a string or an array
-    const url = typeof queryKey === 'string' ? queryKey : 
-               Array.isArray(queryKey) ? queryKey[0] as string : 
-               String(queryKey);
+    // In TanStack Query v5, queryKey is always an array
+    if (!Array.isArray(queryKey)) {
+      throw new Error('As of v4, queryKey needs to be an Array. If you are using a string like "repoData", please change it to an Array, e.g. ["repoData"]');
+    }
+    
+    // Use the first element of the array as the URL
+    const url = queryKey[0] as string;
+    // Any additional parameters can be in the rest of the array
     
     const res = await fetch(url, {
       credentials: "include",

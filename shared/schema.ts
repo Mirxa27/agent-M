@@ -26,6 +26,32 @@ export const insertUserSchema = createInsertSchema(users)
     email: z.string().email("Invalid email address"),
   });
 
+// Agent tools schema
+export const agentTools = pgTable("agent_tools", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(), // e.g., 'data_processing', 'content_generation', etc.
+  type: text("type").notNull(), // e.g., 'openai', 'custom', 'webhook', etc.
+  config: jsonb("config").default({}).notNull(), // Tool specific configuration
+  icon: text("icon").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  isSystem: boolean("is_system").default(false).notNull(), // If true, tool is provided by system and can't be deleted
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertAgentToolSchema = createInsertSchema(agentTools)
+  .pick({
+    name: true,
+    description: true,
+    category: true,
+    type: true,
+    config: true,
+    icon: true,
+    isActive: true,
+  });
+
 // Agent schema
 export const agents = pgTable("agents", {
   id: serial("id").primaryKey(),
@@ -37,7 +63,9 @@ export const agents = pgTable("agents", {
   isActive: boolean("is_active").default(true).notNull(),
   taskCount: integer("task_count").default(0).notNull(),
   config: jsonb("config").default({}).notNull(),
+  tools: jsonb("tools").default([]).notNull(), // List of attached tool IDs
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertAgentSchema = createInsertSchema(agents)
@@ -49,6 +77,7 @@ export const insertAgentSchema = createInsertSchema(agents)
     icon: true,
     isActive: true,
     config: true,
+    tools: true,
   });
 
 // Credential schema
@@ -266,6 +295,9 @@ export const insertPlanSchema = createInsertSchema(plans)
 // Type exports
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type AgentTool = typeof agentTools.$inferSelect;
+export type InsertAgentTool = z.infer<typeof insertAgentToolSchema>;
 
 export type Agent = typeof agents.$inferSelect;
 export type InsertAgent = z.infer<typeof insertAgentSchema>;
