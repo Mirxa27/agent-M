@@ -4,12 +4,13 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
-import { I18nextProvider } from 'react-i18next';
-import i18n from './lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { AuthProvider } from "@/hooks/use-auth";
 import { AppRoutes } from "@/components/router/app-routes";
 
 function App() {
+  const { i18n } = useTranslation();
+  
   // Create a language change handler that updates the HTML element's class
   const handleLanguageChange = (lng: string) => {
     document.documentElement.className = lng.startsWith('ar') ? 'rtl' : 'ltr';
@@ -27,21 +28,19 @@ function App() {
     return () => {
       i18n.off('languageChanged', handleLanguageChange);
     };
-  }, []);
+  }, [i18n]);
 
   return (
-    <I18nextProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="light">
-          <AuthProvider>
-            <TooltipProvider>
-              <Toaster />
-              <AppRoutes />
-            </TooltipProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </I18nextProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="light">
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <AppRoutes />
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
