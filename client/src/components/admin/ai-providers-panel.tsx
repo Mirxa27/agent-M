@@ -78,24 +78,14 @@ export default function AiProvidersPanel() {
   } = useQuery({
     queryKey: ["/api/admin/ai-providers"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/ai-providers");
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to fetch AI providers");
-      }
-      return res.json();
+      return await apiRequest("GET", "/api/admin/ai-providers");
     }
   });
 
   // Create provider mutation
   const createProviderMutation = useMutation({
     mutationFn: async (provider: ProviderFormValues) => {
-      const res = await apiRequest("POST", "/api/admin/ai-providers", provider);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create AI provider");
-      }
-      return res.json();
+      return await apiRequest("POST", "/api/admin/ai-providers", provider);
     },
     onSuccess: () => {
       toast({
@@ -125,12 +115,7 @@ export default function AiProvidersPanel() {
   // Update provider mutation
   const updateProviderMutation = useMutation({
     mutationFn: async ({ id, provider }: { id: number, provider: Partial<ProviderFormValues> }) => {
-      const res = await apiRequest("PATCH", `/api/admin/ai-providers/${id}`, provider);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to update AI provider");
-      }
-      return res.json();
+      return await apiRequest("PATCH", `/api/admin/ai-providers/${id}`, provider);
     },
     onSuccess: () => {
       toast({
@@ -152,11 +137,7 @@ export default function AiProvidersPanel() {
   // Delete provider mutation
   const deleteProviderMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/admin/ai-providers/${id}`);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to delete AI provider");
-      }
+      await apiRequest("DELETE", `/api/admin/ai-providers/${id}`);
       return true;
     },
     onSuccess: () => {
