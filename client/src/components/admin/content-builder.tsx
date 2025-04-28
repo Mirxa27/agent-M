@@ -68,8 +68,7 @@ const ContentBuilder: React.FC = () => {
     setGeneratedContent("");
     
     try {
-      const response = await apiRequest<{content: string}>('/api/ai/generate-content', {
-        method: 'POST',
+      const response = await apiRequest<{content: string}>('POST', '/api/ai/generate-content', {
         body: JSON.stringify({
           prompt: generateOptions.prompt,
           contentType: generateOptions.contentType,
@@ -116,8 +115,7 @@ const ContentBuilder: React.FC = () => {
         keyTerms: string[];
         readabilityScore: number;
         suggestions: string[];
-      }>('/api/ai/analyze-content', {
-        method: 'POST',
+      }>('POST', '/api/ai/analyze-content', {
         body: JSON.stringify({
           text: textToAnalyze
         })
