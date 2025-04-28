@@ -14,6 +14,9 @@ import {
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
+
+// Define SessionStore type to avoid TypeScript errors
+type SessionStore = any;
 import { db } from "./db";
 import { eq, and, desc, asc } from "drizzle-orm";
 import { pool } from "./db";
@@ -121,7 +124,7 @@ export class MemStorage implements IStorage {
   private aiProviders: Map<number, AiProvider>;
   private plans: Map<number, Plan>;
   
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
   
   private userIdCounter: number;
   private agentIdCounter: number;
@@ -631,6 +634,13 @@ export class MemStorage implements IStorage {
   }
   
   async deleteAiModel(id: number): Promise<boolean> {
+    // Check if any prompts are using this model
+    const promptsUsingModel = await this.getAiPromptsByModelId(id);
+    
+    if (promptsUsingModel.length > 0) {
+      throw new Error("Cannot delete model while prompts are using it");
+    }
+    
     return this.aiModels.delete(id);
   }
   
@@ -724,7 +734,7 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({
