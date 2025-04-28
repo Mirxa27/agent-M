@@ -103,12 +103,7 @@ export default function AiModelsPanel() {
   } = useQuery({
     queryKey: ["/api/admin/ai-models"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/ai-models");
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to fetch AI models");
-      }
-      return res.json();
+      return await apiRequest("GET", "/api/admin/ai-models");
     }
   });
 
@@ -119,24 +114,14 @@ export default function AiModelsPanel() {
   } = useQuery({
     queryKey: ["/api/admin/ai-providers"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/ai-providers");
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to fetch AI providers");
-      }
-      return res.json();
+      return await apiRequest("GET", "/api/admin/ai-providers");
     }
   });
 
   // Create model mutation
   const createModelMutation = useMutation({
     mutationFn: async (model: ModelFormValues) => {
-      const res = await apiRequest("POST", "/api/admin/ai-models", model);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create AI model");
-      }
-      return res.json();
+      return await apiRequest("POST", "/api/admin/ai-models", model);
     },
     onSuccess: () => {
       toast({
@@ -159,12 +144,7 @@ export default function AiModelsPanel() {
   // Update model mutation
   const updateModelMutation = useMutation({
     mutationFn: async ({ id, model }: { id: number, model: ModelFormValues }) => {
-      const res = await apiRequest("PATCH", `/api/admin/ai-models/${id}`, model);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to update AI model");
-      }
-      return res.json();
+      return await apiRequest("PATCH", `/api/admin/ai-models/${id}`, model);
     },
     onSuccess: () => {
       toast({
@@ -186,11 +166,7 @@ export default function AiModelsPanel() {
   // Delete model mutation
   const deleteModelMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/admin/ai-models/${id}`);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to delete AI model");
-      }
+      await apiRequest("DELETE", `/api/admin/ai-models/${id}`);
       return true;
     },
     onSuccess: () => {
