@@ -1400,6 +1400,256 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User Activity & Dashboard Routes
+  
+  // Get user activity feed
+  app.get("/api/user/activity", requireAuth, async (req, res) => {
+    try {
+      const { limit } = req.query;
+      
+      const activities = await storage.getUserActivitiesByUserId(
+        req.user.id,
+        limit ? parseInt(limit.toString()) : 10
+      );
+      
+      res.json(activities);
+    } catch (error: any) {
+      console.error("Error retrieving user activities:", error);
+      res.status(500).json({ 
+        error: "Failed to retrieve user activities",
+        details: error.message 
+      });
+    }
+  });
+  
+  // Get user analytics summary
+  app.get("/api/user/analytics", requireAuth, async (req, res) => {
+    try {
+      const analytics = await storage.getUserAnalytics(req.user.id);
+      res.json(analytics || { message: "No analytics data available yet" });
+    } catch (error: any) {
+      console.error("Error retrieving user analytics:", error);
+      res.status(500).json({ 
+        error: "Failed to retrieve analytics data",
+        details: error.message 
+      });
+    }
+  });
+  
+  // Get user dashboard preferences
+  app.get("/api/user/dashboard/preferences", requireAuth, async (req, res) => {
+    try {
+      const preferences = await storage.getDashboardPreferenceByUserId(req.user.id);
+      
+      if (!preferences) {
+        // Create default preferences if none exist
+        const defaultPreferences = {
+          userId: req.user.id,
+          layout: {
+            columns: 2,
+            showWelcome: true,
+            compactView: false
+          },
+          favoriteAgents: [],
+          recentTasks: [],
+          widgets: [
+            { id: "activity", position: 0, enabled: true },
+            { id: "stats", position: 1, enabled: true },
+            { id: "quickActions", position: 2, enabled: true },
+            { id: "recentFiles", position: 3, enabled: true },
+            { id: "agentStatus", position: 4, enabled: true }
+          ],
+          theme: "system",
+          updatedAt: new Date()
+        };
+        
+        const newPreferences = await storage.createDashboardPreference(defaultPreferences);
+        return res.json(newPreferences);
+      }
+      
+      res.json(preferences);
+    } catch (error: any) {
+      console.error("Error retrieving dashboard preferences:", error);
+      res.status(500).json({ 
+        error: "Failed to retrieve dashboard preferences",
+        details: error.message 
+      });
+    }
+  });
+  
+  // Update dashboard preferences
+  app.put("/api/user/dashboard/preferences", requireAuth, async (req, res) => {
+    try {
+      const { layout, widgets, theme, favoriteAgents, recentTasks } = req.body;
+      
+      // Get existing preferences
+      let preferences = await storage.getDashboardPreferenceByUserId(req.user.id);
+      
+      if (!preferences) {
+        // Create default preferences if none exist
+        const defaultPreferences = {
+          userId: req.user.id,
+          layout: layout || {
+            columns: 2,
+            showWelcome: true,
+            compactView: false
+          },
+          favoriteAgents: favoriteAgents || [],
+          recentTasks: recentTasks || [],
+          widgets: widgets || [
+            { id: "activity", position: 0, enabled: true },
+            { id: "stats", position: 1, enabled: true },
+            { id: "quickActions", position: 2, enabled: true },
+            { id: "recentFiles", position: 3, enabled: true },
+            { id: "agentStatus", position: 4, enabled: true }
+          ],
+          theme: theme || "system",
+          updatedAt: new Date()
+        };
+        
+        const newPreferences = await storage.createDashboardPreference(defaultPreferences);
+        return res.json(newPreferences);
+      }
+      
+      // Update existing preferences
+      const updates: any = {
+        updatedAt: new Date()
+      };
+      
+      if (layout) updates.layout = layout;
+      if (widgets) updates.widgets = widgets;
+      if (theme) updates.theme = theme;
+      if (favoriteAgents) updates.favoriteAgents = favoriteAgents;
+      if (recentTasks) updates.recentTasks = recentTasks;
+      
+      const updatedPreferences = await storage.updateDashboardPreference(
+        preferences.id,
+        updates
+      );
+      
+      res.json(updatedPreferences);
+    } catch (error: any) {
+      console.error("Error updating dashboard preferences:", error);
+      res.status(500).json({ 
+        error: "Failed to update dashboard preferences",
+        details: error.message 
+      });
+    }
+  });
+  
+  // Add agent to favorites
+  app.post("/api/user/dashboard/favorites/agent/:agentId", requireAuth, async (req, res) => {
+    try {
+      const { agentId } = req.params;
+      
+      if (!agentId) {
+        return res.status(400).json({ error: "Agent ID is required" });
+      }
+      
+      // Verify agent exists and belongs to user
+      const agent = await storage.getAgent(parseInt(agentId));
+      
+      if (!agent) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      
+      if (agent.userId !== req.user.id) {
+        return res.status(403).json({ error: "You don't have access to this agent" });
+      }
+      
+      // Get preferences
+      let preferences = await storage.getDashboardPreferenceByUserId(req.user.id);
+      
+      if (!preferences) {
+        // Create preferences if they don't exist
+        const defaultPreferences = {
+          userId: req.user.id,
+          layout: {
+            columns: 2,
+            showWelcome: true,
+            compactView: false
+          },
+          favoriteAgents: [parseInt(agentId)],
+          recentTasks: [],
+          widgets: [
+            { id: "activity", position: 0, enabled: true },
+            { id: "stats", position: 1, enabled: true },
+            { id: "quickActions", position: 2, enabled: true },
+            { id: "recentFiles", position: 3, enabled: true },
+            { id: "agentStatus", position: 4, enabled: true }
+          ],
+          theme: "system",
+          updatedAt: new Date()
+        };
+        
+        const newPreferences = await storage.createDashboardPreference(defaultPreferences);
+        return res.json({ success: true, favorites: newPreferences.favoriteAgents });
+      }
+      
+      // Update favorites (maximum of 5 favorites)
+      const currentFavorites = preferences.favoriteAgents as any[] || [];
+      const agentIdNum = parseInt(agentId);
+      
+      // If already in favorites, do nothing
+      if (currentFavorites.includes(agentIdNum)) {
+        return res.json({ success: true, favorites: currentFavorites });
+      }
+      
+      // Add to favorites (maintain max 5)
+      const updatedFavorites = 
+        [...currentFavorites, agentIdNum].slice(-5);
+      
+      await storage.updateDashboardPreference(preferences.id, {
+        favoriteAgents: updatedFavorites,
+        updatedAt: new Date()
+      });
+      
+      res.json({ success: true, favorites: updatedFavorites });
+    } catch (error: any) {
+      console.error("Error adding agent to favorites:", error);
+      res.status(500).json({ 
+        error: "Failed to add agent to favorites",
+        details: error.message 
+      });
+    }
+  });
+  
+  // Remove agent from favorites
+  app.delete("/api/user/dashboard/favorites/agent/:agentId", requireAuth, async (req, res) => {
+    try {
+      const { agentId } = req.params;
+      
+      if (!agentId) {
+        return res.status(400).json({ error: "Agent ID is required" });
+      }
+      
+      // Get preferences
+      const preferences = await storage.getDashboardPreferenceByUserId(req.user.id);
+      
+      if (!preferences) {
+        return res.status(404).json({ error: "Dashboard preferences not found" });
+      }
+      
+      // Remove from favorites
+      const currentFavorites = preferences.favoriteAgents as any[] || [];
+      const agentIdNum = parseInt(agentId);
+      const updatedFavorites = currentFavorites.filter(id => id !== agentIdNum);
+      
+      await storage.updateDashboardPreference(preferences.id, {
+        favoriteAgents: updatedFavorites,
+        updatedAt: new Date()
+      });
+      
+      res.json({ success: true, favorites: updatedFavorites });
+    } catch (error: any) {
+      console.error("Error removing agent from favorites:", error);
+      res.status(500).json({ 
+        error: "Failed to remove agent from favorites",
+        details: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

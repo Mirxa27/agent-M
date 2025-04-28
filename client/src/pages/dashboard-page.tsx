@@ -1,613 +1,671 @@
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
-import {
-  Loader2,
-  Bot,
-  FileText,
-  Key,
-  Users,
-  PlusCircle,
-  Activity,
-  BarChart2,
-  Clock,
-  Calendar,
-  Zap,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
-import { useEffect, useState } from "react";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserActivity, Analytics } from "../../../shared/schema";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { MainLayout } from "@/components/layouts/main-layout";
+import { 
+  BarChart, 
+  Bar, 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell
+} from "recharts";
+import {
+  ActivityIcon,
+  AlertCircleIcon,
+  BarChart2Icon,
+  CheckCircleIcon,
+  ClockIcon,
+  FilesIcon,
+  GaugeIcon,
+  LayoutDashboardIcon,
+  LayoutGridIcon,
+  PackageIcon,
+  SettingsIcon,
+  UserIcon,
+  XCircleIcon,
+} from "lucide-react";
 
-export default function DashboardPage() {
-  const { user } = useAuth();
-  const [greeting, setGreeting] = useState("Good day");
-  const [period, setPeriod] = useState("week"); // 'day', 'week', 'month'
+// Component to display activity feed item
+const ActivityItem = ({ activity }: { activity: any }) => {
+  // Helper to get appropriate icon
+  const getIcon = () => {
+    switch (activity.activityType) {
+      case "login":
+        return <UserIcon className="w-4 h-4 text-blue-500" />;
+      case "agent_created":
+        return <PackageIcon className="w-4 h-4 text-green-500" />;
+      case "task_created":
+        return <FilesIcon className="w-4 h-4 text-orange-500" />;
+      case "task_completed":
+        return <CheckCircleIcon className="w-4 h-4 text-green-500" />;
+      case "credential_created":
+        return <ActivityIcon className="w-4 h-4 text-purple-500" />;
+      default:
+        return <ActivityIcon className="w-4 h-4 text-gray-500" />;
+    }
+  };
 
-  // Set greeting based on time of day
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting("Good morning");
-    else if (hour < 18) setGreeting("Good afternoon");
-    else setGreeting("Good evening");
-  }, []);
-
-  // Fetch agents
-  const { data: agents, isLoading: isLoadingAgents } = useQuery({
-    queryKey: ["/api/agents"],
-    queryFn: async () => {
-      const res = await fetch("/api/agents");
-      if (!res.ok) throw new Error("Failed to fetch agents");
-      return res.json();
-    },
-  });
-
-  // Fetch credentials
-  const { data: credentials, isLoading: isLoadingCredentials } = useQuery({
-    queryKey: ["/api/credentials"],
-    queryFn: async () => {
-      const res = await fetch("/api/credentials");
-      if (!res.ok) throw new Error("Failed to fetch credentials");
-      return res.json();
-    },
-  });
-
-  // Fetch files
-  const { data: files, isLoading: isLoadingFiles } = useQuery({
-    queryKey: ["/api/files"],
-    queryFn: async () => {
-      const res = await fetch("/api/files");
-      if (!res.ok) throw new Error("Failed to fetch files");
-      return res.json();
-    },
-  });
-
-  // Fetch recent tasks
-  const { data: recentTasks, isLoading: isLoadingTasks } = useQuery({
-    queryKey: ["/api/tasks", { limit: 5 }],
-    queryFn: async () => {
-      const res = await fetch("/api/tasks?limit=5");
-      if (!res.ok) throw new Error("Failed to fetch tasks");
-      return res.json();
-    },
-  });
-
-  // Fetch user activities
-  const { data: userActivities, isLoading: isLoadingActivities } = useQuery({
-    queryKey: ["/api/user-activities", { limit: 10 }],
-    queryFn: async () => {
-      const res = await fetch("/api/user-activities?limit=10");
-
-      // For temporary implementation, use placeholder data
-      const now = new Date();
-      const hourAgo = new Date(now.getTime() - 1000 * 60 * 60);
-      const halfHourAgo = new Date(now.getTime() - 1000 * 60 * 30);
-
-      const activities: UserActivity[] = [
-        {
-          id: 1,
-          userId: user?.id || 0,
-          activityType: "login",
-          resourceId: null,
-          resourceType: null,
-          metadata: {},
-          createdAt: now,
-        },
-        {
-          id: 2,
-          userId: user?.id || 0,
-          activityType: "agent_created",
-          resourceId: 1,
-          resourceType: "agent",
-          metadata: { name: "Email Assistant" },
-          createdAt: hourAgo,
-        },
-        {
-          id: 3,
-          userId: user?.id || 0,
-          activityType: "task_created",
-          resourceId: 1,
-          resourceType: "task",
-          metadata: { title: "Process emails" },
-          createdAt: halfHourAgo,
-        },
-      ];
-
-      return activities;
-    },
-    enabled: !!user,
-  });
-
-  // Fetch analytics data
-  const { data: analytics, isLoading: isLoadingAnalytics } = useQuery({
-    queryKey: ["/api/analytics", { period }],
-    queryFn: async () => {
-      const res = await fetch(`/api/analytics?period=${period}`);
-
-      // For temporary implementation, use placeholder data
-      const now = new Date();
-      const weekAgo = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 7);
-
-      const analyticsData: Analytics = {
-        id: 1,
-        userId: user?.id || 0,
-        period,
-        periodStart: weekAgo,
-        periodEnd: now,
-        taskCount: 15,
-        successfulTaskCount: 12,
-        failedTaskCount: 3,
-        tokenUsage: 25000,
-        mostUsedAgentId: 1,
-        mostUsedToolType: "openai",
-        averageCompletionTime: 45, // seconds
-        metadata: {},
-        createdAt: now,
-      };
-
-      return analyticsData;
-    },
-    enabled: !!user,
-  });
-
-  const isLoading =
-    isLoadingAgents ||
-    isLoadingCredentials ||
-    isLoadingFiles ||
-    isLoadingTasks ||
-    isLoadingActivities ||
-    isLoadingAnalytics;
+  // Helper to get formatted message
+  const getMessage = () => {
+    switch (activity.activityType) {
+      case "login":
+        return "Logged in to the platform";
+      case "agent_created":
+        return `Created a new agent${activity.metadata?.name ? `: ${activity.metadata.name}` : ""}`;
+      case "task_created":
+        return `Created a new task${activity.metadata?.title ? `: ${activity.metadata.title}` : ""}`;
+      case "task_completed":
+        return `Completed a task${activity.metadata?.title ? `: ${activity.metadata.title}` : ""}`;
+      case "credential_created":
+        return `Created a new credential${activity.metadata?.name ? ` for ${activity.metadata.name}` : ""}`;
+      default:
+        return activity.activityType.replace(/_/g, " ");
+    }
+  };
 
   return (
-    <div className="container py-6 space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {greeting}, {user?.fullName.split(" ")[0]}
-          </h1>
-          <p className="text-muted-foreground">
-            Welcome to your dashboard. Here's what's happening with your agents.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button asChild>
-            <Link href="/agents">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create Agent
-            </Link>
-          </Button>
+    <div className="flex items-start space-x-3 py-3 border-b border-gray-100 last:border-0">
+      <div className="p-1.5 bg-gray-50 rounded-full">
+        {getIcon()}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-medium">{getMessage()}</div>
+        <div className="text-xs text-gray-500">
+          {format(new Date(activity.createdAt), "MMM d, yyyy 'at' h:mm a")}
         </div>
       </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Agents
-                </CardTitle>
-                <Bot className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{agents?.length || 0}</div>
-                <p className="text-xs text-muted-foreground">
-                  Your personal AI assistants
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Credentials
-                </CardTitle>
-                <Key className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {credentials?.length || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Securely stored API keys and tokens
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Files & Templates
-                </CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{files?.length || 0}</div>
-                <p className="text-xs text-muted-foreground">
-                  Documents and reusable templates
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Recent Activity */}
-          {/* Analytics */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance Analytics</CardTitle>
-              <CardDescription>
-                Task completion rate and usage statistics
-              </CardDescription>
-              <Tabs defaultValue="week" className="w-full">
-                <TabsList className="grid w-full max-w-xs grid-cols-3">
-                  <TabsTrigger value="day" onClick={() => setPeriod("day")}>
-                    Day
-                  </TabsTrigger>
-                  <TabsTrigger value="week" onClick={() => setPeriod("week")}>
-                    Week
-                  </TabsTrigger>
-                  <TabsTrigger value="month" onClick={() => setPeriod("month")}>
-                    Month
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </CardHeader>
-            <CardContent className="px-2 pb-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="bg-background border-none shadow-none">
-                  <CardHeader className="p-3">
-                    <CardTitle className="text-sm font-medium">Tasks</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 pt-0">
-                    <div className="text-2xl font-bold">
-                      {analytics?.taskCount || 0}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Total tasks this {period}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-background border-none shadow-none">
-                  <CardHeader className="p-3">
-                    <CardTitle className="text-sm font-medium">
-                      Success Rate
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 pt-0">
-                    {analytics ? (
-                      <>
-                        <div className="text-2xl font-bold">
-                          {Math.round(
-                            (analytics.successfulTaskCount /
-                              analytics.taskCount) *
-                              100,
-                          )}
-                          %
-                        </div>
-                        <Progress
-                          value={
-                            (analytics.successfulTaskCount /
-                              analytics.taskCount) *
-                            100
-                          }
-                          className="mt-2 h-1.5"
-                        />
-                      </>
-                    ) : (
-                      <div className="text-2xl font-bold">-</div>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Task success rate
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-background border-none shadow-none">
-                  <CardHeader className="p-3">
-                    <CardTitle className="text-sm font-medium">
-                      Average Time
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 pt-0">
-                    <div className="text-2xl font-bold flex items-center">
-                      <Clock className="h-4 w-4 mr-1 text-muted-foreground" />
-                      {analytics?.averageCompletionTime
-                        ? `${analytics.averageCompletionTime}s`
-                        : "-"}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Avg. completion time
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-background border-none shadow-none">
-                  <CardHeader className="p-3">
-                    <CardTitle className="text-sm font-medium">
-                      Token Usage
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 pt-0">
-                    <div className="text-2xl font-bold">
-                      {analytics?.tokenUsage
-                        ? `${Math.round(analytics.tokenUsage / 1000)}K`
-                        : "0"}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Total tokens used
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {analytics && (
-                <div className="mt-6 pl-3">
-                  <h4 className="text-sm font-medium mb-2">
-                    Task Distribution
-                  </h4>
-                  <div className="flex justify-between items-center mt-2">
-                    <div className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      <span>Successful</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="mr-2 font-medium">
-                        {analytics.successfulTaskCount}
-                      </span>
-                      <div className="w-32 h-2 bg-muted overflow-hidden rounded-full">
-                        <div
-                          className="h-full bg-green-500"
-                          style={{
-                            width: `${(analytics.successfulTaskCount / analytics.taskCount) * 100}%`,
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center mt-2">
-                    <div className="flex items-center">
-                      <XCircle className="h-4 w-4 text-red-500 mr-2" />
-                      <span>Failed</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="mr-2 font-medium">
-                        {analytics.failedTaskCount}
-                      </span>
-                      <div className="w-32 h-2 bg-muted overflow-hidden rounded-full">
-                        <div
-                          className="h-full bg-red-500"
-                          style={{
-                            width: `${(analytics.failedTaskCount / analytics.taskCount) * 100}%`,
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recent Tasks */}
-            <Card className="col-span-1">
-              <CardHeader>
-                <CardTitle>Recent Tasks</CardTitle>
-                <CardDescription>
-                  Your latest agent tasks and status updates
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {recentTasks && recentTasks.length > 0 ? (
-                  <div className="space-y-4">
-                    {recentTasks.map((task: any) => (
-                      <div
-                        key={task.id}
-                        className="flex items-center justify-between border-b pb-3 last:border-0"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Activity
-                            className={`h-5 w-5 ${
-                              task.status === "completed"
-                                ? "text-green-500"
-                                : task.status === "failed"
-                                  ? "text-red-500"
-                                  : task.status === "in_progress"
-                                    ? "text-blue-500"
-                                    : "text-yellow-500"
-                            }`}
-                          />
-                          <div>
-                            <p className="font-medium">{task.title}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(task.createdAt).toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="capitalize">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              task.status === "completed"
-                                ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400"
-                                : task.status === "failed"
-                                  ? "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400"
-                                  : task.status === "in_progress"
-                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-400"
-                                    : "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400"
-                            }`}
-                          >
-                            {task.status.replace(/_/g, " ")}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-6 text-center">
-                    <Activity className="h-10 w-10 text-muted-foreground mb-2" />
-                    <h3 className="text-lg font-medium mb-1">
-                      No recent tasks
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Create your first agent task to get started
-                    </p>
-                    <Button asChild size="sm">
-                      <Link href="/agents">View Your Agents</Link>
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-              <CardFooter className="pt-0">
-                <Button asChild variant="outline" size="sm" className="w-full">
-                  <Link href="/task-history">View All Tasks</Link>
-                </Button>
-              </CardFooter>
-            </Card>
-
-            {/* User Activities */}
-            <Card className="col-span-1">
-              <CardHeader>
-                <CardTitle>Activity Log</CardTitle>
-                <CardDescription>
-                  Your recent activity on the platform
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {userActivities && userActivities.length > 0 ? (
-                  <div className="space-y-4">
-                    {userActivities.map((activity: any) => (
-                      <div
-                        key={activity.id}
-                        className="flex items-start gap-3 border-b pb-3 last:border-0"
-                      >
-                        <div className="rounded-full p-2 bg-primary/10 text-primary">
-                          {activity.activityType === "login" && (
-                            <Users className="h-4 w-4" />
-                          )}
-                          {activity.activityType === "agent_created" && (
-                            <Bot className="h-4 w-4" />
-                          )}
-                          {activity.activityType === "task_created" && (
-                            <Activity className="h-4 w-4" />
-                          )}
-                          {activity.activityType === "credential_added" && (
-                            <Key className="h-4 w-4" />
-                          )}
-                          {activity.activityType === "file_uploaded" && (
-                            <FileText className="h-4 w-4" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">
-                            {activity.activityType === "login" &&
-                              "Logged in to the platform"}
-                            {activity.activityType === "agent_created" && (
-                              <>
-                                Created new agent{" "}
-                                <span className="font-semibold">
-                                  {(activity.metadata as any)?.name}
-                                </span>
-                              </>
-                            )}
-                            {activity.activityType === "task_created" && (
-                              <>
-                                Created new task{" "}
-                                <span className="font-semibold">
-                                  {(activity.metadata as any)?.title}
-                                </span>
-                              </>
-                            )}
-                            {activity.activityType === "credential_added" &&
-                              "Added new credential"}
-                            {activity.activityType === "file_uploaded" &&
-                              "Uploaded new file"}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(activity.createdAt).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-6 text-center">
-                    <Calendar className="h-10 w-10 text-muted-foreground mb-2" />
-                    <h3 className="text-lg font-medium mb-1">
-                      No activity yet
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Your recent actions will appear here
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card className="col-span-1 lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>Common tasks and shortcuts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                  <Button asChild variant="outline" className="justify-start">
-                    <Link href="/agents">
-                      <Bot className="mr-2 h-4 w-4" />
-                      Manage Agents
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" className="justify-start">
-                    <Link href="/credentials">
-                      <Key className="mr-2 h-4 w-4" />
-                      Add Credentials
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" className="justify-start">
-                    <Link href="/files">
-                      <FileText className="mr-2 h-4 w-4" />
-                      Upload Files
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" className="justify-start">
-                    <Link href="/task-history">
-                      <Activity className="mr-2 h-4 w-4" />
-                      View History
-                    </Link>
-                  </Button>
-
-                  {user?.role === "admin" && (
-                    <Button asChild variant="outline" className="justify-start">
-                      <Link href="/admin">
-                        <Users className="mr-2 h-4 w-4" />
-                        Admin Panel
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </>
-      )}
     </div>
   );
-}
+};
+
+// Component to display user activity feed
+const ActivityFeed = () => {
+  const { toast } = useToast();
+  
+  const { isLoading, error, data } = useQuery({
+    queryKey: ['/api/user/activity'],
+    retry: 1,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex items-start space-x-3 py-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-8 text-center">
+        <AlertCircleIcon className="mx-auto h-8 w-8 text-red-500 mb-2" />
+        <p className="text-gray-500">Failed to load activity data.</p>
+      </div>
+    );
+  }
+
+  const activities = data || [];
+
+  if (activities.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <ActivityIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+        <p className="text-gray-500">No activities yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <ScrollArea className="h-[350px] pr-4">
+      <div className="space-y-1">
+        {activities.map((activity: any) => (
+          <ActivityItem key={activity.id} activity={activity} />
+        ))}
+      </div>
+    </ScrollArea>
+  );
+};
+
+// Component to display user statistics
+const UserStats = () => {
+  const { toast } = useToast();
+  
+  const { isLoading, error, data } = useQuery({
+    queryKey: ['/api/user/analytics'],
+    retry: 1,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="pb-2">
+              <Skeleton className="h-4 w-20" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-8 text-center">
+        <AlertCircleIcon className="mx-auto h-8 w-8 text-red-500 mb-2" />
+        <p className="text-gray-500">Failed to load analytics data.</p>
+      </div>
+    );
+  }
+
+  const analytics = data?.thisMonth || {
+    taskCount: 0,
+    successfulTaskCount: 0,
+    failedTaskCount: 0,
+    tokenUsage: 0
+  };
+
+  const previousMonth = data?.previousMonth;
+  
+  // Helper function to get trend indicator
+  const getTrendIndicator = (current: number, previous: number | undefined) => {
+    if (!previous) return null;
+    
+    const diff = current - previous;
+    const percentage = previous === 0 ? 
+      (current > 0 ? 100 : 0) : 
+      Math.round((diff / previous) * 100);
+      
+    if (percentage === 0) return null;
+    
+    return (
+      <Badge variant={percentage > 0 ? "success" : "destructive"} className="ml-2">
+        {percentage > 0 ? "+" : ""}{percentage}%
+      </Badge>
+    );
+  };
+  
+  // Chart data for tasks
+  const taskData = [
+    { name: 'Successful', value: analytics.successfulTaskCount || 0, color: '#10b981' },
+    { name: 'Failed', value: analytics.failedTaskCount || 0, color: '#ef4444' },
+    { name: 'Pending', value: (analytics.taskCount || 0) - 
+      ((analytics.successfulTaskCount || 0) + (analytics.failedTaskCount || 0)), 
+      color: '#f59e0b' }
+  ].filter(item => item.value > 0);
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline">
+              <span className="text-2xl font-bold">{analytics.taskCount || 0}</span>
+              {getTrendIndicator(
+                analytics.taskCount || 0, 
+                previousMonth?.taskCount
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Successful Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline">
+              <span className="text-2xl font-bold">{analytics.successfulTaskCount || 0}</span>
+              {getTrendIndicator(
+                analytics.successfulTaskCount || 0, 
+                previousMonth?.successfulTaskCount
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Token Usage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline">
+              <span className="text-2xl font-bold">{analytics.tokenUsage || 0}</span>
+              {getTrendIndicator(
+                analytics.tokenUsage || 0, 
+                previousMonth?.tokenUsage
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              {analytics.mostUsedAgent ? "Most Used Agent" : "Agent Status"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {analytics.mostUsedAgent ? (
+              <span className="text-lg font-medium">{analytics.mostUsedAgent}</span>
+            ) : (
+              <span className="text-lg font-medium text-gray-500">No agents used yet</span>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      
+      {taskData.length > 0 && (
+        <ResponsiveContainer width="100%" height={240}>
+          <PieChart>
+            <Pie
+              data={taskData}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={80}
+              paddingAngle={5}
+              dataKey="value"
+              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+            >
+              {taskData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip 
+              formatter={(value: any) => [value, 'Tasks']} 
+              labelFormatter={() => ''} 
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
+    </>
+  );
+};
+
+// Component to display dashboard widgets
+const DashboardWidgets = () => {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  
+  // Fetch dashboard preferences
+  const { isLoading, error, data } = useQuery({
+    queryKey: ['/api/user/dashboard/preferences'],
+    retry: 1,
+  });
+  
+  // Update dashboard preferences
+  const { mutate: updatePreferences } = useMutation({
+    mutationFn: (updates: any) => 
+      apiRequest('PATCH', '/api/user/dashboard/preferences', updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user/dashboard/preferences'] });
+      toast({
+        title: "Dashboard Updated",
+        description: "Your dashboard preferences have been saved.",
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update dashboard preferences.",
+      });
+    },
+  });
+  
+  // Handle widget toggle
+  const handleWidgetToggle = (widgetId: string, enabled: boolean) => {
+    if (!data) return;
+    
+    const updatedWidgets = data.widgets.map((widget: any) => 
+      widget.id === widgetId ? { ...widget, enabled } : widget
+    );
+    
+    updatePreferences({ widgets: updatedWidgets });
+  };
+  
+  // Handle layout change
+  const handleLayoutChange = (columns: number) => {
+    if (!data) return;
+    
+    updatePreferences({ 
+      layout: { 
+        ...data.layout,
+        columns 
+      } 
+    });
+  };
+  
+  // Handle theme change
+  const handleThemeChange = (theme: string) => {
+    if (!data) return;
+    
+    updatePreferences({ theme });
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-8 w-32" />
+        <div className="grid gap-4 md:grid-cols-2 mb-8">
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="py-8 text-center">
+        <AlertCircleIcon className="mx-auto h-8 w-8 text-red-500 mb-2" />
+        <p className="text-gray-500">Failed to load dashboard preferences.</p>
+      </div>
+    );
+  }
+  
+  const preferences = data || {
+    layout: { columns: 2, showWelcome: true },
+    widgets: [
+      { id: "activity", position: 0, enabled: true },
+      { id: "stats", position: 1, enabled: true },
+      { id: "quickActions", position: 2, enabled: true },
+      { id: "agentStatus", position: 3, enabled: true },
+    ],
+    theme: "system"
+  };
+  
+  return (
+    <>
+      {preferences.layout.showWelcome && (
+        <Card className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-none">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold mb-2">
+                  Welcome back, {user?.fullName || 'User'}!
+                </h2>
+                <p className="text-gray-600 max-w-md">
+                  Here's an overview of your activity and platform usage. Customize your dashboard with the options below.
+                </p>
+              </div>
+              <LayoutDashboardIcon className="h-12 w-12 text-blue-400 opacity-75" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold mb-1">Dashboard Settings</h2>
+          <p className="text-sm text-gray-500">Customize how your dashboard looks and feels</p>
+        </div>
+        
+        <div className="flex flex-wrap gap-3">
+          <div className="flex items-center space-x-2">
+            <Label htmlFor="welcome-toggle">Show Welcome</Label>
+            <Switch 
+              id="welcome-toggle" 
+              checked={preferences.layout.showWelcome}
+              onCheckedChange={(checked) => {
+                updatePreferences({ 
+                  layout: { 
+                    ...preferences.layout,
+                    showWelcome: checked 
+                  } 
+                });
+              }}
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="layout-select" className="mr-2">Layout</Label>
+            <Select 
+              value={preferences.layout.columns.toString()} 
+              onValueChange={(value) => handleLayoutChange(parseInt(value))}
+            >
+              <SelectTrigger id="layout-select" className="w-[120px]">
+                <SelectValue placeholder="Layout" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Single column</SelectItem>
+                <SelectItem value="2">Two columns</SelectItem>
+                <SelectItem value="3">Three columns</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label htmlFor="theme-select" className="mr-2">Theme</Label>
+            <Select 
+              value={preferences.theme} 
+              onValueChange={handleThemeChange}
+            >
+              <SelectTrigger id="theme-select" className="w-[120px]">
+                <SelectValue placeholder="Theme" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="system">System</SelectItem>
+                <SelectItem value="light">Light</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+      
+      <div className="mb-4">
+        <h3 className="text-md font-medium mb-2">Widgets</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {preferences.widgets.map((widget: any) => (
+            <div key={widget.id} className="flex items-center space-x-2">
+              <Switch 
+                id={`widget-${widget.id}`} 
+                checked={widget.enabled}
+                onCheckedChange={(checked) => handleWidgetToggle(widget.id, checked)}
+              />
+              <Label htmlFor={`widget-${widget.id}`} className="capitalize">
+                {widget.id.replace(/([A-Z])/g, ' $1')}
+              </Label>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <div className={`grid gap-6 ${
+        preferences.layout.columns === 1 ? 'grid-cols-1' : 
+        preferences.layout.columns === 3 ? 'grid-cols-1 md:grid-cols-3' : 
+        'grid-cols-1 md:grid-cols-2'
+      }`}>
+        {preferences.widgets.find((w: any) => w.id === "activity" && w.enabled) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ActivityIcon className="h-5 w-5" />
+                <span>Recent Activity</span>
+              </CardTitle>
+              <CardDescription>
+                Your latest actions and events
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ActivityFeed />
+            </CardContent>
+          </Card>
+        )}
+        
+        {preferences.widgets.find((w: any) => w.id === "stats" && w.enabled) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart2Icon className="h-5 w-5" />
+                <span>Analytics</span>
+              </CardTitle>
+              <CardDescription>
+                Your platform usage statistics
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UserStats />
+            </CardContent>
+          </Card>
+        )}
+        
+        {preferences.widgets.find((w: any) => w.id === "quickActions" && w.enabled) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PackageIcon className="h-5 w-5" />
+                <span>Quick Actions</span>
+              </CardTitle>
+              <CardDescription>
+                Common tasks and shortcuts
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                  <PackageIcon className="h-5 w-5" />
+                  <span>New Agent</span>
+                </Button>
+                <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                  <FilesIcon className="h-5 w-5" />
+                  <span>Create Task</span>
+                </Button>
+                <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                  <ActivityIcon className="h-5 w-5" />
+                  <span>Add Credential</span>
+                </Button>
+                <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                  <SettingsIcon className="h-5 w-5" />
+                  <span>Settings</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {preferences.widgets.find((w: any) => w.id === "agentStatus" && w.enabled) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GaugeIcon className="h-5 w-5" />
+                <span>Agent Status</span>
+              </CardTitle>
+              <CardDescription>
+                Current state of your agents
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center py-12">
+              <p className="text-gray-500">This feature will be available soon.</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </>
+  );
+};
+
+// Main dashboard page
+const DashboardPage = () => {
+  const { user } = useAuth();
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <MainLayout>
+      <div className="container px-4 py-8 max-w-7xl mx-auto">
+        <Tabs defaultValue="dashboard">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold">Your Dashboard</h1>
+            <TabsList>
+              <TabsTrigger value="dashboard">
+                <LayoutDashboardIcon className="h-4 w-4 mr-2" />
+                Dashboard
+              </TabsTrigger>
+              <TabsTrigger value="activity">
+                <ActivityIcon className="h-4 w-4 mr-2" />
+                Activity
+              </TabsTrigger>
+              <TabsTrigger value="analytics">
+                <BarChart2Icon className="h-4 w-4 mr-2" />
+                Analytics
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          
+          <TabsContent value="dashboard" className="mt-0">
+            <DashboardWidgets />
+          </TabsContent>
+          
+          <TabsContent value="activity" className="mt-0">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+                <CardDescription>
+                  A log of your recent actions and system events
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ActivityFeed />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="analytics" className="mt-0">
+            <Card>
+              <CardHeader>
+                <CardTitle>Usage Analytics</CardTitle>
+                <CardDescription>
+                  Detailed metrics about your platform usage
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <UserStats />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </MainLayout>
+  );
+};
+
+export default DashboardPage;
