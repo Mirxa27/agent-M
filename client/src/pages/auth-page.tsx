@@ -98,8 +98,8 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row-reverse bg-gradient-to-b from-background to-slate-50 dark:from-background dark:to-slate-950">
       {/* Right side - Forms */}
-      <div className="w-full md:w-1/2 lg:w-3/5 flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-16 xl:p-20">
-        <div className="w-full max-w-lg xl:max-w-2xl backdrop-blur-sm bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 xl:p-10 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+      <div className="w-full md:w-1/2 lg:w-2/5 flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-16 xl:p-20">
+        <div className="w-full max-w-md xl:max-w-lg backdrop-blur-sm bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 xl:p-10 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
           <div className="text-center mb-6 sm:mb-8">
             <div className="inline-flex items-center justify-center">
               <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center mr-2">
@@ -333,7 +333,7 @@ export default function AuthPage() {
       </div>
 
       {/* Left side - Hero image and overview */}
-      <div className="hidden lg:flex w-2/5 md:flex-1 bg-auth-gradient text-white p-8 xl:p-12 2xl:p-16 flex-col justify-center relative overflow-hidden">
+      <div className="hidden lg:flex w-3/5 md:flex-1 bg-auth-gradient text-white p-8 xl:p-12 2xl:p-16 flex-col justify-center relative overflow-hidden">
         {/* Background decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 md:w-96 md:h-96 bg-white/5 rounded-full -mt-20 -mr-20 animate-pulse-slow"></div>
         <div className="absolute bottom-0 left-0 w-80 h-80 md:w-96 md:h-96 bg-white/5 rounded-full -mb-40 -ml-20 animate-pulse-slow"></div>
