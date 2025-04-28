@@ -570,13 +570,13 @@ export default function UsersPanel() {
                 
                 <FormField
                   control={form.control}
-                  name="planId"
+                  name="plan"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Subscription Plan</FormLabel>
                       <Select 
-                        onValueChange={(value) => field.onChange(parseInt(value) || undefined)} 
-                        value={field.value?.toString()}
+                        onValueChange={field.onChange} 
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -584,23 +584,10 @@ export default function UsersPanel() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No Plan</SelectItem>
-                          {isLoadingPlans ? (
-                            <div className="flex items-center justify-center p-2">
-                              <Skeleton className="h-5 w-full" />
-                            </div>
-                          ) : (
-                            plans
-                              .filter(plan => plan.isActive)
-                              .map((plan) => (
-                                <SelectItem 
-                                  key={plan.id} 
-                                  value={plan.id.toString()}
-                                >
-                                  {plan.name}
-                                </SelectItem>
-                              ))
-                          )}
+                          <SelectItem value="free">Free Plan</SelectItem>
+                          <SelectItem value="starter">Starter Plan</SelectItem>
+                          <SelectItem value="pro">Pro Plan</SelectItem>
+                          <SelectItem value="enterprise">Enterprise</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
