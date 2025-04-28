@@ -8,9 +8,10 @@ interface MainLayoutProps {
   children: ReactNode;
   className?: string;
   hideNav?: boolean;
+  noPadding?: boolean;
 }
 
-export function MainLayout({ children, className, hideNav }: MainLayoutProps) {
+export function MainLayout({ children, className, hideNav, noPadding = false }: MainLayoutProps) {
   const { user } = useAuth();
   
   return (
@@ -18,7 +19,11 @@ export function MainLayout({ children, className, hideNav }: MainLayoutProps) {
       {!hideNav && <Header />}
       
       <main className={cn("flex-1 w-full max-w-full overflow-x-hidden", className)}>
-        <div className="min-w-0 w-full"> {/* Ensures content won't overflow horizontally */}
+        <div className={cn(
+          "min-w-0 w-full", 
+          !noPadding && "p-3 sm:p-4 md:p-5 lg:p-6 space-y-4 sm:space-y-5 md:space-y-6"
+        )}> 
+          {/* Ensures content won't overflow horizontally and adds adaptive padding */}
           {children}
         </div>
       </main>
