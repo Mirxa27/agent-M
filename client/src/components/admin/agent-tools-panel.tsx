@@ -551,16 +551,16 @@ export default function AgentToolsPanel() {
 
       {/* Create Tool Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create Tool</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-lg p-4 sm:p-6">
+          <DialogHeader className="mb-1 sm:mb-2">
+            <DialogTitle className="text-lg sm:text-xl">Create Tool</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Create a new tool for AI agents to use.
             </DialogDescription>
           </DialogHeader>
           
           <Form {...createForm}>
-            <form onSubmit={createForm.handleSubmit(handleCreateSubmit)} className="space-y-4">
+            <form onSubmit={createForm.handleSubmit(handleCreateSubmit)} className="space-y-3 sm:space-y-4">
               <FormField
                 control={createForm.control}
                 name="name"
@@ -759,16 +759,16 @@ export default function AgentToolsPanel() {
 
       {/* Edit Tool Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit Tool</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-lg p-4 sm:p-6">
+          <DialogHeader className="mb-1 sm:mb-2">
+            <DialogTitle className="text-lg sm:text-xl">Edit Tool</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Modify the existing tool settings.
             </DialogDescription>
           </DialogHeader>
           
           <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-4">
+            <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-3 sm:space-y-4">
               {/* Same form fields as create dialog */}
               <FormField
                 control={editForm.control}
@@ -969,45 +969,46 @@ export default function AgentToolsPanel() {
       {/* View Tool Dialog */}
       {selectedTool && (
         <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>{selectedTool.name}</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-lg p-4 sm:p-6">
+            <DialogHeader className="mb-1 sm:mb-2">
+              <DialogTitle className="text-lg sm:text-xl">{selectedTool.name}</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
                 {selectedTool.description}
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
                 <div>
-                  <h4 className="text-sm font-medium">Category</h4>
-                  <p className="text-sm capitalize">{selectedTool.category.replace('_', ' ')}</p>
+                  <h4 className="text-xs sm:text-sm font-medium mb-1">Category</h4>
+                  <p className="text-xs sm:text-sm capitalize">{selectedTool.category.replace('_', ' ')}</p>
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium">Type</h4>
-                  <p className="text-sm">{selectedTool.type}</p>
+                  <h4 className="text-xs sm:text-sm font-medium mb-1">Type</h4>
+                  <p className="text-xs sm:text-sm">{selectedTool.type}</p>
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium">Status</h4>
-                  <p className="text-sm">{selectedTool.isActive ? 'Active' : 'Inactive'}</p>
+                  <h4 className="text-xs sm:text-sm font-medium mb-1">Status</h4>
+                  <p className="text-xs sm:text-sm">{selectedTool.isActive ? 'Active' : 'Inactive'}</p>
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium">System Tool</h4>
-                  <p className="text-sm">{selectedTool.isSystem ? 'Yes' : 'No'}</p>
+                  <h4 className="text-xs sm:text-sm font-medium mb-1">System Tool</h4>
+                  <p className="text-xs sm:text-sm">{selectedTool.isSystem ? 'Yes' : 'No'}</p>
                 </div>
               </div>
               
               <div>
-                <h4 className="text-sm font-medium mb-2">Configuration</h4>
-                <pre className="bg-muted p-4 rounded-md text-xs overflow-auto max-h-[400px]">
+                <h4 className="text-xs sm:text-sm font-medium mb-1 sm:mb-2">Configuration</h4>
+                <pre className="bg-muted p-3 sm:p-4 rounded-md text-xs overflow-auto max-h-[200px] sm:max-h-[400px]">
                   {JSON.stringify(selectedTool.config, null, 2)}
                 </pre>
               </div>
             </div>
             
-            <DialogFooter>
+            <DialogFooter className="mt-3 sm:mt-4">
               <Button 
-                variant="outline" 
+                variant="outline"
+                className="h-8 sm:h-9 text-xs sm:text-sm py-1 px-3"
                 onClick={() => setViewDialogOpen(false)}
               >
                 Close
@@ -1015,12 +1016,13 @@ export default function AgentToolsPanel() {
               
               {!selectedTool.isSystem && (
                 <Button
+                  className="h-8 sm:h-9 text-xs sm:text-sm py-1 px-3"
                   onClick={() => {
                     setViewDialogOpen(false);
                     handleEditClick(selectedTool);
                   }}
                 >
-                  <Edit className="mr-2 h-4 w-4" />
+                  <Edit className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   Edit
                 </Button>
               )}
@@ -1031,27 +1033,29 @@ export default function AgentToolsPanel() {
 
       {/* Delete Tool Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Tool</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="p-4 sm:p-6 max-w-sm sm:max-w-md">
+          <DialogHeader className="mb-1 sm:mb-2">
+            <DialogTitle className="text-lg sm:text-xl">Delete Tool</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Are you sure you want to delete this tool? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           
-          <DialogFooter>
+          <DialogFooter className="mt-4 sm:mt-6 flex-col sm:flex-row gap-2 sm:gap-2">
             <Button
               variant="outline"
+              className="h-8 sm:h-9 text-xs sm:text-sm py-1 px-3 sm:order-1"
               onClick={() => setDeleteDialogOpen(false)}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
+              className="h-8 sm:h-9 text-xs sm:text-sm py-1 px-3 sm:order-2"
               onClick={handleDeleteConfirm}
               disabled={deleteToolMutation.isPending}
             >
-              {deleteToolMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {deleteToolMutation.isPending && <Loader2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />}
               Delete
             </Button>
           </DialogFooter>
