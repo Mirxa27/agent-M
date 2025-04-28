@@ -65,7 +65,7 @@ function Router() {
       <ProtectedRoute path="/agents" component={AgentsPage} />
       <ProtectedRoute path="/credentials" component={CredentialsPage} />
       <ProtectedRoute path="/files" component={FilesPage} />
-      <ProtectedRoute path="/tasks" component={TaskHistoryPage} />
+      <ProtectedRoute path="/task-history" component={TaskHistoryPage} />
       
       {/* Admin Routes */}
       <AdminRoute path="/admin" component={AdminDashboard} />

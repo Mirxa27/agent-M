@@ -1,632 +1,440 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { Task, Message, Agent } from "@shared/schema";
-import { format } from "date-fns";
-import { 
-  Loader2, 
-  Search, 
-  RefreshCw, 
-  Eye, 
-  X, 
-  Clock, 
-  Filter, 
-  ArrowUpDown, 
-  Download,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Clock8
-} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Task } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle, 
+  CardFooter 
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+import { 
+  Activity, 
+  Bot, 
+  Search, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  AlertCircle, 
+  Loader2, 
+  ChevronRight,
+  Calendar
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { format, formatDistanceToNow } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import DashboardLayout from "@/components/layouts/dashboard-layout";
+import { useToast } from "@/hooks/use-toast";
+
+// Task status colors
+const statusConfig = {
+  completed: {
+    color: "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400",
+    icon: CheckCircle,
+  },
+  failed: {
+    color: "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400",
+    icon: XCircle,
+  },
+  in_progress: {
+    color: "bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-400",
+    icon: Loader2,
+  },
+  pending: {
+    color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400",
+    icon: Clock,
+  },
+};
 
 export default function TaskHistoryPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [agentFilter, setAgentFilter] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [taskMessages, setTaskMessages] = useState<Message[]>([]);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [timeRange, setTimeRange] = useState("all");
 
-  // Get tasks data
+  // Fetch tasks
   const { 
-    data: tasks = [], 
-    isLoading: isLoadingTasks 
-  } = useQuery<Task[]>({
+    data: tasks,
+    isLoading 
+  } = useQuery({
     queryKey: ["/api/tasks"],
+    queryFn: async () => {
+      const res = await fetch("/api/tasks");
+      if (!res.ok) throw new Error("Failed to fetch tasks");
+      return res.json() as Promise<Task[]>;
+    }
   });
 
-  // Get agents data
+  // Get agent details for a task
   const { 
-    data: agents = [], 
-    isLoading: isLoadingAgents 
-  } = useQuery<Agent[]>({
-    queryKey: ["/api/agents"],
+    data: agentDetails, 
+    isLoading: isLoadingAgentDetails 
+  } = useQuery({
+    queryKey: ["/api/agents", selectedTask?.agentId],
+    queryFn: async () => {
+      if (!selectedTask?.agentId) return null;
+      const res = await fetch(`/api/agents/${selectedTask.agentId}`);
+      if (!res.ok) throw new Error("Failed to fetch agent details");
+      return res.json();
+    },
+    enabled: !!selectedTask?.agentId,
   });
 
   // Get task messages
-  const fetchTaskMessages = async (taskId: number) => {
-    try {
-      const res = await apiRequest("GET", `/api/tasks/${taskId}/messages`);
-      const data = await res.json();
-      setTaskMessages(data);
-      return data;
-    } catch (error) {
-      toast({
-        title: "Failed to load messages",
-        description: error.message,
-        variant: "destructive",
-      });
-      return [];
-    }
-  };
-
-  // Rerun task mutation
-  const rerunTaskMutation = useMutation({
-    mutationFn: async (taskId: number) => {
-      // In a real implementation, we'd make an API call to rerun the task
-      // For now, we'll simulate it by cloning the task
-      const task = tasks.find(t => t.id === taskId);
-      if (!task) throw new Error("Task not found");
-      
-      const res = await apiRequest("POST", "/api/tasks", {
-        userId: user!.id,
-        agentId: task.agentId,
-        title: `Rerun: ${task.title}`,
-        description: task.description,
-      });
-      
+  const { 
+    data: taskMessages, 
+    isLoading: isLoadingMessages 
+  } = useQuery({
+    queryKey: ["/api/tasks", selectedTask?.id, "messages"],
+    queryFn: async () => {
+      if (!selectedTask?.id) return [];
+      const res = await fetch(`/api/tasks/${selectedTask.id}/messages`);
+      if (!res.ok) throw new Error("Failed to fetch task messages");
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
-      toast({
-        title: "Task rerun initiated",
-        description: "The task has been queued to run again",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to rerun task",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
+    enabled: !!selectedTask?.id,
   });
 
-  // Handle viewing task details
-  const handleViewTask = async (task: Task) => {
+  // Filter tasks based on active tab, search query, and time range
+  const filteredTasks = tasks?.filter(task => {
+    // Filter by status
+    if (activeTab !== "all" && task.status !== activeTab) {
+      return false;
+    }
+    
+    // Filter by search query
+    if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    
+    // Filter by time range
+    if (timeRange !== "all") {
+      const taskDate = new Date(task.createdAt);
+      const now = new Date();
+      
+      if (timeRange === "today") {
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        return taskDate >= today;
+      } else if (timeRange === "week") {
+        const lastWeek = new Date();
+        lastWeek.setDate(now.getDate() - 7);
+        return taskDate >= lastWeek;
+      } else if (timeRange === "month") {
+        const lastMonth = new Date();
+        lastMonth.setMonth(now.getMonth() - 1);
+        return taskDate >= lastMonth;
+      }
+    }
+    
+    return true;
+  });
+  
+  const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
-    setIsDetailsOpen(true);
-    await fetchTaskMessages(task.id);
   };
 
-  // Handle rerunning a task
-  const handleRerunTask = (taskId: number) => {
-    rerunTaskMutation.mutate(taskId);
-  };
-
-  // Filter tasks based on search term, status, and agent
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = 
-      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (task.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const formatTaskContent = (content: any) => {
+    if (!content) return "No result data available";
     
-    const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
+    if (typeof content === "string") {
+      return content;
+    }
     
-    const matchesAgent = agentFilter === 'all' || task.agentId.toString() === agentFilter;
-    
-    return matchesSearch && matchesStatus && matchesAgent;
-  });
-
-  // Get agent name by ID
-  const getAgentName = (agentId: number): string => {
-    const agent = agents.find(a => a.id === agentId);
-    return agent ? agent.name : 'Unknown Agent';
-  };
-
-  // Get agent icon by agent ID
-  const getAgentIcon = (agentId: number): string => {
-    const agent = agents.find(a => a.id === agentId);
-    if (!agent) return 'robot';
-    
-    switch (agent.type) {
-      case 'email':
-        return 'envelope';
-      case 'wordpress':
-        return 'wordpress-simple';
-      case 'google':
-        return 'google';
-      default:
-        return 'robot';
+    try {
+      return JSON.stringify(content, null, 2);
+    } catch (e) {
+      return "Unable to display result data";
     }
   };
 
-  // Get status badge color
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "failed":
-        return "bg-red-100 text-red-800";
-      case "partial":
-        return "bg-yellow-100 text-yellow-800";
-      case "pending":
-        return "bg-blue-100 text-blue-800";
-      case "running":
-        return "bg-indigo-100 text-indigo-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  // Get status icon
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-      case "failed":
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      case "partial":
-        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-      case "pending":
-      case "running":
-        return <Clock8 className="h-4 w-4 text-blue-600" />;
-      default:
-        return <Clock className="h-4 w-4 text-gray-600" />;
-    }
-  };
-
-  // Loading state
-  if (isLoadingTasks || isLoadingAgents) {
+  const renderTaskStatus = (status: string) => {
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    const StatusIcon = config.icon;
+    
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-10 w-10 text-primary animate-spin" />
+      <div className="flex items-center gap-1.5">
+        <StatusIcon className={`h-4 w-4 ${status === "in_progress" ? "animate-spin" : ""}`} />
+        <span className="capitalize">{status.replace(/_/g, ' ')}</span>
       </div>
     );
-  }
-
+  };
+  
   return (
-    <DashboardLayout 
-      title="Task History"
-      subtitle="View and manage your AI agent tasks"
-    >
-      {/* Filters & search bar */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div className="w-full md:w-auto flex flex-1 gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search tasks..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+    <div className="container py-6">
+      <div className="flex flex-col space-y-6">
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Task History</h1>
+            <p className="text-muted-foreground">
+              View and manage your AI agent task history
+            </p>
           </div>
-          
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <div className="flex items-center">
-                <Filter className="mr-2 h-4 w-4" />
-                <span>{statusFilter === 'all' ? 'All Statuses' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}</span>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="running">Running</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="partial">Partial</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={agentFilter} onValueChange={setAgentFilter}>
-            <SelectTrigger className="w-[180px]">
-              <div className="flex items-center">
-                <Filter className="mr-2 h-4 w-4" />
-                <span>{agentFilter === 'all' ? 'All Agents' : getAgentName(parseInt(agentFilter))}</span>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Agents</SelectItem>
-              {agents.map((agent) => (
-                <SelectItem key={agent.id} value={agent.id.toString()}>
-                  {agent.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search tasks..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Select
+              value={timeRange}
+              onValueChange={setTimeRange}
+            >
+              <SelectTrigger className="w-full sm:w-[150px]">
+                <SelectValue placeholder="Time range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="week">Last Week</SelectItem>
+                <SelectItem value="month">Last Month</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
 
-      {/* Tasks table */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-0">
-          <CardTitle>Task History</CardTitle>
-          <CardDescription>
-            View and manage all tasks executed by your AI agents
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[250px]">
-                  <div className="flex items-center gap-1">
-                    Task
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        <DropdownMenuItem>Sort A-Z</DropdownMenuItem>
-                        <DropdownMenuItem>Sort Z-A</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableHead>
-                <TableHead>Agent</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>
-                  <div className="flex items-center gap-1">
-                    Date
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        <DropdownMenuItem>Newest First</DropdownMenuItem>
-                        <DropdownMenuItem>Oldest First</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTasks.length > 0 ? (
-                filteredTasks.map((task) => (
-                  <TableRow key={task.id}>
-                    <TableCell>
-                      <div className="font-medium">{task.title}</div>
-                      {task.description && (
-                        <div className="text-sm text-gray-500">{task.description}</div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-primary-500 rounded-md flex items-center justify-center text-white">
-                          <i className={`fa-${getAgentIcon(task.agentId) === 'wordpress-simple' ? 'brands' : 'solid'} fa-${getAgentIcon(task.agentId)} text-xs`}></i>
-                        </div>
-                        <span>{getAgentName(task.agentId)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        {getStatusIcon(task.status)}
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(task.status)}`}>
-                          {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {task.completedAt 
-                        ? format(new Date(task.completedAt), "MMM d, yyyy h:mm a")
-                        : format(new Date(task.createdAt), "MMM d, yyyy h:mm a")
-                      }
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleViewTask(task)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>View Task Details</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleRerunTask(task.id)}
-                                disabled={rerunTaskMutation.isPending}
-                              >
-                                {rerunTaskMutation.isPending ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <RefreshCw className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Rerun Task</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        
-                        {task.result && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Download Results</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10">
-                    <div className="flex flex-col items-center">
-                      <Clock className="h-10 w-10 text-gray-300 mb-2" />
-                      {searchTerm || statusFilter !== 'all' || agentFilter !== 'all' ? (
-                        <>
-                          <p className="font-medium text-gray-700">No tasks found with the current filters</p>
-                          <p className="text-gray-500 text-sm">Try adjusting your search or filters</p>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="mt-4"
-                            onClick={() => {
-                              setSearchTerm('');
-                              setStatusFilter('all');
-                              setAgentFilter('all');
-                            }}
-                          >
-                            Clear Filters
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <p className="font-medium text-gray-700">No tasks found</p>
-                          <p className="text-gray-500 text-sm">Your agent tasks will appear here</p>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="mt-4"
-                            onClick={() => window.location.href = '/'}
-                          >
-                            Create a Task
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-        <CardFooter className="border-t p-4 flex justify-between">
-          <div className="text-sm text-gray-500">
-            Showing {filteredTasks.length} of {tasks.length} tasks
-          </div>
-        </CardFooter>
-      </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-1 space-y-4">
+            <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid grid-cols-4 mb-4">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="completed">Completed</TabsTrigger>
+                <TabsTrigger value="in_progress">In Progress</TabsTrigger>
+                <TabsTrigger value="failed">Failed</TabsTrigger>
+              </TabsList>
 
-      {/* Task Details Dialog */}
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Task Details</span>
-              <Button variant="ghost" size="icon" onClick={() => setIsDetailsOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </DialogTitle>
-            {selectedTask && (
-              <DialogDescription>
-                {selectedTask.title}
-              </DialogDescription>
-            )}
-          </DialogHeader>
-          
-          {selectedTask && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">Status</p>
-                  <div className="flex items-center gap-1.5">
-                    {getStatusIcon(selectedTask.status)}
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(selectedTask.status)}`}>
-                      {selectedTask.status.charAt(0).toUpperCase() + selectedTask.status.slice(1)}
-                    </span>
+              <Card>
+                <CardHeader className="px-4 py-3 border-b">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg">Tasks</CardTitle>
+                    {!isLoading && (
+                      <Badge variant="outline">
+                        {filteredTasks?.length || 0} tasks
+                      </Badge>
+                    )}
                   </div>
-                </div>
-                
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">Agent</p>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-primary-500 rounded-md flex items-center justify-center text-white">
-                      <i className={`fa-${getAgentIcon(selectedTask.agentId) === 'wordpress-simple' ? 'brands' : 'solid'} fa-${getAgentIcon(selectedTask.agentId)} text-xs`}></i>
-                    </div>
-                    <span>{getAgentName(selectedTask.agentId)}</span>
-                  </div>
-                </div>
-                
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">Created</p>
-                  <p>{format(new Date(selectedTask.createdAt), "MMMM d, yyyy h:mm a")}</p>
-                </div>
-                
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">Completed</p>
-                  <p>
-                    {selectedTask.completedAt 
-                      ? format(new Date(selectedTask.completedAt), "MMMM d, yyyy h:mm a")
-                      : 'Not completed yet'}
-                  </p>
-                </div>
-              </div>
-              
-              {selectedTask.description && (
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">Description</p>
-                  <p className="text-sm">{selectedTask.description}</p>
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-500">Conversation</p>
-                  <Button variant="outline" size="sm" className="text-xs">
-                    <Download className="h-3 w-3 mr-1" />
-                    Export Chat
-                  </Button>
-                </div>
-                
-                <div className="border rounded-lg p-4 max-h-[400px] overflow-y-auto bg-gray-50">
-                  {taskMessages.length > 0 ? (
-                    <div className="space-y-4">
-                      {taskMessages.map((message, index) => (
-                        <div 
-                          key={message.id || index} 
-                          className={`flex ${message.role === 'user' ? 'justify-end' : ''}`}
-                        >
-                          {message.role === 'assistant' && (
-                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white mr-2 flex-shrink-0">
-                              <i className="fa-solid fa-robot text-xs"></i>
-                            </div>
-                          )}
-                          
-                          <div className={`${
-                            message.role === 'user' 
-                              ? 'bg-primary-50 text-primary-800 rounded-lg rounded-tr-none'
-                              : 'bg-white border rounded-lg rounded-tl-none'
-                          } p-3 max-w-[70%] shadow-sm`}>
-                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                            <p className="text-xs text-gray-400 mt-1 text-right">
-                              {format(new Date(message.createdAt), "h:mm a")}
-                            </p>
-                          </div>
-                          
-                          {message.role === 'user' && (
-                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center ml-2 flex-shrink-0">
-                              <span className="text-xs font-medium text-gray-600">
-                                {user?.fullName?.split(' ').map(n => n[0]).join('') || user?.username?.substring(0, 2).toUpperCase()}
-                              </span>
-                            </div>
-                          )}
+                </CardHeader>
+                <CardContent className="p-0">
+                  {isLoading ? (
+                    <div className="p-4 space-y-3">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="space-y-2">
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-3 w-1/2" />
+                          <div className="pt-2"><Skeleton className="h-3 w-1/4" /></div>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">No messages found for this task</p>
+                  ) : filteredTasks?.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+                      <Activity className="h-10 w-10 text-muted-foreground mb-2" />
+                      <h3 className="text-lg font-medium mb-1">No tasks found</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {searchQuery 
+                          ? "Try adjusting your search query"
+                          : activeTab !== "all" 
+                            ? `No ${activeTab.replace('_', ' ')} tasks found`
+                            : "No task history available"}
+                      </p>
                     </div>
+                  ) : (
+                    <ScrollArea className="h-[400px]">
+                      <div className="divide-y">
+                        {filteredTasks?.map((task) => {
+                          const StatusIcon = statusConfig[task.status as keyof typeof statusConfig]?.icon || statusConfig.pending.icon;
+                          const statusColor = statusConfig[task.status as keyof typeof statusConfig]?.color || statusConfig.pending.color;
+                          
+                          return (
+                            <button
+                              key={task.id}
+                              className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors ${
+                                selectedTask?.id === task.id ? "bg-muted" : ""
+                              }`}
+                              onClick={() => handleTaskClick(task)}
+                            >
+                              <div className="flex justify-between items-start gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{task.title}</p>
+                                  <p className="text-sm text-muted-foreground mt-1 truncate">
+                                    {task.description || "No description"}
+                                  </p>
+                                  <div className="flex items-center mt-2 gap-2">
+                                    <Badge variant="outline" className={statusColor}>
+                                      <StatusIcon className={`h-3 w-3 mr-1 ${task.status === "in_progress" ? "animate-spin" : ""}`} />
+                                      <span className="capitalize">{task.status.replace(/_/g, ' ')}</span>
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
+                                    </span>
+                                  </div>
+                                </div>
+                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
                   )}
-                </div>
-              </div>
-              
-              {selectedTask.result && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-500">Results</p>
-                  <div className="border rounded-lg p-4 bg-white">
-                    <pre className="text-sm whitespace-pre-wrap overflow-x-auto">
-                      {JSON.stringify(selectedTask.result, null, 2)}
-                    </pre>
+                </CardContent>
+              </Card>
+            </Tabs>
+          </div>
+
+          <div className="md:col-span-2">
+            {!selectedTask ? (
+              <Card className="h-full flex items-center justify-center">
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <Activity className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Select a task to view details</h3>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Click on any task from the list to view its details, including status, 
+                    timestamps, and results.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="h-full flex flex-col">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between">
+                    <div>
+                      <CardTitle>{selectedTask.title}</CardTitle>
+                      <CardDescription>
+                        {selectedTask.description || "No description"}
+                      </CardDescription>
+                    </div>
+                    <Badge variant="outline" className={statusConfig[selectedTask.status as keyof typeof statusConfig]?.color || statusConfig.pending.color}>
+                      {renderTaskStatus(selectedTask.status)}
+                    </Badge>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => handleRerunTask(selectedTask!.id)}
-              disabled={rerunTaskMutation.isPending}
-            >
-              {rerunTaskMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-2 h-4 w-4" />
-              )}
-              Rerun Task
-            </Button>
-            <Button onClick={() => setIsDetailsOpen(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </DashboardLayout>
+                </CardHeader>
+                <CardContent className="space-y-6 pb-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-medium flex items-center gap-1.5">
+                        <Bot className="h-4 w-4" /> Agent
+                      </h4>
+                      {isLoadingAgentDetails ? (
+                        <Skeleton className="h-5 w-28" />
+                      ) : (
+                        <p className="text-sm">{agentDetails?.name || "Unknown agent"}</p>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-medium flex items-center gap-1.5">
+                        <Calendar className="h-4 w-4" /> Created
+                      </h4>
+                      <p className="text-sm">
+                        {format(new Date(selectedTask.createdAt), "PPp")}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-medium flex items-center gap-1.5">
+                        <Calendar className="h-4 w-4" /> Completed
+                      </h4>
+                      <p className="text-sm">
+                        {selectedTask.completedAt 
+                          ? format(new Date(selectedTask.completedAt), "PPp")
+                          : "Not completed"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-md font-medium">Result</h4>
+                    {selectedTask.status === "in_progress" ? (
+                      <div className="p-4 rounded-md bg-muted flex items-center justify-center">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Task in progress</span>
+                        </div>
+                      </div>
+                    ) : selectedTask.status === "pending" ? (
+                      <div className="p-4 rounded-md bg-muted flex items-center justify-center">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span>Task pending</span>
+                        </div>
+                      </div>
+                    ) : selectedTask.status === "failed" ? (
+                      <div className="p-4 rounded-md bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium">Task failed</p>
+                            <p className="text-sm mt-1">{formatTaskContent(selectedTask.result)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-md bg-muted font-mono text-sm overflow-auto max-h-[300px]">
+                        <pre className="whitespace-pre-wrap">{formatTaskContent(selectedTask.result)}</pre>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Task Messages Section */}
+                  <div className="space-y-3">
+                    <h4 className="text-md font-medium">Messages</h4>
+                    {isLoadingMessages ? (
+                      <div className="space-y-3">
+                        <Skeleton className="h-20 w-full" />
+                        <Skeleton className="h-20 w-full" />
+                      </div>
+                    ) : !taskMessages || taskMessages.length === 0 ? (
+                      <div className="p-4 rounded-md bg-muted text-center">
+                        <p className="text-muted-foreground">No messages for this task</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {taskMessages.map((message, index) => (
+                          <div 
+                            key={index} 
+                            className={`p-3 rounded-md ${
+                              message.role === "system" 
+                                ? "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400" 
+                                : message.role === "assistant" 
+                                  ? "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400" 
+                                  : "bg-muted"
+                            }`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <span className="text-xs font-medium uppercase">
+                                {message.role}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(message.timestamp), "p")}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-sm whitespace-pre-wrap">{message.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
