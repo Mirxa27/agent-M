@@ -18,7 +18,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { Loader2, Plus, Trash, Edit, Eye, Copy, Box, Search, Filter, X } from "lucide-react";
+import { 
+  Loader2, Plus, Trash, Edit, Eye, Copy, Box, Search, Filter, X,
+  Text, FileText, Code, Database, Globe, Mail, Server, Share, 
+  Tag, Terminal, BarChart, Activity, Bot, Brain, Cloud 
+} from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { LucideIcon } from "lucide-react";
 import * as LucideIcons from "lucide-react";
@@ -563,7 +567,7 @@ export default function AgentToolsPanel() {
 
       {/* Create Tool Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[92vh]">
+        <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[92vh] sm:max-h-[95vh]">
           <DialogHeader className="mb-1 sm:mb-2">
             <DialogTitle className="text-lg sm:text-xl">Create Tool</DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
@@ -578,11 +582,15 @@ export default function AgentToolsPanel() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel className="text-xs sm:text-sm">Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Text Generator" {...field} />
+                      <Input 
+                        placeholder="Text Generator" 
+                        className="h-9 sm:h-10 text-xs sm:text-sm"
+                        {...field} 
+                      />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
@@ -592,43 +600,44 @@ export default function AgentToolsPanel() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel className="text-xs sm:text-sm">Description</FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder="Describe what this tool does..."
+                        className="text-xs sm:text-sm min-h-[80px]"
                         {...field} 
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <FormField
                   control={createForm.control}
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel className="text-xs sm:text-sm">Category</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="text-xs sm:text-sm">
                           {Object.entries(TOOL_CATEGORIES).map(([key, value]) => (
-                            <SelectItem key={key} value={value}>
+                            <SelectItem key={key} value={value} className="text-xs sm:text-sm">
                               {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
+                      <FormMessage className="text-xs" />
                     </FormItem>
                   )}
                 />
@@ -638,28 +647,28 @@ export default function AgentToolsPanel() {
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Type</FormLabel>
+                      <FormLabel className="text-xs sm:text-sm">Type</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="openai">OpenAI</SelectItem>
-                          <SelectItem value="custom_api">Custom API</SelectItem>
-                          <SelectItem value="webhook">Webhook</SelectItem>
-                          <SelectItem value="database">Database</SelectItem>
-                          <SelectItem value="file_system">File System</SelectItem>
-                          <SelectItem value="email">Email</SelectItem>
-                          <SelectItem value="sms">SMS</SelectItem>
-                          <SelectItem value="search">Search</SelectItem>
+                        <SelectContent className="text-xs sm:text-sm">
+                          <SelectItem value="openai" className="text-xs sm:text-sm">OpenAI</SelectItem>
+                          <SelectItem value="custom_api" className="text-xs sm:text-sm">Custom API</SelectItem>
+                          <SelectItem value="webhook" className="text-xs sm:text-sm">Webhook</SelectItem>
+                          <SelectItem value="database" className="text-xs sm:text-sm">Database</SelectItem>
+                          <SelectItem value="file_system" className="text-xs sm:text-sm">File System</SelectItem>
+                          <SelectItem value="email" className="text-xs sm:text-sm">Email</SelectItem>
+                          <SelectItem value="sms" className="text-xs sm:text-sm">SMS</SelectItem>
+                          <SelectItem value="search" className="text-xs sm:text-sm">Search</SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormMessage />
+                      <FormMessage className="text-xs" />
                     </FormItem>
                   )}
                 />
@@ -670,37 +679,71 @@ export default function AgentToolsPanel() {
                 name="icon"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Icon</FormLabel>
+                    <FormLabel className="text-xs sm:text-sm">Icon</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
                           <SelectValue placeholder="Select icon" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="max-h-[300px]">
-                        <SelectItem value="box">Box</SelectItem>
-                        <SelectItem value="text">Text</SelectItem>
-                        <SelectItem value="file-text">File Text</SelectItem>
-                        <SelectItem value="code">Code</SelectItem>
-                        <SelectItem value="database">Database</SelectItem>
-                        <SelectItem value="globe">Globe</SelectItem>
-                        <SelectItem value="mail">Mail</SelectItem>
-                        <SelectItem value="search">Search</SelectItem>
-                        <SelectItem value="server">Server</SelectItem>
-                        <SelectItem value="share">Share</SelectItem>
-                        <SelectItem value="tag">Tag</SelectItem>
-                        <SelectItem value="terminal">Terminal</SelectItem>
-                        <SelectItem value="bar-chart">Bar Chart</SelectItem>
-                        <SelectItem value="activity">Activity</SelectItem>
-                        <SelectItem value="bot">Bot</SelectItem>
-                        <SelectItem value="brain">Brain</SelectItem>
-                        <SelectItem value="cloud">Cloud</SelectItem>
+                      <SelectContent className="max-h-[50vh] text-xs sm:text-sm">
+                        <SelectItem value="box" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Box className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Box
+                        </SelectItem>
+                        <SelectItem value="text" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Text className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Text
+                        </SelectItem>
+                        <SelectItem value="file-text" className="text-xs sm:text-sm flex items-center gap-2">
+                          <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> File Text
+                        </SelectItem>
+                        <SelectItem value="code" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Code className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Code
+                        </SelectItem>
+                        <SelectItem value="database" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Database className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Database
+                        </SelectItem>
+                        <SelectItem value="globe" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Globe
+                        </SelectItem>
+                        <SelectItem value="mail" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Mail
+                        </SelectItem>
+                        <SelectItem value="search" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Search
+                        </SelectItem>
+                        <SelectItem value="server" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Server className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Server
+                        </SelectItem>
+                        <SelectItem value="share" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Share className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Share
+                        </SelectItem>
+                        <SelectItem value="tag" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Tag
+                        </SelectItem>
+                        <SelectItem value="terminal" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Terminal className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Terminal
+                        </SelectItem>
+                        <SelectItem value="bar-chart" className="text-xs sm:text-sm flex items-center gap-2">
+                          <BarChart className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Bar Chart
+                        </SelectItem>
+                        <SelectItem value="activity" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Activity
+                        </SelectItem>
+                        <SelectItem value="bot" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Bot
+                        </SelectItem>
+                        <SelectItem value="brain" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Brain className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Brain
+                        </SelectItem>
+                        <SelectItem value="cloud" className="text-xs sm:text-sm flex items-center gap-2">
+                          <Cloud className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Cloud
+                        </SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
@@ -709,10 +752,10 @@ export default function AgentToolsPanel() {
                 control={createForm.control}
                 name="isActive"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-2.5 sm:p-3 shadow-sm">
                     <div className="space-y-0.5">
-                      <FormLabel>Active</FormLabel>
-                      <FormDescription>
+                      <FormLabel className="text-xs sm:text-sm">Active</FormLabel>
+                      <FormDescription className="text-xs">
                         Enable or disable this tool
                       </FormDescription>
                     </div>
@@ -720,6 +763,7 @@ export default function AgentToolsPanel() {
                       <Switch
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        className="scale-90 sm:scale-100"
                       />
                     </FormControl>
                   </FormItem>
@@ -731,36 +775,38 @@ export default function AgentToolsPanel() {
                 name="config"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Configuration (JSON)</FormLabel>
+                    <FormLabel className="text-xs sm:text-sm">Configuration (JSON)</FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder='{}'
-                        className="font-mono"
-                        rows={10}
+                        className="font-mono text-xs sm:text-sm"
+                        rows={8}
                         {...field} 
                       />
                     </FormControl>
-                    <FormDescription>
+                    <FormDescription className="text-xs">
                       Configuration depends on the tool type. For OpenAI tools, include model, temperature, etc.
                     </FormDescription>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
               
-              <DialogFooter>
+              <DialogFooter className="flex-col sm:flex-row gap-2">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={() => setCreateDialogOpen(false)}
+                  className="w-full sm:w-auto h-9 text-xs sm:text-sm"
                 >
                   Cancel
                 </Button>
                 <Button 
                   type="submit" 
                   disabled={createToolMutation.isPending}
+                  className="w-full sm:w-auto h-9 text-xs sm:text-sm"
                 >
-                  {createToolMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {createToolMutation.isPending && <Loader2 className="mr-1 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />}
                   Create Tool
                 </Button>
               </DialogFooter>
@@ -771,7 +817,7 @@ export default function AgentToolsPanel() {
 
       {/* Edit Tool Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[92vh]">
+        <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[92vh] sm:max-h-[95vh]">
           <DialogHeader className="mb-1 sm:mb-2">
             <DialogTitle className="text-lg sm:text-xl">Edit Tool</DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
@@ -787,11 +833,15 @@ export default function AgentToolsPanel() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel className="text-xs sm:text-sm">Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Text Generator" {...field} />
+                      <Input 
+                        placeholder="Text Generator" 
+                        className="h-9 sm:h-10 text-xs sm:text-sm"
+                        {...field} 
+                      />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
@@ -801,43 +851,44 @@ export default function AgentToolsPanel() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel className="text-xs sm:text-sm">Description</FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder="Describe what this tool does..."
+                        className="text-xs sm:text-sm min-h-[80px]"
                         {...field} 
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <FormField
                   control={editForm.control}
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel className="text-xs sm:text-sm">Category</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="text-xs sm:text-sm">
                           {Object.entries(TOOL_CATEGORIES).map(([key, value]) => (
-                            <SelectItem key={key} value={value}>
+                            <SelectItem key={key} value={value} className="text-xs sm:text-sm">
                               {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
+                      <FormMessage className="text-xs" />
                     </FormItem>
                   )}
                 />
@@ -847,28 +898,28 @@ export default function AgentToolsPanel() {
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Type</FormLabel>
+                      <FormLabel className="text-xs sm:text-sm">Type</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="openai">OpenAI</SelectItem>
-                          <SelectItem value="custom_api">Custom API</SelectItem>
-                          <SelectItem value="webhook">Webhook</SelectItem>
-                          <SelectItem value="database">Database</SelectItem>
-                          <SelectItem value="file_system">File System</SelectItem>
-                          <SelectItem value="email">Email</SelectItem>
-                          <SelectItem value="sms">SMS</SelectItem>
-                          <SelectItem value="search">Search</SelectItem>
+                        <SelectContent className="text-xs sm:text-sm">
+                          <SelectItem value="openai" className="text-xs sm:text-sm">OpenAI</SelectItem>
+                          <SelectItem value="custom_api" className="text-xs sm:text-sm">Custom API</SelectItem>
+                          <SelectItem value="webhook" className="text-xs sm:text-sm">Webhook</SelectItem>
+                          <SelectItem value="database" className="text-xs sm:text-sm">Database</SelectItem>
+                          <SelectItem value="file_system" className="text-xs sm:text-sm">File System</SelectItem>
+                          <SelectItem value="email" className="text-xs sm:text-sm">Email</SelectItem>
+                          <SelectItem value="sms" className="text-xs sm:text-sm">SMS</SelectItem>
+                          <SelectItem value="search" className="text-xs sm:text-sm">Search</SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormMessage />
+                      <FormMessage className="text-xs" />
                     </FormItem>
                   )}
                 />
