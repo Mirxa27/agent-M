@@ -90,7 +90,7 @@ export default function UsersPanel() {
     isLoading,
     error 
   } = useQuery({
-    queryKey: "/api/admin/users"
+    queryKey: ["/api/admin/users"]
   });
 
   // Fetch all plans for the dropdown
@@ -98,7 +98,7 @@ export default function UsersPanel() {
     data: plans = [], 
     isLoading: isLoadingPlans,
   } = useQuery({
-    queryKey: "/api/admin/plans"
+    queryKey: ["/api/admin/plans"]
   });
 
   // Create user mutation
@@ -117,7 +117,7 @@ export default function UsersPanel() {
         description: "The user has been successfully created.",
       });
       setIsCreateDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: "/api/admin/users" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       resetForm();
     },
     onError: (error) => {
@@ -145,7 +145,7 @@ export default function UsersPanel() {
         description: "The user has been successfully updated.",
       });
       setIsEditDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: "/api/admin/users" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
     },
     onError: (error) => {
       toast({
