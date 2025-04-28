@@ -105,7 +105,7 @@ export interface IStorage {
   deletePlan(id: number): Promise<boolean>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using any for compatibility
 }
 
 export class MemStorage implements IStorage {
