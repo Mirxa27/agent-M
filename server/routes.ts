@@ -14,6 +14,7 @@ import {
   insertAiModelSchema,
   insertAiPromptSchema,
   insertPlanSchema,
+  insertAgentToolSchema,
   aiModels,
   aiPrompts
 } from "@shared/schema";
@@ -627,6 +628,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
+  
+  // Agent Tools Routes
+  app.get("/api/admin/agent-tools", requireAdmin, async (req, res) => {
+    try {
+      const tools = await storage.getAllAgentTools();
+      res.json(tools);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/admin/agent-tools/:id", requireAdmin, async (req, res) => {
+    try {
+      const toolId = parseInt(req.params.id);
+      const tool = await storage.getAgentTool(toolId);
+      
+      if (!tool) {
+        return res.status(404).json({ error: "Agent Tool not found" });
+      }
+      
+      res.json(tool);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/admin/agent-tools", requireAdmin, async (req, res) => {
+    try {
+      // Validate and create tool
+      const validatedData = insertAgentToolSchema.safeParse(req.body);
+      
+      if (!validatedData.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validatedData.error.format() 
+        });
+      }
+      
+      const tool = await storage.createAgentTool(validatedData.data);
+      res.status(201).json(tool);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.patch("/api/admin/agent-tools/:id", requireAdmin, async (req, res) => {
+    try {
+      const toolId = parseInt(req.params.id);
+      const tool = await storage.getAgentTool(toolId);
+      
+      if (!tool) {
+        return res.status(404).json({ error: "Agent Tool not found" });
+      }
+      
+      // Update tool
+      const updatedTool = await storage.updateAgentTool(toolId, req.body);
+      res.json(updatedTool);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.delete("/api/admin/agent-tools/:id", requireAdmin, async (req, res) => {
+    try {
+      const toolId = parseInt(req.params.id);
+      const tool = await storage.getAgentTool(toolId);
+      
+      if (!tool) {
+        return res.status(404).json({ error: "Agent Tool not found" });
+      }
+      
+      // Can't delete system tools
+      if (tool.isSystem) {
+        return res.status(403).json({ error: "Cannot delete system tools" });
+      }
+      
+      // Delete tool
+      await storage.deleteAgentTool(toolId);
+      res.sendStatus(204);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // User accessible agent tools (for agent task execution)
+  app.get("/api/agent-tools", requireAuth, async (req, res) => {
+    try {
+      // Only return active tools for regular users
+      const tools = await storage.getAllAgentTools();
+      const activeTools = tools.filter(tool => tool.isActive);
+      res.json(activeTools);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/agent-tools/category/:category", requireAuth, async (req, res) => {
+    try {
+      const category = req.params.category;
+      // Only return active tools for regular users
+      const tools = await storage.getAgentToolsByCategory(category);
+      const activeTools = tools.filter(tool => tool.isActive);
+      res.json(activeTools);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // Plans
   app.get("/api/plans", async (req, res) => {
     try {

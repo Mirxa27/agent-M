@@ -1,6 +1,7 @@
 import {
   users, User, InsertUser,
   agents, Agent, InsertAgent,
+  agentTools, AgentTool, InsertAgentTool,
   credentials, Credential, InsertCredential,
   files, File, InsertFile,
   tasks, Task, InsertTask,
