@@ -30,7 +30,7 @@ pool.on("error", (err) => {
 });
 
 // Initialize Drizzle ORM with the connection pool and schema
-export const db = drizzle(pool, { schema });
+export const db = drizzle({ client: pool, schema });
 
 // Health check function to test database connectivity
 export async function checkDatabaseConnection() {
