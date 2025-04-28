@@ -916,9 +916,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       res.json(paymentSession);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment session creation error:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message || "Failed to create payment session" });
     }
   });
   
@@ -944,9 +944,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // The actual subscription update would be handled by a webhook or background process
       
       res.redirect("/payment-success");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment callback error:", error);
-      res.redirect(`/payment-failed?reason=${encodeURIComponent(error.message)}`);
+      res.redirect(`/payment-failed?reason=${encodeURIComponent(error.message || "Unknown error")}`);
     }
   });
   
@@ -958,16 +958,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Webhook for payment notifications (would be configured in MyFatoorah dashboard)
   app.post("/api/payments/webhook", async (req, res) => {
     try {
-      // In a production environment, we would:
-      // 1. Verify the webhook signature
-      // 2. Process payment status updates
-      // 3. Update user subscriptions
+      // Log the webhook payload for debugging
+      console.log("Received payment webhook:", req.body);
       
-      // For simplicity in this prototype, we acknowledge receipt
-      res.status(200).send("Webhook received");
-    } catch (error) {
+      // MyFatoorah webhook contains InvoiceId and PaymentId
+      const { InvoiceId, PaymentId } = req.body;
+      
+      if (!PaymentId) {
+        return res.status(400).json({ error: "Missing payment ID" });
+      }
+      
+      // Verify the payment with MyFatoorah
+      const verification = await paymentService.verifyPayment(PaymentId.toString());
+      
+      if (!verification.isValid) {
+        console.error("Payment verification failed in webhook", { PaymentId, InvoiceId });
+        return res.status(400).json({ error: "Payment verification failed" });
+      }
+      
+      // In a real system, we would store the payment session information including
+      // the user ID and plan ID when the session is created
+      // For simplicity, we'll assume we have a way to get this information
+      
+      // For example:
+      // const paymentRecord = await storage.getPaymentByInvoiceId(InvoiceId);
+      // const userId = paymentRecord.userId;
+      // const planId = paymentRecord.planId;
+      
+      // Update the user's subscription
+      // This is commented out because we don't have a way to get userId and planId
+      // in this simplified example
+      /*
+      const updatedUser = await paymentService.updateUserSubscription(
+        userId,
+        planId,
+        {
+          invoiceId: verification.invoiceId,
+          transactionId: verification.transactionId,
+          paymentMethod: verification.paymentMethod
+        }
+      );
+      */
+      
+      // Respond with success to the webhook call
+      res.status(200).json({ status: "success" });
+    } catch (error: any) {
       console.error("Payment webhook error:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message || "Webhook processing failed" });
     }
   });
   
@@ -991,8 +1028,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         planExpiresAt: user.planExpiresAt,
         planDetails: plan
       });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to retrieve subscription information" });
     }
   });
 
