@@ -1,10 +1,11 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/navigation/header";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Users, Bot, Settings, Database, PanelLeft, Tag, Languages, Palette } from "lucide-react";
+import { Loader2, Users, Bot, Settings, Database, PanelLeft, Tag, Languages, Palette, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -15,6 +16,7 @@ interface AdminLayoutProps {
 export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
   const { user } = useAuth();
   const [location] = useLocation();
+  const [open, setOpen] = useState(false);
 
   if (!user) {
     return (
@@ -62,9 +64,9 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
             </div>
             {adminNavItems.map((item) => (
               <Link key={item.href} href={item.href}>
-                <a
+                <div
                   className={cn(
-                    "flex items-center px-3 py-2 rounded-md group transition-colors",
+                    "flex items-center px-3 py-2 rounded-md group transition-colors cursor-pointer",
                     location === item.href
                       ? "bg-primary/10 text-primary"
                       : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -72,18 +74,68 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
                 >
                   {item.icon}
                   <span>{item.label}</span>
-                </a>
+                </div>
               </Link>
             ))}
           </div>
         </aside>
         
+        {/* Mobile Menu */}
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild className="md:hidden absolute top-5 left-6 z-10">
+            <Button variant="outline" size="icon" className="rounded-full w-10 h-10">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle Menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-72 p-0">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <div className="text-lg font-semibold">Admin Panel</div>
+                <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+            <div className="py-4">
+              <nav className="grid gap-1 px-2">
+                {adminNavItems.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    <div
+                      className={cn(
+                        "flex items-center px-3 py-2 rounded-md group transition-colors cursor-pointer",
+                        location === item.href
+                          ? "bg-primary/10 text-primary"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      )}
+                      onClick={() => setOpen(false)}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </div>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </SheetContent>
+        </Sheet>
+        
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-6">
           <div className="max-w-6xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-              {subtitle && <p className="text-muted-foreground mt-1">{subtitle}</p>}
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+                {subtitle && <p className="text-muted-foreground mt-1">{subtitle}</p>}
+              </div>
+              
+              {/* Show this button only on mobile */}
+              <div className="mt-4 md:mt-0 md:hidden">
+                <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+                  <Menu className="h-4 w-4 mr-2" />
+                  Menu
+                </Button>
+              </div>
             </div>
             
             {children}

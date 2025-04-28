@@ -348,22 +348,26 @@ export default function UsersPanel() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <CardTitle className="text-xl font-bold">Users</CardTitle>
-          <div className="flex space-x-2">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
               <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search users..."
-                className="w-64 pl-8"
+                className="pl-8 w-full"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Button 
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="w-full sm:w-auto"
+            >
               <PlusIcon className="mr-2 h-4 w-4" />
-              Add User
+              <span className="hidden sm:inline">Add User</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </div>
         </CardHeader>
@@ -378,17 +382,17 @@ export default function UsersPanel() {
               ))}
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Username</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Full Name</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Plan</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
+                    <TableHead className="w-[120px]">Username</TableHead>
+                    <TableHead className="hidden sm:table-cell">Email</TableHead>
+                    <TableHead className="hidden md:table-cell">Full Name</TableHead>
+                    <TableHead className="w-[80px]">Role</TableHead>
+                    <TableHead className="hidden sm:table-cell">Plan</TableHead>
+                    <TableHead className="hidden md:table-cell">Status</TableHead>
+                    <TableHead className="hidden lg:table-cell">Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -403,8 +407,8 @@ export default function UsersPanel() {
                     filteredUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.username}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.fullName || "-"}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{user.email}</TableCell>
+                        <TableCell className="hidden md:table-cell">{user.fullName || "-"}</TableCell>
                         <TableCell>
                           {user.role === "admin" ? (
                             <Badge variant="secondary" className="flex items-center space-x-1 w-fit">
@@ -418,13 +422,13 @@ export default function UsersPanel() {
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell>{user.plan || "No Plan"}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">{user.plan || "No Plan"}</TableCell>
+                        <TableCell className="hidden md:table-cell">
                           <Badge variant="success">
                             Active
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                           {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "N/A"}
                         </TableCell>
                         <TableCell className="text-right">
@@ -473,7 +477,7 @@ export default function UsersPanel() {
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onCreateSubmit)} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="username"
@@ -542,7 +546,7 @@ export default function UsersPanel() {
                 )}
               />
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="role"
@@ -651,7 +655,7 @@ export default function UsersPanel() {
           </DialogHeader>
           <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={editForm.control}
                   name="username"
