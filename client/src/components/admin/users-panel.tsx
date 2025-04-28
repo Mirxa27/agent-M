@@ -90,15 +90,7 @@ export default function UsersPanel() {
     isLoading,
     error 
   } = useQuery({
-    queryKey: ["/api/admin/users"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/users");
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to fetch users");
-      }
-      return res.json();
-    }
+    queryKey: "/api/admin/users"
   });
 
   // Fetch all plans for the dropdown
@@ -106,15 +98,7 @@ export default function UsersPanel() {
     data: plans = [], 
     isLoading: isLoadingPlans,
   } = useQuery({
-    queryKey: ["/api/admin/plans"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/plans");
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to fetch plans");
-      }
-      return res.json();
-    }
+    queryKey: "/api/admin/plans"
   });
 
   // Create user mutation

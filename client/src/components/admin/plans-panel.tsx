@@ -147,15 +147,7 @@ export default function PlansPanel() {
     isLoading,
     error 
   } = useQuery({
-    queryKey: ["/api/admin/plans"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/plans");
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to fetch plans");
-      }
-      return res.json();
-    }
+    queryKey: "/api/admin/plans"
   });
 
   // Create plan mutation
@@ -174,7 +166,7 @@ export default function PlansPanel() {
         description: "The subscription plan has been successfully created.",
       });
       setIsCreateDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
+      queryClient.invalidateQueries({ queryKey: "/api/admin/plans" });
       resetForm();
     },
     onError: (error) => {
@@ -202,7 +194,7 @@ export default function PlansPanel() {
         description: "The subscription plan has been successfully updated.",
       });
       setIsEditDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
+      queryClient.invalidateQueries({ queryKey: "/api/admin/plans" });
     },
     onError: (error) => {
       toast({
