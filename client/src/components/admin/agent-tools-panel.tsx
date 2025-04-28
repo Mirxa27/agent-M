@@ -567,7 +567,7 @@ export default function AgentToolsPanel() {
 
       {/* Create Tool Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[92vh] sm:max-h-[95vh]">
+        <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[85vh] sm:max-h-[90vh]">
           <DialogHeader className="mb-1 sm:mb-2">
             <DialogTitle className="text-lg sm:text-xl">Create Tool</DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
@@ -817,7 +817,7 @@ export default function AgentToolsPanel() {
 
       {/* Edit Tool Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[92vh] sm:max-h-[95vh]">
+        <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[85vh] sm:max-h-[90vh]">
           <DialogHeader className="mb-1 sm:mb-2">
             <DialogTitle className="text-lg sm:text-xl">Edit Tool</DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
@@ -1069,7 +1069,7 @@ export default function AgentToolsPanel() {
       {/* View Tool Dialog */}
       {selectedTool && (
         <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-          <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[92vh]">
+          <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[85vh] sm:max-h-[90vh]">
             <DialogHeader className="mb-1 sm:mb-2">
               <DialogTitle className="text-lg sm:text-xl">{selectedTool.name}</DialogTitle>
               <DialogDescription className="text-xs sm:text-sm">
@@ -1133,7 +1133,7 @@ export default function AgentToolsPanel() {
 
       {/* Delete Tool Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="p-3 sm:p-6 max-w-sm sm:max-w-md">
+        <DialogContent className="p-3 sm:p-6 max-w-sm sm:max-w-md overflow-y-auto max-h-[85vh] sm:max-h-[90vh]">
           <DialogHeader className="mb-1 sm:mb-2">
             <DialogTitle className="text-lg sm:text-xl">Delete Tool</DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
