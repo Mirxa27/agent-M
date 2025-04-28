@@ -18,6 +18,7 @@ import {
   aiPrompts
 } from "@shared/schema";
 import { encrypt, decrypt } from "../shared/crypto";
+import { paymentService } from "./services/payment-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
