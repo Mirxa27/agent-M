@@ -54,7 +54,7 @@ export function AuthLayout({
     <div className="min-h-screen flex flex-col overflow-hidden">
       {/* Left Side - Form */}
       <motion.div
-        className="relative flex w-full justify-center lg:w-[55%] xl:w-[60%] p-4 sm:p-6 md:p-8 lg:p-12 xl:p-16 bg-gradient-to-b from-background/40 to-background"
+        className="relative flex w-full lg:w-[55%] xl:w-[60%] p-4 sm:p-6 md:p-8 lg:p-12 xl:p-16 bg-gradient-to-b from-background/40 to-background"
         initial="hidden"
         animate="visible"
         variants={fadeIn}
@@ -62,7 +62,7 @@ export function AuthLayout({
         <div className="absolute top-4 right-4 z-10">
           <LanguageSwitcher />
         </div>
-        <div className="w-full max-w-md md:max-w-lg mx-auto relative">
+        <div className="w-full mx-auto relative">
           {showLogo && (
             <motion.div
               className="mb-6 md:mb-8 lg:mb-10 flex items-center"
