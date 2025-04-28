@@ -3,6 +3,18 @@
     "name": "Mirxa.io",
     "slogan": "Next-Gen AI Agent Platform"
   },
+  "nav": {
+    "dashboard": "Dashboard",
+    "agents": "Agents",
+    "credentials": "Credentials",
+    "files": "Files",
+    "tasks": "Tasks",
+    "subscription": "Subscription",
+    "settings": "Settings",
+    "admin": "Admin",
+    "login": "Login",
+    "logout": "Logout"
+  },
   "common": {
     "welcome": "Welcome",
     "loading": "Loading...",
