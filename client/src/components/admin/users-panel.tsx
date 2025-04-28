@@ -1,39 +1,17 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { toast } from "@/hooks/use-toast";
+import { User } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { User, Plan } from "@shared/schema";
-import { 
-  Loader2, 
-  Users as UsersIcon, 
-  Search, 
-  MoreHorizontal,
-  UserCog,
-  Mail,
-  Key,
-  Shield,
-  AlertTriangle,
-  Calendar
-} from "lucide-react";
+import { EditIcon, PlusIcon, SearchIcon, TrashIcon, ShieldIcon, UserIcon } from "lucide-react";
+import { format } from "date-fns";
+
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -43,13 +21,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -59,9 +37,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   Select,
   SelectContent,
@@ -69,205 +44,459 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Badge,
-} from "@/components/ui/badge";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-// Define the user update schema
-const userUpdateSchema = z.object({
-  fullName: z.string().optional(),
-  email: z.string().email("Invalid email").optional(),
-  role: z.string().optional(),
-  plan: z.string().optional(),
-  planExpiresAt: z.string().optional(),
+// Define form schema for creating/updating users
+const userFormSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email address"),
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  role: z.enum(["user", "admin"]).default("user"),
+  password: z.string().min(8, "Password must be at least 8 characters").optional(),
+  isActive: z.boolean().default(true),
+  planId: z.coerce.number().optional()
 });
 
-type UserUpdateData = z.infer<typeof userUpdateSchema>;
+type UserFormValues = z.infer<typeof userFormSchema>;
 
 export default function UsersPanel() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<Omit<User, "password"> | null>(null);
+  
+  const queryClient = useQueryClient();
 
-  // Form setup for editing user
-  const form = useForm<UserUpdateData>({
-    resolver: zodResolver(userUpdateSchema),
-    defaultValues: {
-      fullName: "",
-      email: "",
-      role: "user",
-      plan: "free",
-      planExpiresAt: "",
-    },
-  });
-
-  // Get users data
+  // Fetch all users
   const { 
     data: users = [], 
-    isLoading: isLoadingUsers 
-  } = useQuery<User[]>({
+    isLoading,
+    error 
+  } = useQuery({
     queryKey: ["/api/admin/users"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/users");
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to fetch users");
+      }
+      return res.json();
+    }
   });
 
-  // Get plans data for dropdown
+  // Fetch all plans for the dropdown
   const { 
     data: plans = [], 
-    isLoading: isLoadingPlans 
-  } = useQuery<Plan[]>({
+    isLoading: isLoadingPlans,
+  } = useQuery({
     queryKey: ["/api/admin/plans"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/plans");
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to fetch plans");
+      }
+      return res.json();
+    }
+  });
+
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (user: UserFormValues) => {
+      const res = await apiRequest("POST", "/api/admin/users", user);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to create user");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User created",
+        description: "The user has been successfully created.",
+      });
+      setIsCreateDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      resetForm();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error creating user",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
 
   // Update user mutation
   const updateUserMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: number, updates: UserUpdateData }) => {
-      const res = await apiRequest("PATCH", `/api/admin/users/${id}`, updates);
+    mutationFn: async ({ id, user }: { id: number, user: Partial<UserFormValues> }) => {
+      const res = await apiRequest("PATCH", `/api/admin/users/${id}`, user);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to update user");
+      }
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      setIsEditDialogOpen(false);
-      form.reset();
       toast({
         title: "User updated",
-        description: "The user has been updated successfully",
+        description: "The user has been successfully updated.",
       });
+      setIsEditDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
     },
     onError: (error) => {
       toast({
-        title: "Failed to update user",
+        title: "Error updating user",
         description: error.message,
         variant: "destructive",
       });
-    },
+    }
   });
 
-  // Reset password mutation
-  const resetPasswordMutation = useMutation({
-    mutationFn: async (userId: number) => {
-      const res = await apiRequest("POST", `/api/admin/users/${userId}/reset-password`, {});
-      return res.json();
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/admin/users/${id}`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to delete user");
+      }
+      return true;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
-        title: "Password reset link sent",
-        description: `A password reset link has been sent to ${data.email}`,
+        title: "User deleted",
+        description: "The user has been successfully deleted.",
       });
+      setIsDeleteDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
     },
     onError: (error) => {
       toast({
-        title: "Failed to send reset link",
+        title: "Error deleting user",
         description: error.message,
         variant: "destructive",
       });
-    },
+    }
   });
 
-  // Handle edit button click
-  const handleEditUser = (user: User) => {
-    setSelectedUser(user);
-    
-    // Prefill the edit form
+  // Create form
+  const form = useForm<UserFormValues>({
+    resolver: zodResolver(userFormSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      fullName: "",
+      role: "user",
+      isActive: true,
+      planId: undefined
+    }
+  });
+
+  // Edit form
+  const editForm = useForm<UserFormValues>({
+    resolver: zodResolver(userFormSchema.omit({ password: true }).extend({
+      password: z.string().min(8, "Password must be at least 8 characters").optional().or(z.literal(''))
+    })),
+    defaultValues: {
+      username: "",
+      email: "",
+      fullName: "",
+      role: "user",
+      password: "",
+      isActive: true,
+      planId: undefined
+    }
+  });
+
+  // Reset form to default values
+  const resetForm = () => {
     form.reset({
-      fullName: user.fullName,
-      email: user.email,
-      role: user.role,
-      plan: user.plan,
-      planExpiresAt: user.planExpiresAt ? new Date(user.planExpiresAt).toISOString().split('T')[0] : undefined,
+      username: "",
+      email: "",
+      fullName: "",
+      role: "user",
+      password: "",
+      isActive: true,
+      planId: undefined
     });
-    
+  };
+
+  // Handle create submission
+  const onCreateSubmit = (values: UserFormValues) => {
+    createUserMutation.mutate(values);
+  };
+
+  // Handle edit submission
+  const onEditSubmit = (values: Omit<UserFormValues, 'password'> & { password?: string }) => {
+    if (selectedUser) {
+      // Only include non-empty values
+      const updateData: any = {};
+      
+      if (values.username && values.username !== selectedUser.username) {
+        updateData.username = values.username;
+      }
+      
+      if (values.email && values.email !== selectedUser.email) {
+        updateData.email = values.email;
+      }
+      
+      if (values.fullName && values.fullName !== selectedUser.fullName) {
+        updateData.fullName = values.fullName;
+      }
+      
+      if (values.role !== selectedUser.role) {
+        updateData.role = values.role;
+      }
+      
+      if (values.isActive !== selectedUser.isActive) {
+        updateData.isActive = values.isActive;
+      }
+      
+      if (values.planId !== selectedUser.planId) {
+        updateData.planId = values.planId;
+      }
+      
+      // Only include password if it's not empty
+      if (values.password) {
+        updateData.password = values.password;
+      }
+      
+      // Only update if there are changes
+      if (Object.keys(updateData).length > 0) {
+        updateUserMutation.mutate({ 
+          id: selectedUser.id, 
+          user: updateData
+        });
+      } else {
+        toast({
+          title: "No changes detected",
+          description: "No changes were made to the user.",
+        });
+        setIsEditDialogOpen(false);
+      }
+    }
+  };
+
+  // Handle delete confirmation
+  const onDeleteConfirm = () => {
+    if (selectedUser) {
+      deleteUserMutation.mutate(selectedUser.id);
+    }
+  };
+
+  // Handle opening edit dialog
+  const handleEdit = (user: Omit<User, "password">) => {
+    setSelectedUser(user);
+    editForm.reset({
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName || "",
+      role: user.role as "user" | "admin",
+      password: "",
+      isActive: user.isActive,
+      planId: user.planId
+    });
     setIsEditDialogOpen(true);
   };
 
-  // Handle form submission
-  const onSubmit = (data: UserUpdateData) => {
-    if (!selectedUser) return;
-    
-    updateUserMutation.mutate({
-      id: selectedUser.id,
-      updates: data,
-    });
+  // Handle opening delete dialog
+  const handleDelete = (user: Omit<User, "password">) => {
+    setSelectedUser(user);
+    setIsDeleteDialogOpen(true);
   };
 
-  // Filter users based on search term
+  // Filter users by search query
   const filteredUsers = users.filter(user => 
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (user.fullName && user.fullName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  // Get role badge color
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800';
-      case 'superadmin':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-blue-100 text-blue-800';
-    }
+  // Get plan name by ID
+  const getPlanName = (planId: number | null) => {
+    if (!planId) return "No Plan";
+    const plan = plans.find(p => p.id === planId);
+    return plan ? plan.name : "Unknown Plan";
   };
 
-  // Get plan badge color
-  const getPlanBadgeColor = (plan: string) => {
-    switch (plan) {
-      case 'free':
-        return 'bg-gray-100 text-gray-800';
-      case 'professional':
-        return 'bg-green-100 text-green-800';
-      case 'enterprise':
-        return 'bg-primary-100 text-primary-800';
-      default:
-        return 'bg-blue-100 text-blue-800';
-    }
-  };
-
-  // Format date
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'N/A';
-    return new Date(dateStr).toLocaleDateString();
-  };
-
-  // Loading state
-  if (isLoadingUsers || isLoadingPlans) {
+  if (error) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-bold">Users</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-red-500">
+            Error loading users: {error instanceof Error ? error.message : "Unknown error"}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="relative w-full md:w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search users..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[550px]">
-            <DialogHeader>
-              <DialogTitle>Edit User</DialogTitle>
-              <DialogDescription>
-                Update user information and permissions
-              </DialogDescription>
-            </DialogHeader>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-xl font-bold">Users</CardTitle>
+          <div className="flex space-x-2">
+            <div className="relative">
+              <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search users..."
+                className="w-64 pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Add User
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            // Loading state
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Full Name</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                        {searchQuery ? "No users match your search" : "No users found"}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.username}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{user.fullName || "-"}</TableCell>
+                        <TableCell>
+                          {user.role === "admin" ? (
+                            <Badge variant="secondary" className="flex items-center space-x-1 w-fit">
+                              <ShieldIcon className="h-3 w-3 mr-1" />
+                              Admin
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="flex items-center space-x-1 w-fit">
+                              <UserIcon className="h-3 w-3 mr-1" />
+                              User
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>{getPlanName(user.planId)}</TableCell>
+                        <TableCell>
+                          <Badge variant={user.isActive ? "success" : "outline"}>
+                            {user.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {format(new Date(user.createdAt), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <span className="sr-only">Open menu</span>
+                                <span className="h-4 w-4">⋯</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleEdit(user)}>
+                                <EditIcon className="mr-2 h-4 w-4" />
+                                <span>Edit user</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => handleDelete(user)}
+                              >
+                                <TrashIcon className="mr-2 h-4 w-4" />
+                                <span>Delete user</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create User Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>
+              Create a new user account with specific permissions.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onCreateSubmit)} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input placeholder="johndoe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
                 <FormField
                   control={form.control}
                   name="fullName"
@@ -275,266 +504,387 @@ export default function UsersPanel() {
                     <FormItem>
                       <FormLabel>Full Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Full Name" {...field} />
+                        <Input placeholder="John Doe" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Role</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select role" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="user">User</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="superadmin">Super Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="plan"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Plan</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select plan" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="free">Free</SelectItem>
-                            {plans.map(plan => (
-                              <SelectItem key={plan.id} value={plan.name}>
-                                {plan.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="planExpiresAt"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Plan Expiry Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        When the current plan expires
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <DialogFooter>
-                  <Button 
-                    type="submit" 
-                    disabled={updateUserMutation.isPending}
-                  >
-                    {updateUserMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Save Changes
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </div>
+              </div>
 
-      {/* Users Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-          <CardDescription>
-            Manage user accounts, permissions and subscription plans
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[250px]">User</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary">
-                          <span className="font-medium text-xs">
-                            {user.fullName.split(' ').map(n => n[0]).join('') || user.username.substring(0, 2).toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <div className="font-medium">{user.fullName}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
-                          <div className="text-xs text-gray-400">@{user.username}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
-                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getPlanBadgeColor(user.plan)}`}>
-                        {user.plan.charAt(0).toUpperCase() + user.plan.slice(1)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {user.planExpiresAt ? (
-                        <div className="flex items-center">
-                          <Calendar className="h-3 w-3 mr-1 text-gray-500" />
-                          <span className="text-sm">{formatDate(user.planExpiresAt)}</span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-500">Never</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                            <UserCog className="h-4 w-4 mr-2" />
-                            Edit User
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => resetPasswordMutation.mutate(user.id)}>
-                            <Key className="h-4 w-4 mr-2" />
-                            Reset Password
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
-                            toast({
-                              title: "Email sent",
-                              description: `A notification email has been sent to ${user.email}`,
-                            });
-                          }}>
-                            <Mail className="h-4 w-4 mr-2" />
-                            Send Email
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {user.role !== 'admin' ? (
-                            <DropdownMenuItem onClick={() => {
-                              updateUserMutation.mutate({
-                                id: user.id,
-                                updates: { role: 'admin' }
-                              });
-                            }}>
-                              <Shield className="h-4 w-4 mr-2" />
-                              Make Admin
-                            </DropdownMenuItem>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="email" 
+                        placeholder="user@example.com" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        placeholder="••••••••" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Must be at least 8 characters long
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>User Role</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="user">Regular User</SelectItem>
+                          <SelectItem value="admin">Administrator</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="planId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subscription Plan</FormLabel>
+                      <Select 
+                        onValueChange={(value) => field.onChange(parseInt(value) || undefined)} 
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="No plan" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">No Plan</SelectItem>
+                          {isLoadingPlans ? (
+                            <div className="flex items-center justify-center p-2">
+                              <Skeleton className="h-5 w-full" />
+                            </div>
                           ) : (
-                            <DropdownMenuItem onClick={() => {
-                              updateUserMutation.mutate({
-                                id: user.id,
-                                updates: { role: 'user' }
-                              });
-                            }}>
-                              <Shield className="h-4 w-4 mr-2" />
-                              Remove Admin
-                            </DropdownMenuItem>
+                            plans
+                              .filter(plan => plan.isActive)
+                              .map((plan) => (
+                                <SelectItem 
+                                  key={plan.id} 
+                                  value={plan.id.toString()}
+                                >
+                                  {plan.name}
+                                </SelectItem>
+                              ))
                           )}
-                          <DropdownMenuItem 
-                            className="text-red-600"
-                            onClick={() => {
-                              toast({
-                                title: "Account suspended",
-                                description: `The account for ${user.username} has been suspended`,
-                                variant: "destructive"
-                              });
-                            }}
-                          >
-                            <AlertTriangle className="h-4 w-4 mr-2" />
-                            Suspend Account
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10">
-                    <div className="flex flex-col items-center">
-                      <UsersIcon className="h-12 w-12 text-gray-300 mb-4" />
-                      {searchTerm ? (
-                        <>
-                          <p className="font-medium text-gray-700">No users found matching "{searchTerm}"</p>
-                          <p className="text-gray-500 text-sm">Try adjusting your search</p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="font-medium text-gray-700">No users found</p>
-                          <p className="text-gray-500 text-sm">Create a new user or invite users to get started</p>
-                        </>
-                      )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Active Status</FormLabel>
+                      <FormDescription>
+                        Enable or disable this user account
+                      </FormDescription>
                     </div>
-                  </TableCell>
-                </TableRow>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsCreateDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={createUserMutation.isPending}
+                >
+                  {createUserMutation.isPending && (
+                    <span className="mr-2 h-4 w-4 animate-spin">◌</span>
+                  )}
+                  Create User
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update user information and permissions.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input placeholder="johndoe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="fullName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={editForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="email" 
+                        placeholder="user@example.com" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>New Password (Optional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        placeholder="Leave blank to keep current password" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Only enter a new password if you want to change it
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>User Role</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="user">Regular User</SelectItem>
+                          <SelectItem value="admin">Administrator</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="planId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subscription Plan</FormLabel>
+                      <Select 
+                        onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
+                        value={field.value?.toString() || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="No plan" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">No Plan</SelectItem>
+                          {isLoadingPlans ? (
+                            <div className="flex items-center justify-center p-2">
+                              <Skeleton className="h-5 w-full" />
+                            </div>
+                          ) : (
+                            plans
+                              .filter(plan => plan.isActive)
+                              .map((plan) => (
+                                <SelectItem 
+                                  key={plan.id} 
+                                  value={plan.id.toString()}
+                                >
+                                  {plan.name}
+                                </SelectItem>
+                              ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={editForm.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Active Status</FormLabel>
+                      <FormDescription>
+                        Enable or disable this user account
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updateUserMutation.isPending}
+                >
+                  {updateUserMutation.isPending && (
+                    <span className="mr-2 h-4 w-4 animate-spin">◌</span>
+                  )}
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the user "{selectedUser?.username}"? 
+              This action cannot be undone and will remove all associated agents, credentials, and files.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={onDeleteConfirm}
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending && (
+                <span className="mr-2 h-4 w-4 animate-spin">◌</span>
               )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+              Delete User
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

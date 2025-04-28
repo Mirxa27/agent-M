@@ -1,33 +1,28 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { toast } from "@/hooks/use-toast";
+import { Plan } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { Plan, InsertPlan } from "@shared/schema";
 import { 
-  Loader2, 
-  Plus, 
-  Trash2, 
-  Edit, 
-  MoreHorizontal, 
-  Check, 
-  X, 
-  CreditCard,
-  Search,
-  BarChart4,
-  Users as UsersIcon,
-  Zap,
-  DollarSign
+  EditIcon, PlusIcon, SearchIcon, TrashIcon, 
+  CheckIcon, XIcon, PlusCircleIcon, BrainCircuitIcon, CoinsIcon, BotIcon, 
+  FilesIcon, ZapIcon, BoxesIcon, CreditCardIcon
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +30,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -46,9 +40,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   Select,
   SelectContent,
@@ -56,640 +47,1000 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Badge,
-} from "@/components/ui/badge";
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
-// Define the form schema for plans
-const planFormSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  price: z.coerce.number().min(0, "Price must be 0 or greater"),
-  interval: z.string().min(1, "Interval is required"),
-  features: z.record(z.string(), z.any()).default({}),
-  isActive: z.boolean().default(true),
-});
+// Features definition for plans
+type PlanFeature = {
+  key: string;
+  name: string;
+  description: string;
+  type: "boolean" | "number" | "string";
+  icon: React.ReactNode;
+};
 
-type PlanFormData = z.infer<typeof planFormSchema>;
-
-// Feature structure for plans
-const featuresList = [
-  { id: "agents", name: "AI Agents", type: "number" },
-  { id: "tasks", name: "Tasks per month", type: "number" },
-  { id: "templates", name: "Templates", type: "number" },
-  { id: "fileStorage", name: "File Storage (GB)", type: "number" },
-  { id: "apiAccess", name: "API Access", type: "boolean" },
-  { id: "prioritySupport", name: "Priority Support", type: "boolean" },
-  { id: "teamMembers", name: "Team Members", type: "number" },
-  { id: "customBranding", name: "Custom Branding", type: "boolean" },
-  { id: "advancedAnalytics", name: "Advanced Analytics", type: "boolean" },
-  { id: "dedicatedManager", name: "Dedicated Account Manager", type: "boolean" },
+const planFeatures: PlanFeature[] = [
+  {
+    key: "agents",
+    name: "Agents",
+    description: "Maximum number of AI agents allowed",
+    type: "number",
+    icon: <BotIcon className="h-4 w-4" />,
+  },
+  {
+    key: "tasks",
+    name: "Tasks",
+    description: "Maximum number of tasks allowed per month",
+    type: "number",
+    icon: <ZapIcon className="h-4 w-4" />,
+  },
+  {
+    key: "maxFilesSize",
+    name: "Max Storage",
+    description: "Maximum file storage in MB",
+    type: "number",
+    icon: <FilesIcon className="h-4 w-4" />,
+  },
+  {
+    key: "templates",
+    name: "Templates",
+    description: "Maximum number of templates",
+    type: "number",
+    icon: <BoxesIcon className="h-4 w-4" />,
+  },
+  {
+    key: "advancedModels",
+    name: "Advanced Models",
+    description: "Access to advanced AI models",
+    type: "boolean",
+    icon: <BrainCircuitIcon className="h-4 w-4" />,
+  },
+  {
+    key: "customPrompts",
+    name: "Custom Prompts",
+    description: "Create custom AI prompts",
+    type: "boolean",
+    icon: <PlusCircleIcon className="h-4 w-4" />,
+  },
+  {
+    key: "priority",
+    name: "Priority Support",
+    description: "Get prioritized support",
+    type: "boolean",
+    icon: <CreditCardIcon className="h-4 w-4" />,
+  },
 ];
 
+// Define form schema for creating/updating plans
+const planFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters."),
+  description: z.string().optional(),
+  price: z.coerce.number().min(0, "Price must be at least 0"),
+  interval: z.enum(["monthly", "yearly", "one-time"]).default("monthly"),
+  currency: z.string().default("SAR"),
+  isActive: z.boolean().default(true),
+  features: z.record(z.union([z.boolean(), z.number(), z.string()])).optional(),
+});
+
+type PlanFormValues = z.infer<typeof planFormSchema>;
+
 export default function PlansPanel() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  const [features, setFeatures] = useState<Record<string, any>>({
-    agents: 2,
-    tasks: 100,
-    templates: 5,
-    fileStorage: 1,
-    apiAccess: false,
-    prioritySupport: false,
-    teamMembers: 1,
-    customBranding: false,
-    advancedAnalytics: false,
-    dedicatedManager: false,
-  });
+  
+  const queryClient = useQueryClient();
 
-  // Form setup for creating plan
-  const form = useForm<PlanFormData>({
-    resolver: zodResolver(planFormSchema),
-    defaultValues: {
-      name: "",
-      price: 0,
-      interval: "monthly",
-      features: features,
-      isActive: true,
-    },
-  });
-
-  // Form setup for editing plan
-  const editForm = useForm<PlanFormData>({
-    resolver: zodResolver(planFormSchema),
-    defaultValues: {
-      name: "",
-      price: 0,
-      interval: "monthly",
-      features: {},
-      isActive: true,
-    },
-  });
-
-  // Get plans data
+  // Fetch all plans
   const { 
     data: plans = [], 
-    isLoading: isLoadingPlans 
-  } = useQuery<Plan[]>({
+    isLoading,
+    error 
+  } = useQuery({
     queryKey: ["/api/admin/plans"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/plans");
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to fetch plans");
+      }
+      return res.json();
+    }
   });
 
   // Create plan mutation
   const createPlanMutation = useMutation({
-    mutationFn: async (newPlan: InsertPlan) => {
-      const res = await apiRequest("POST", "/api/admin/plans", newPlan);
+    mutationFn: async (plan: PlanFormValues) => {
+      const res = await apiRequest("POST", "/api/admin/plans", plan);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to create plan");
+      }
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
-      setIsCreateDialogOpen(false);
-      form.reset({ features: features });
       toast({
         title: "Plan created",
-        description: "The subscription plan has been created successfully",
+        description: "The subscription plan has been successfully created.",
       });
+      setIsCreateDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
+      resetForm();
     },
     onError: (error) => {
       toast({
-        title: "Failed to create plan",
+        title: "Error creating plan",
         description: error.message,
         variant: "destructive",
       });
-    },
+    }
   });
 
   // Update plan mutation
   const updatePlanMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: number, updates: Partial<InsertPlan> }) => {
-      const res = await apiRequest("PATCH", `/api/admin/plans/${id}`, updates);
+    mutationFn: async ({ id, plan }: { id: number, plan: Partial<PlanFormValues> }) => {
+      const res = await apiRequest("PATCH", `/api/admin/plans/${id}`, plan);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to update plan");
+      }
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
-      setIsEditDialogOpen(false);
-      editForm.reset();
       toast({
         title: "Plan updated",
-        description: "The subscription plan has been updated successfully",
+        description: "The subscription plan has been successfully updated.",
       });
+      setIsEditDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
     },
     onError: (error) => {
       toast({
-        title: "Failed to update plan",
+        title: "Error updating plan",
         description: error.message,
         variant: "destructive",
       });
-    },
+    }
   });
 
   // Delete plan mutation
   const deletePlanMutation = useMutation({
-    mutationFn: async (planId: number) => {
-      await apiRequest("DELETE", `/api/admin/plans/${planId}`);
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/admin/plans/${id}`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to delete plan");
+      }
+      return true;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
       toast({
         title: "Plan deleted",
-        description: "The subscription plan has been deleted successfully",
+        description: "The subscription plan has been successfully deleted.",
       });
+      setIsDeleteDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
     },
     onError: (error) => {
       toast({
-        title: "Failed to delete plan",
+        title: "Error deleting plan",
         description: error.message,
         variant: "destructive",
       });
-    },
+    }
   });
 
-  // Toggle plan active status
-  const togglePlanStatus = (plan: Plan) => {
-    updatePlanMutation.mutate({
-      id: plan.id,
-      updates: {
-        isActive: !plan.isActive,
-      },
+  // Create form with default feature values
+  const form = useForm<PlanFormValues>({
+    resolver: zodResolver(planFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      price: 0,
+      interval: "monthly",
+      currency: "SAR",
+      isActive: true,
+      features: {
+        agents: 2,
+        tasks: 100,
+        maxFilesSize: 100,
+        templates: 5,
+        advancedModels: false,
+        customPrompts: false,
+        priority: false
+      }
+    }
+  });
+
+  // Edit form
+  const editForm = useForm<PlanFormValues>({
+    resolver: zodResolver(planFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      price: 0,
+      interval: "monthly",
+      currency: "SAR",
+      isActive: true,
+      features: {}
+    }
+  });
+
+  // Reset form to default values
+  const resetForm = () => {
+    form.reset({
+      name: "",
+      description: "",
+      price: 0,
+      interval: "monthly",
+      currency: "SAR",
+      isActive: true,
+      features: {
+        agents: 2,
+        tasks: 100,
+        maxFilesSize: 100,
+        templates: 5,
+        advancedModels: false,
+        customPrompts: false,
+        priority: false
+      }
     });
   };
 
-  // Handle creating a new plan
-  const onSubmit = (data: PlanFormData) => {
-    // Combine form data with features
-    const planData = {
-      ...data,
-      features: features,
-    };
-    
-    createPlanMutation.mutate(planData as InsertPlan);
+  // Handle create submission
+  const onCreateSubmit = (values: PlanFormValues) => {
+    createPlanMutation.mutate(values);
   };
 
-  // Handle editing a plan
-  const onEditSubmit = (data: PlanFormData) => {
-    if (!selectedPlan) return;
-    
-    // Combine form data with features
-    const planData = {
-      ...data,
-      features: features,
-    };
-    
-    updatePlanMutation.mutate({
-      id: selectedPlan.id,
-      updates: planData as InsertPlan,
-    });
+  // Handle edit submission
+  const onEditSubmit = (values: PlanFormValues) => {
+    if (selectedPlan) {
+      updatePlanMutation.mutate({ 
+        id: selectedPlan.id, 
+        plan: values
+      });
+    }
   };
 
-  // Handle edit button click
-  const handleEditPlan = (plan: Plan) => {
+  // Handle delete confirmation
+  const onDeleteConfirm = () => {
+    if (selectedPlan) {
+      deletePlanMutation.mutate(selectedPlan.id);
+    }
+  };
+
+  // Handle opening edit dialog
+  const handleEdit = (plan: Plan) => {
     setSelectedPlan(plan);
     
-    // Set features state from plan
-    setFeatures(plan.features || {});
+    // Parse features from string/JSON if needed
+    let featuresObj = {};
+    try {
+      if (typeof plan.features === 'string') {
+        featuresObj = JSON.parse(plan.features);
+      } else if (plan.features && typeof plan.features === 'object') {
+        featuresObj = plan.features;
+      }
+    } catch (err) {
+      console.error("Error parsing plan features:", err);
+    }
     
-    // Prefill the edit form
     editForm.reset({
       name: plan.name,
+      description: plan.description || "",
       price: plan.price,
-      interval: plan.interval,
-      features: plan.features,
+      interval: plan.interval as "monthly" | "yearly" | "one-time",
+      currency: "SAR", // Default to SAR as per requirements
       isActive: plan.isActive,
+      features: featuresObj as Record<string, any>
     });
     
     setIsEditDialogOpen(true);
   };
 
-  // Update feature value
-  const updateFeature = (id: string, value: any) => {
-    setFeatures(prev => ({
-      ...prev,
-      [id]: value
-    }));
+  // Handle opening delete dialog
+  const handleDelete = (plan: Plan) => {
+    setSelectedPlan(plan);
+    setIsDeleteDialogOpen(true);
   };
 
-  // Filter plans based on search term
+  // Filter plans by search query
   const filteredPlans = plans.filter(plan => 
-    plan.name.toLowerCase().includes(searchTerm.toLowerCase())
+    plan.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (plan.description && plan.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  // Format price
-  const formatPrice = (price: number, interval: string) => {
-    return `${price} SAR/${interval === 'monthly' ? 'mo' : 'yr'}`;
+  // Format price with currency
+  const formatPrice = (price: number, currency: string = "SAR", interval: string = "monthly") => {
+    let formatted = `${price} ${currency}`;
+    
+    if (interval === "monthly") {
+      formatted += "/month";
+    } else if (interval === "yearly") {
+      formatted += "/year";
+    }
+    
+    return formatted;
   };
 
-  // Format feature value
-  const formatFeatureValue = (feature: any, id: string) => {
-    const featureObj = featuresList.find(f => f.id === id);
-    
-    if (featureObj?.type === 'boolean') {
-      return feature ? <Check className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-red-500" />;
-    }
-    
-    if (id === 'fileStorage') {
-      return `${feature} GB`;
-    }
-    
-    if (feature === -1) {
-      return "Unlimited";
-    }
-    
-    return feature;
-  };
-
-  // Get badge color for interval
-  const getIntervalBadgeColor = (interval: string) => {
-    switch (interval) {
-      case 'monthly':
-        return 'bg-blue-100 text-blue-800';
-      case 'yearly':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  // Get feature value from plan (handles different storage formats)
+  const getFeatureValue = (plan: Plan, key: string) => {
+    try {
+      let features = {};
+      
+      if (typeof plan.features === 'string') {
+        features = JSON.parse(plan.features);
+      } else if (plan.features && typeof plan.features === 'object') {
+        features = plan.features;
+      }
+      
+      return features[key];
+    } catch (err) {
+      return undefined;
     }
   };
 
-  // Loading state
-  if (isLoadingPlans) {
+  // Render feature value based on its type
+  const renderFeatureValue = (plan: Plan, feature: PlanFeature) => {
+    const value = getFeatureValue(plan, feature.key);
+    
+    if (feature.type === "boolean") {
+      return value === true ? (
+        <CheckIcon className="h-5 w-5 text-green-500" />
+      ) : (
+        <XIcon className="h-5 w-5 text-red-500" />
+      );
+    } else if (feature.type === "number") {
+      return value !== undefined ? (
+        <span className="font-medium">{value}</span>
+      ) : (
+        <span className="text-muted-foreground">-</span>
+      );
+    } else {
+      return value || <span className="text-muted-foreground">-</span>;
+    }
+  };
+
+  if (error) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-bold">Subscription Plans</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-red-500">
+            Error loading plans: {error instanceof Error ? error.message : "Unknown error"}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="relative w-full md:w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search plans..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center">
-              <Plus className="h-4 w-4 mr-2" />
-              <span>Add Plan</span>
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-xl font-bold">Subscription Plans</CardTitle>
+          <div className="flex space-x-2">
+            <div className="relative">
+              <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search plans..."
+                className="w-64 pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Add Plan
             </Button>
-          </DialogTrigger>
-          
-          <DialogContent className="sm:max-w-[650px]">
-            <DialogHeader>
-              <DialogTitle>Create Subscription Plan</DialogTitle>
-              <DialogDescription>
-                Create a new subscription plan for your platform
-              </DialogDescription>
-            </DialogHeader>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel>Plan Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Professional" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="interval"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Billing Interval</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Interval" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="monthly">Monthly</SelectItem>
-                            <SelectItem value="yearly">Yearly</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            // Loading state
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-20 w-full" />
                 </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {filteredPlans.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {searchQuery ? "No plans match your search" : "No subscription plans found"}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredPlans.map((plan) => (
+                    <Card key={plan.id} className="relative">
+                      {!plan.isActive && (
+                        <div className="absolute top-2 right-2">
+                          <Badge variant="outline">Inactive</Badge>
+                        </div>
+                      )}
+                      <CardHeader>
+                        <CardTitle className="flex justify-between items-center">
+                          <span>{plan.name}</span>
+                          <span className="text-xl font-bold text-primary">
+                            {plan.price > 0 ? formatPrice(plan.price, "SAR", plan.interval) : "Free"}
+                          </span>
+                        </CardTitle>
+                        {plan.description && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            {plan.description}
+                          </p>
+                        )}
+                      </CardHeader>
+                      <CardContent>
+                        <Accordion type="single" collapsible defaultValue="features">
+                          <AccordionItem value="features">
+                            <AccordionTrigger>Features</AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-4">
+                                {planFeatures.map((feature) => (
+                                  <div key={feature.key} className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                      <div className="mr-2 text-primary">
+                                        {feature.icon}
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-medium">{feature.name}</p>
+                                        <p className="text-xs text-muted-foreground">{feature.description}</p>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      {renderFeatureValue(plan, feature)}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                        
+                        <div className="flex justify-end gap-2 mt-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(plan)}
+                          >
+                            <EditIcon className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(plan)}
+                          >
+                            <TrashIcon className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create Plan Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add New Subscription Plan</DialogTitle>
+            <DialogDescription>
+              Create a new subscription plan for your users.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onCreateSubmit)} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Plan Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Premium" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
+                <FormField
+                  control={form.control}
+                  name="interval"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Billing Interval</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select interval" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                          <SelectItem value="one-time">One-time Payment</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price (SAR)</FormLabel>
+                      <FormLabel>Price</FormLabel>
                       <FormControl>
-                        <div className="relative">
-                          <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
-                          <Input type="number" placeholder="99" className="pl-10" {...field} />
-                        </div>
+                        <Input 
+                          type="number" 
+                          placeholder="0" 
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        />
                       </FormControl>
                       <FormDescription>
-                        Price in Saudi Riyal (SAR)
+                        Set to 0 for a free plan
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 
-                <div className="border rounded-lg p-4 space-y-4">
-                  <h3 className="font-medium">Plan Features</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    {featuresList.map(feature => (
-                      <div key={feature.id} className="flex items-center justify-between">
-                        <span className="text-sm">{feature.name}</span>
-                        {feature.type === 'boolean' ? (
-                          <Switch
-                            checked={!!features[feature.id]}
-                            onCheckedChange={(checked) => updateFeature(feature.id, checked)}
-                          />
-                        ) : (
-                          <div className="w-24">
-                            <Input
-                              type="number"
-                              value={features[feature.id] || 0}
-                              onChange={(e) => updateFeature(feature.id, parseInt(e.target.value) || 0)}
-                              className="h-8 text-right"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">-1 for unlimited</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
                 <FormField
                   control={form.control}
-                  name="isActive"
+                  name="currency"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-lg border p-4">
-                      <div>
-                        <FormLabel className="text-base">Active</FormLabel>
-                        <FormDescription>
-                          Make this plan available for subscription
-                        </FormDescription>
-                      </div>
+                    <FormItem>
+                      <FormLabel>Currency</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="SAR">SAR (Saudi Riyal)</SelectItem>
+                          <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                          <SelectItem value="EUR">EUR (Euro)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Brief description of the plan" 
+                        {...field} 
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Plan Features</h3>
+                
+                {planFeatures.map((feature) => {
+                  if (feature.type === "boolean") {
+                    // Boolean feature (checkbox/switch)
+                    return (
+                      <FormField
+                        key={feature.key}
+                        control={form.control}
+                        name={`features.${feature.key}`}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center">
+                                <div className="mr-2 text-primary">
+                                  {feature.icon}
+                                </div>
+                                <FormLabel className="text-base">{feature.name}</FormLabel>
+                              </div>
+                              <FormDescription>
+                                {feature.description}
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value as boolean}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    );
+                  } else {
+                    // Number feature (input)
+                    return (
+                      <FormField
+                        key={feature.key}
+                        control={form.control}
+                        name={`features.${feature.key}`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center mb-2">
+                              <div className="mr-2 text-primary">
+                                {feature.icon}
+                              </div>
+                              <FormLabel>{feature.name}</FormLabel>
+                            </div>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                {...field}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              {feature.description}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    );
+                  }
+                })}
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Active Status</FormLabel>
+                      <FormDescription>
+                        Make this plan available to users
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsCreateDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={createPlanMutation.isPending}
+                >
+                  {createPlanMutation.isPending && (
+                    <span className="mr-2 h-4 w-4 animate-spin">◌</span>
+                  )}
+                  Create Plan
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Plan Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Subscription Plan</DialogTitle>
+            <DialogDescription>
+              Update this subscription plan's details and features.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Plan Name</FormLabel>
                       <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
+                        <Input placeholder="e.g., Premium" {...field} />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
                 
-                <DialogFooter>
-                  <Button 
-                    type="submit" 
-                    disabled={createPlanMutation.isPending}
-                  >
-                    {createPlanMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Create Plan
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-        
-        {/* Edit Plan Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[650px]">
-            <DialogHeader>
-              <DialogTitle>Edit Subscription Plan</DialogTitle>
-              <DialogDescription>
-                Update this subscription plan
-              </DialogDescription>
-            </DialogHeader>
-            
-            <Form {...editForm}>
-              <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6 py-4">
-                {/* Same form fields as the create form, but with edit values */}
-                {/* ... (Include similar form fields as in the create form) */}
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                <FormField
+                  control={editForm.control}
+                  name="interval"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Billing Interval</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select interval" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                          <SelectItem value="one-time">One-time Payment</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-      {/* Plans List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Subscription Plans</CardTitle>
-          <CardDescription>
-            Manage your platform's subscription plans and pricing
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[200px]">Plan</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Interval</TableHead>
-                <TableHead>Features</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPlans.length > 0 ? (
-                filteredPlans.map((plan) => (
-                  <TableRow key={plan.id}>
-                    <TableCell>
-                      <div className="font-medium">{plan.name}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-mono">{plan.price} SAR</div>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getIntervalBadgeColor(plan.interval)}`}>
-                        {plan.interval === 'monthly' ? 'Monthly' : 'Yearly'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {plan.features && plan.features.agents && (
-                          <Badge variant="outline" className="flex items-center gap-1">
-                            <Bot className="h-3 w-3" />
-                            <span>{plan.features.agents === -1 ? 'Unlimited' : plan.features.agents} agents</span>
-                          </Badge>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="0" 
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Set to 0 for a free plan
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="SAR">SAR (Saudi Riyal)</SelectItem>
+                          <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                          <SelectItem value="EUR">EUR (Euro)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={editForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Brief description of the plan" 
+                        {...field} 
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Plan Features</h3>
+                
+                {planFeatures.map((feature) => {
+                  if (feature.type === "boolean") {
+                    // Boolean feature (checkbox/switch)
+                    return (
+                      <FormField
+                        key={feature.key}
+                        control={editForm.control}
+                        name={`features.${feature.key}`}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center">
+                                <div className="mr-2 text-primary">
+                                  {feature.icon}
+                                </div>
+                                <FormLabel className="text-base">{feature.name}</FormLabel>
+                              </div>
+                              <FormDescription>
+                                {feature.description}
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={Boolean(field.value)}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
                         )}
-                        {plan.features && plan.features.tasks && (
-                          <Badge variant="outline" className="flex items-center gap-1">
-                            <Zap className="h-3 w-3" />
-                            <span>{plan.features.tasks === -1 ? 'Unlimited' : plan.features.tasks} tasks</span>
-                          </Badge>
+                      />
+                    );
+                  } else {
+                    // Number feature (input)
+                    return (
+                      <FormField
+                        key={feature.key}
+                        control={editForm.control}
+                        name={`features.${feature.key}`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center mb-2">
+                              <div className="mr-2 text-primary">
+                                {feature.icon}
+                              </div>
+                              <FormLabel>{feature.name}</FormLabel>
+                            </div>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                {...field}
+                                value={field.value || 0}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              {feature.description}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <span className={`flex h-2 w-2 rounded-full mr-2 ${plan.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
-                        <span>{plan.isActive ? 'Active' : 'Disabled'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleEditPlan(plan)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => togglePlanStatus(plan)}>
-                            {plan.isActive ? (
-                              <>
-                                <X className="h-4 w-4 mr-2" />
-                                Disable
-                              </>
-                            ) : (
-                              <>
-                                <Check className="h-4 w-4 mr-2" />
-                                Enable
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => {
-                              window.open(`/admin/plans/${plan.id}/analytics`, '_blank');
-                            }}
-                          >
-                            <BarChart4 className="h-4 w-4 mr-2" />
-                            View Analytics
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => {
-                              window.open(`/admin/plans/${plan.id}/subscribers`, '_blank');
-                            }}
-                          >
-                            <UsersIcon className="h-4 w-4 mr-2" />
-                            View Subscribers
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Trash2 className="h-4 w-4 mr-2 text-red-500" />
-                                <span className="text-red-500">Delete</span>
-                              </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently delete the plan "{plan.name}". This action cannot be undone. Existing subscribers will not be affected.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => deletePlanMutation.mutate(plan.id)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  {deletePlanMutation.isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    "Delete"
-                                  )}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10">
-                    <div className="flex flex-col items-center">
-                      <CreditCard className="h-12 w-12 text-gray-300 mb-4" />
-                      {searchTerm ? (
-                        <>
-                          <p className="font-medium text-gray-700">No plans found matching "{searchTerm}"</p>
-                          <p className="text-gray-500 text-sm">Try adjusting your search</p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="font-medium text-gray-700">No subscription plans configured</p>
-                          <p className="text-gray-500 text-sm">Add your first plan to start offering subscriptions</p>
-                          <Button 
-                            onClick={() => setIsCreateDialogOpen(true)} 
-                            className="mt-4"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Plan
-                          </Button>
-                        </>
-                      )}
+                      />
+                    );
+                  }
+                })}
+              </div>
+              
+              <FormField
+                control={editForm.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Active Status</FormLabel>
+                      <FormDescription>
+                        Make this plan available to users
+                      </FormDescription>
                     </div>
-                  </TableCell>
-                </TableRow>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updatePlanMutation.isPending}
+                >
+                  {updatePlanMutation.isPending && (
+                    <span className="mr-2 h-4 w-4 animate-spin">◌</span>
+                  )}
+                  Update Plan
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the plan "{selectedPlan?.name}"? 
+              This action cannot be undone and will affect any users currently subscribed to this plan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={onDeleteConfirm}
+              disabled={deletePlanMutation.isPending}
+            >
+              {deletePlanMutation.isPending && (
+                <span className="mr-2 h-4 w-4 animate-spin">◌</span>
               )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+              Delete Plan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
