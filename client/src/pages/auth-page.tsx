@@ -51,7 +51,17 @@ export default function AuthPage() {
   const onRegisterSubmit = (data: z.infer<typeof registerSchema>) => {
     // Remove confirmPassword as it's not part of the API
     const { confirmPassword, ...registrationData } = data;
-    registerMutation.mutate(registrationData);
+    
+    // Log the registration data for debugging
+    console.log("Registration form data:", registrationData);
+    
+    // Make sure we're passing an object with the correct fields
+    registerMutation.mutate({
+      username: registrationData.username,
+      email: registrationData.email,
+      fullName: registrationData.fullName,
+      password: registrationData.password
+    });
   };
 
   // If user is already authenticated, redirect to dashboard
