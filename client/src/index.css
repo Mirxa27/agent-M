@@ -180,8 +180,23 @@ html.rtl .rtl-flip {
     background: linear-gradient(
       135deg,
       hsl(207, 90%, 54%),
-      hsl(224, 76.3%, 38%)
+      hsl(224, 76.3%, 38%),
+      hsl(240, 80%, 30%)
     );
+    background-size: 200% 200%;
+    animation: gradientShift 15s ease infinite;
+  }
+  
+  @keyframes gradientShift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
   }
 
   /* Responsive text improvements */
