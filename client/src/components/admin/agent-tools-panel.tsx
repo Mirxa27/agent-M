@@ -969,7 +969,7 @@ export default function AgentToolsPanel() {
       {/* View Tool Dialog */}
       {selectedTool && (
         <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-          <DialogContent className="max-w-lg p-4 sm:p-6">
+          <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[92vh]">
             <DialogHeader className="mb-1 sm:mb-2">
               <DialogTitle className="text-lg sm:text-xl">{selectedTool.name}</DialogTitle>
               <DialogDescription className="text-xs sm:text-sm">
@@ -1033,7 +1033,7 @@ export default function AgentToolsPanel() {
 
       {/* Delete Tool Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="p-4 sm:p-6 max-w-sm sm:max-w-md">
+        <DialogContent className="p-3 sm:p-6 max-w-sm sm:max-w-md">
           <DialogHeader className="mb-1 sm:mb-2">
             <DialogTitle className="text-lg sm:text-xl">Delete Tool</DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
