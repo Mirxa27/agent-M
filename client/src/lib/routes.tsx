@@ -17,6 +17,11 @@ import AdminDashboard from "@/pages/admin/dashboard";
 // Admin Components
 import TranslationsPanel from "@/components/admin/translations-panel";
 import SiteEditorPanel from "@/components/admin/site-editor-panel";
+import UsersPanel from "@/components/admin/users-panel";
+import AiProvidersPanel from "@/components/admin/ai-providers-panel";
+import AiModelsPanel from "@/components/admin/ai-models-panel";
+import AiPromptsPanel from "@/components/admin/ai-prompts-panel";
+import PlansPanel from "@/components/admin/plans-panel";
 
 // Demo pages - These can be removed in production
 import LoadersDemoPage from "@/pages/loaders-demo-page";
@@ -146,6 +151,46 @@ export const ADMIN_ROUTES: RouteConfig[] = [
     path: "/admin/dashboard",
     component: AdminDashboard,
     title: "Admin Dashboard",
+    isAdmin: true,
+    layout: "admin",
+    exact: true,
+  },
+  {
+    path: "/admin/users",
+    component: UsersPanel,
+    title: "Users Management",
+    isAdmin: true,
+    layout: "admin",
+    exact: true,
+  },
+  {
+    path: "/admin/providers",
+    component: AiProvidersPanel,
+    title: "AI Providers Management",
+    isAdmin: true,
+    layout: "admin",
+    exact: true,
+  },
+  {
+    path: "/admin/models",
+    component: AiModelsPanel,
+    title: "AI Models Management",
+    isAdmin: true,
+    layout: "admin",
+    exact: true,
+  },
+  {
+    path: "/admin/prompts",
+    component: AiPromptsPanel,
+    title: "AI Prompts Management",
+    isAdmin: true,
+    layout: "admin",
+    exact: true,
+  },
+  {
+    path: "/admin/plans",
+    component: PlansPanel,
+    title: "Subscription Plans Management",
     isAdmin: true,
     layout: "admin",
     exact: true,
