@@ -638,61 +638,59 @@ const DashboardPage = () => {
   }
 
   return (
-    <MainLayout>
-      <div className="container px-4 py-8 max-w-7xl mx-auto">
-        <Tabs defaultValue="dashboard">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold">Your Dashboard</h1>
-            <TabsList>
-              <TabsTrigger value="dashboard">
-                <LayoutDashboardIcon className="h-4 w-4 mr-2" />
-                Dashboard
-              </TabsTrigger>
-              <TabsTrigger value="activity">
-                <ActivityIcon className="h-4 w-4 mr-2" />
-                Activity
-              </TabsTrigger>
-              <TabsTrigger value="analytics">
-                <BarChart2Icon className="h-4 w-4 mr-2" />
-                Analytics
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          
-          <TabsContent value="dashboard" className="mt-0">
-            <DashboardWidgets />
-          </TabsContent>
-          
-          <TabsContent value="activity" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>
-                  A log of your recent actions and system events
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ActivityFeed />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="analytics" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Usage Analytics</CardTitle>
-                <CardDescription>
-                  Detailed metrics about your platform usage
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <UserStats />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </MainLayout>
+    <div className="container px-4 py-8 max-w-7xl mx-auto">
+      <Tabs defaultValue="dashboard">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">Your Dashboard</h1>
+          <TabsList>
+            <TabsTrigger value="dashboard">
+              <LayoutDashboardIcon className="h-4 w-4 mr-2" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="activity">
+              <ActivityIcon className="h-4 w-4 mr-2" />
+              Activity
+            </TabsTrigger>
+            <TabsTrigger value="analytics">
+              <BarChart2Icon className="h-4 w-4 mr-2" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
+        </div>
+        
+        <TabsContent value="dashboard" className="mt-0">
+          <DashboardWidgets />
+        </TabsContent>
+        
+        <TabsContent value="activity" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>
+                A log of your recent actions and system events
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ActivityFeed />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="analytics" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle>Usage Analytics</CardTitle>
+              <CardDescription>
+                Detailed metrics about your platform usage
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UserStats />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
