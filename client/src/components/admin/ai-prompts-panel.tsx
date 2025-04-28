@@ -112,12 +112,7 @@ export default function AiPromptsPanel() {
   } = useQuery({
     queryKey: ["/api/admin/ai-prompts"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/ai-prompts");
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to fetch AI prompts");
-      }
-      return res.json();
+      return await apiRequest("GET", "/api/admin/ai-prompts");
     }
   });
 
@@ -128,24 +123,14 @@ export default function AiPromptsPanel() {
   } = useQuery({
     queryKey: ["/api/admin/ai-models"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/ai-models");
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to fetch AI models");
-      }
-      return res.json();
+      return await apiRequest("GET", "/api/admin/ai-models");
     }
   });
 
   // Create prompt mutation
   const createPromptMutation = useMutation({
     mutationFn: async (prompt: PromptFormValues) => {
-      const res = await apiRequest("POST", "/api/admin/ai-prompts", prompt);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create AI prompt");
-      }
-      return res.json();
+      return await apiRequest("POST", "/api/admin/ai-prompts", prompt);
     },
     onSuccess: () => {
       toast({
