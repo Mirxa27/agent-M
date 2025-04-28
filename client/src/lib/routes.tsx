@@ -86,6 +86,13 @@ export const PRIVATE_ROUTES: RouteConfig[] = [
     exact: true,
   },
   {
+    path: "/ai-browser",
+    component: AiBrowserPage,
+    title: "AI Browser",
+    layout: "main",
+    exact: true,
+  },
+  {
     path: "/credentials",
     component: CredentialsPage,
     title: "Credentials",
