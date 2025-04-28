@@ -578,7 +578,7 @@ export default function LandingPage() {
 
         {/* FAQ Section */}
         <section id="faq" className="py-20">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-4">
                 Frequently Asked Questions
@@ -589,7 +589,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="max-w-3xl mx-auto space-y-6">
+            <div className="max-w-4xl mx-auto space-y-6">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="p-6">
                   <h3 className="text-lg font-semibold mb-2 flex items-center">
@@ -687,9 +687,9 @@ export default function LandingPage() {
 
         {/* CTA Section */}
         <section className="py-20 bg-primary text-white">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl font-bold mb-6">
+          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto text-center">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
                 Ready to Transform Your Workflow?
               </h2>
               <p className="text-xl mb-8 opacity-90">
@@ -699,7 +699,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 variant="secondary"
-                className="px-8"
+                className="px-8 py-6 text-lg"
                 onClick={() => (location.href = "/auth")}
               >
                 Get Started Free
@@ -711,7 +711,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="bg-gray-900 dark:bg-gray-950 text-gray-400 py-12">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
