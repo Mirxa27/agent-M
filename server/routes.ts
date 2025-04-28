@@ -19,6 +19,12 @@ import {
 } from "@shared/schema";
 import { encrypt, decrypt } from "../shared/crypto";
 import { paymentService } from "./services/payment-service";
+import { 
+  translateText, 
+  translateTranslations, 
+  generateContent, 
+  analyzeContent 
+} from "./services/openai-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
@@ -1106,6 +1112,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(userWithoutPassword);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // AI Translation Routes
+  app.post("/api/ai/translate", requireAuth, async (req, res) => {
+    try {
+      const { text, sourceLanguage, targetLanguage } = req.body;
+      
+      if (!text || !sourceLanguage || !targetLanguage) {
+        return res.status(400).json({ 
+          error: "Missing required fields",
+          details: "Text, source language, and target language are required"
+        });
+      }
+      
+      const translatedText = await translateText(text, sourceLanguage, targetLanguage);
+      return res.json({ translatedText });
+    } catch (error: any) {
+      console.error("Translation error:", error);
+      return res.status(500).json({ 
+        error: "Translation failed", 
+        details: error.message 
+      });
+    }
+  });
+
+  // Bulk translate translations (admin only)
+  app.post("/api/ai/translate-bulk", requireAdmin, async (req, res) => {
+    try {
+      const { translations, sourceLanguage, targetLanguage } = req.body;
+      
+      if (!translations || !sourceLanguage || !targetLanguage) {
+        return res.status(400).json({ 
+          error: "Missing required fields",
+          details: "Translations object, source language, and target language are required"
+        });
+      }
+      
+      const translatedTranslationsObj = await translateTranslations(
+        translations,
+        sourceLanguage, 
+        targetLanguage
+      );
+      
+      return res.json({ translations: translatedTranslationsObj });
+    } catch (error: any) {
+      console.error("Bulk translation error:", error);
+      return res.status(500).json({ 
+        error: "Bulk translation failed", 
+        details: error.message 
+      });
+    }
+  });
+
+  // AI Content Generation Routes
+  app.post("/api/ai/generate-content", requireAuth, async (req, res) => {
+    try {
+      const { prompt, contentType, tone } = req.body;
+      
+      if (!prompt || !contentType || !tone) {
+        return res.status(400).json({ 
+          error: "Missing required fields",
+          details: "Prompt, content type, and tone are required"
+        });
+      }
+      
+      const generatedContent = await generateContent(prompt, contentType, tone);
+      return res.json({ content: generatedContent });
+    } catch (error: any) {
+      console.error("Content generation error:", error);
+      return res.status(500).json({ 
+        error: "Content generation failed", 
+        details: error.message 
+      });
+    }
+  });
+  
+  // Analyze content
+  app.post("/api/ai/analyze-content", requireAuth, async (req, res) => {
+    try {
+      const { text } = req.body;
+      
+      if (!text) {
+        return res.status(400).json({ 
+          error: "Missing required field",
+          details: "Text to analyze is required"
+        });
+      }
+      
+      const analysis = await analyzeContent(text);
+      return res.json(analysis);
+    } catch (error: any) {
+      console.error("Content analysis error:", error);
+      return res.status(500).json({ 
+        error: "Content analysis failed", 
+        details: error.message 
+      });
     }
   });
 
