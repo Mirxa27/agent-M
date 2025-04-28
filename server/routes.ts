@@ -533,6 +533,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // Task-File relationship routes
+  app.get("/api/tasks/:taskId/files", requireAuth, async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const task = await storage.getTask(taskId);
+      
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      
+      // Check ownership
+      if (task.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      const files = await storage.getFilesByTaskId(taskId);
+      res.json(files);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Link a file to a task
+  app.post("/api/tasks/:taskId/files/:fileId", requireAuth, async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const fileId = parseInt(req.params.fileId);
+      
+      // Verify task exists and user owns it
+      const task = await storage.getTask(taskId);
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      
+      if (task.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized to access this task" });
+      }
+      
+      // Verify file exists and user owns it
+      const file = await storage.getFile(fileId);
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      
+      if (file.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized to access this file" });
+      }
+      
+      // Link file to task
+      const taskFile = await storage.linkFileToTask(taskId, fileId);
+      res.status(201).json({ success: true, taskFile });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Unlink a file from a task
+  app.delete("/api/tasks/:taskId/files/:fileId", requireAuth, async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const fileId = parseInt(req.params.fileId);
+      
+      // Verify task exists and user owns it
+      const task = await storage.getTask(taskId);
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      
+      if (task.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized to access this task" });
+      }
+      
+      // Unlink file from task
+      const success = await storage.unlinkFileFromTask(taskId, fileId);
+      
+      if (!success) {
+        return res.status(404).json({ error: "File not linked to task" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // Admin routes
   // Plans

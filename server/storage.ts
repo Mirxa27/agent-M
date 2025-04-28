@@ -845,6 +845,62 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(files).where(eq(files.id, id));
     return result.rowCount > 0;
   }
+  
+  // Get files linked to a task through the task-file relationship
+  async getFilesByTaskId(taskId: number): Promise<File[]> {
+    // Get file IDs from task-file relationship
+    const fileIds = await db.select({ fileId: taskFiles.fileId })
+      .from(taskFiles)
+      .where(eq(taskFiles.taskId, taskId));
+    
+    if (fileIds.length === 0) {
+      return [];
+    }
+    
+    // Create an array of OR conditions for each fileId
+    const fileIdConditions = fileIds.map(row => eq(files.id, row.fileId));
+    
+    return await db.select().from(files)
+      .where(or(...fileIdConditions));
+  }
+  
+  // Task-File relationship operations
+  async linkFileToTask(taskId: number, fileId: number): Promise<TaskFile> {
+    // Verify the task and file exist
+    const task = await this.getTask(taskId);
+    if (!task) {
+      throw new Error(`Task with ID ${taskId} not found`);
+    }
+    
+    const file = await this.getFile(fileId);
+    if (!file) {
+      throw new Error(`File with ID ${fileId} not found`);
+    }
+    
+    // Create the relationship record
+    const now = new Date();
+    const [taskFile] = await db.insert(taskFiles).values({
+      taskId,
+      fileId,
+      createdAt: now
+    }).returning();
+    
+    return taskFile;
+  }
+  
+  async getTaskFilesByTaskId(taskId: number): Promise<TaskFile[]> {
+    return await db.select().from(taskFiles).where(eq(taskFiles.taskId, taskId));
+  }
+  
+  async unlinkFileFromTask(taskId: number, fileId: number): Promise<boolean> {
+    const result = await db.delete(taskFiles)
+      .where(and(
+        eq(taskFiles.taskId, taskId),
+        eq(taskFiles.fileId, fileId)
+      ));
+    
+    return result.rowCount > 0;
+  }
 
   // Task operations
   async getTask(id: number): Promise<Task | undefined> {
