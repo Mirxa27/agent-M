@@ -23,8 +23,22 @@ const TOOL_CATEGORIES = {
   CUSTOM: "custom"
 };
 
+// Define types for the templates
+interface AgentToolTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  implementation_type: string;
+  input_schema: string;
+  output_schema: string;
+  endpoint?: string;
+  api_key_name?: string;
+  code?: string;
+}
+
 // Mock templates for demonstration purposes
-const AGENT_TOOL_TEMPLATES = [
+const AGENT_TOOL_TEMPLATES: AgentToolTemplate[] = [
   {
     id: "search_tool",
     name: "Search Knowledge Base",
@@ -32,7 +46,10 @@ const AGENT_TOOL_TEMPLATES = [
     category: "knowledge",
     implementation_type: "openai",
     input_schema: "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"query\": {\n      \"type\": \"string\",\n      \"description\": \"The search query\"\n    }\n  },\n  \"required\": [\"query\"]\n}",
-    output_schema: "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"results\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}"
+    output_schema: "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"results\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}",
+    endpoint: "",
+    api_key_name: "",
+    code: ""
   },
   {
     id: "content_generator",
@@ -41,7 +58,10 @@ const AGENT_TOOL_TEMPLATES = [
     category: "content_generation",
     implementation_type: "openai",
     input_schema: "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"content_type\": {\n      \"type\": \"string\",\n      \"enum\": [\"blog\", \"email\", \"social_post\", \"product_description\"]\n    },\n    \"topic\": {\n      \"type\": \"string\"\n    },\n    \"tone\": {\n      \"type\": \"string\",\n      \"enum\": [\"professional\", \"casual\", \"humorous\", \"formal\"]\n    },\n    \"length\": {\n      \"type\": \"string\",\n      \"enum\": [\"short\", \"medium\", \"long\"]\n    }\n  },\n  \"required\": [\"content_type\", \"topic\"]\n}",
-    output_schema: "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"content\": {\n      \"type\": \"string\"\n    },\n    \"suggestions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}"
+    output_schema: "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"content\": {\n      \"type\": \"string\"\n    },\n    \"suggestions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}",
+    endpoint: "",
+    api_key_name: "",
+    code: ""
   }
 ];
 
@@ -100,7 +120,7 @@ export function AgentToolsPanel() {
   }
 
   function fillTemplateData(templateId: string) {
-    const template = AGENT_TOOL_TEMPLATES.find(t => t.id === templateId);
+    const template = AGENT_TOOL_TEMPLATES.find((t: AgentToolTemplate) => t.id === templateId);
     if (template) {
       form.reset({
         name: template.name,
@@ -131,13 +151,13 @@ export function AgentToolsPanel() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {AGENT_TOOL_TEMPLATES.map((tool) => (
+            {AGENT_TOOL_TEMPLATES.map((tool: AgentToolTemplate) => (
               <Card key={tool.id} className="overflow-hidden">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">{tool.name}</CardTitle>
                     <span className="text-xs bg-muted px-2 py-1 rounded-full">
-                      {Object.entries(TOOL_CATEGORIES).find(([_, value]) => value === tool.category)?.[0]?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || "Custom"}
+                      {Object.entries(TOOL_CATEGORIES).find(([_, value]) => value === tool.category)?.[0]?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || "Custom"}
                     </span>
                   </div>
                   <CardDescription className="text-xs line-clamp-2">
@@ -146,7 +166,7 @@ export function AgentToolsPanel() {
                 </CardHeader>
                 <CardContent className="pb-2 text-xs">
                   <div className="text-muted-foreground">
-                    Type: {tool.implementation_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    Type: {tool.implementation_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end pt-0">
@@ -215,7 +235,7 @@ export function AgentToolsPanel() {
                                   value={value || `category_${key.toLowerCase()}`}
                                   className="text-xs sm:text-sm"
                                 >
-                                  {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                  {key.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                 </SelectItem>
                               ))}
                             </SelectContent>
