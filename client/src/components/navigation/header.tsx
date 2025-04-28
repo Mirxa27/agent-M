@@ -94,12 +94,12 @@ export function Header() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href={user ? "/dashboard" : "/"}>
-              <a className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 cursor-pointer">
                 <AnimatedLogo size="sm" />
                 <span className="font-heading text-lg font-bold hidden md:block text-primary">
                   {t("app.name")}
                 </span>
-              </a>
+              </div>
             </Link>
           </div>
 
