@@ -122,9 +122,9 @@ export const insertTaskSchema = createInsertSchema(tasks)
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   taskId: integer("task_id").notNull(),
-  role: text("role").notNull(), // 'user' or 'assistant'
+  role: text("role").notNull(), // 'user', 'assistant', or 'system'
   content: text("content").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
 export const insertMessageSchema = createInsertSchema(messages)
@@ -132,6 +132,21 @@ export const insertMessageSchema = createInsertSchema(messages)
     taskId: true,
     role: true,
     content: true,
+    timestamp: true,
+  });
+
+// Task-File relationship schema
+export const taskFiles = pgTable("task_files", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").notNull(),
+  fileId: integer("file_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertTaskFileSchema = createInsertSchema(taskFiles)
+  .pick({
+    taskId: true,
+    fileId: true,
   });
 
 // AI Provider schema (for admin)
@@ -262,6 +277,9 @@ export type InsertTask = z.infer<typeof insertTaskSchema>;
 
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+export type TaskFile = typeof taskFiles.$inferSelect;
+export type InsertTaskFile = z.infer<typeof insertTaskFileSchema>;
 
 export type AiProvider = typeof aiProviders.$inferSelect;
 export type InsertAiProvider = z.infer<typeof insertAiProviderSchema>;
