@@ -5,8 +5,11 @@ interface Credential {
   id: number;
   userId: number;
   name: string;
-  type: string; // 'openai', 'anthropic', 'perplexity', etc.
+  type: string; // 'openai', 'anthropic', 'perplexity', 'gmail', etc.
+  authMethod: string; // 'api_key', 'oauth', 'direct_login'
   data: any; // Holds encrypted API keys and other secure data
+  expiresAt: Date | null; // When credentials expire (null for non-expiring)
+  lastRefreshedAt: Date | null; // For OAuth refresh tokens
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,11 +71,13 @@ import { decrypt } from "@shared/crypto";
 const credentialSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   type: z.string().min(1, "Type is required"),
+  authMethod: z.enum(["api_key", "oauth", "direct_login"]).default("api_key"),
   apiKey: z.string().min(1, "API Key is required"),
   apiSecret: z.string().optional(),
   baseUrl: z.string().optional(),
   organizationId: z.string().optional(),
   additionalParams: z.string().optional(),
+  expirationPeriod: z.enum(["never", "30days", "60days", "90days"]).default("90days"),
 });
 
 export default function CredentialsPage() {
@@ -383,13 +388,32 @@ export default function CredentialsPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        {/* AI Services */}
                         <SelectItem value="openai">OpenAI</SelectItem>
                         <SelectItem value="anthropic">Anthropic</SelectItem>
                         <SelectItem value="perplexity">Perplexity</SelectItem>
                         <SelectItem value="xai">xAI (Grok)</SelectItem>
                         <SelectItem value="azure">Azure OpenAI</SelectItem>
                         <SelectItem value="google">Google AI</SelectItem>
+                        
+                        {/* Payment Services */}
                         <SelectItem value="myfatoorah">MyFatoorah</SelectItem>
+                        <SelectItem value="stripe">Stripe</SelectItem>
+                        
+                        {/* Email & Productivity */}
+                        <SelectItem value="gmail">Gmail</SelectItem>
+                        <SelectItem value="outlook">Outlook</SelectItem>
+                        <SelectItem value="google_drive">Google Drive</SelectItem>
+                        <SelectItem value="onedrive">OneDrive</SelectItem>
+                        <SelectItem value="dropbox">Dropbox</SelectItem>
+                        
+                        {/* Social Media */}
+                        <SelectItem value="twitter">Twitter/X</SelectItem>
+                        <SelectItem value="linkedin">LinkedIn</SelectItem>
+                        <SelectItem value="facebook">Facebook</SelectItem>
+                        <SelectItem value="instagram">Instagram</SelectItem>
+                        
+                        {/* Custom */}
                         <SelectItem value="custom">Custom API</SelectItem>
                       </SelectContent>
                     </Select>
