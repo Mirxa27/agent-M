@@ -18,56 +18,56 @@ export function AuthLayout({
   showLogo = true,
 }: AuthLayoutProps) {
   const { t } = useTranslation();
-  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-  
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1200,
+  );
+
   useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Side - Form */}
-      <div className="flex flex-col w-full md:w-3/5 p-4 sm:p-6 md:p-8 lg:p-16 xl:p-20 justify-center">
+      <div className="relative h-screen md:h-full flex flex-col w-full md:w-3/5 p-4 sm:p-6 md:p-8 lg:p-16 xl:p-20 justify-center">
         <div className="absolute top-4 right-4">
           <LanguageSwitcher />
         </div>
-
-        {showLogo && (
-          <div className="mb-6 md:mb-8 lg:mb-10 flex items-center">
-            <Link href="/">
-              <span className="flex items-center space-x-2 sm:space-x-3 cursor-pointer">
-                <AnimatedLogo
-                  size={
-                    windowWidth > 1400 ? "lg" : windowWidth > 1200 ? "md" : "sm"
-                  }
-                />
-                <span className="font-heading text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-primary">
-                  {t("app.name")}
+        <div className="w-full max-w-md mx-auto md:mx-0">
+          {showLogo && (
+            <div className="mb-6 md:mb-8 lg:mb-10 flex items-center">
+              <Link href="/">
+                <span className="flex items-center space-x-2 sm:space-x-3 cursor-pointer">
+                  <AnimatedLogo
+                    size={
+                      windowWidth > 1400
+                        ? "lg"
+                        : windowWidth > 1200
+                          ? "md"
+                          : "sm"
+                    }
+                  />
+                  <span className="font-heading text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-primary">
+                    {t("app.name")}
+                  </span>
                 </span>
-              </span>
-            </Link>
-          </div>
-        )}
-
-        <div className="mb-6 md:mb-8 lg:mb-10">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="text-gray-500 dark:text-gray-400 mt-2 md:mt-3 text-sm md:text-base lg:text-lg">
-              {subtitle}
-            </p>
+              </Link>
+            </div>
           )}
+          <div className="mb-6 md:mb-8 lg:mb-10">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="text-gray-500 dark:text-gray-400 mt-2 md:mt-3 text-sm md:text-base lg:text-lg">
+                {subtitle}
+              </p>
+            )}
+          </div>
+          {children}
         </div>
-
-        {children}
       </div>
 
       {/* Right Side - Hero */}
