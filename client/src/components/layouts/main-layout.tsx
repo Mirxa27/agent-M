@@ -17,8 +17,10 @@ export function MainLayout({ children, className, hideNav }: MainLayoutProps) {
     <div className="min-h-screen flex flex-col">
       {!hideNav && <Header />}
       
-      <main className={cn("flex-1", className)}>
-        {children}
+      <main className={cn("flex-1 w-full max-w-full overflow-x-hidden", className)}>
+        <div className="min-w-0 w-full"> {/* Ensures content won't overflow horizontally */}
+          {children}
+        </div>
       </main>
       
       {!hideNav && user && <MobileFooterNav />}
