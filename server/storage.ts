@@ -10,7 +10,10 @@ import {
   aiProviders, AiProvider, InsertAiProvider,
   aiModels, AiModel, InsertAiModel,
   aiPrompts, AiPrompt, InsertAiPrompt,
-  plans, Plan, InsertPlan
+  plans, Plan, InsertPlan,
+  userActivities, UserActivity, InsertUserActivity,
+  dashboardPreferences, DashboardPreference, InsertDashboardPreference,
+  analytics, Analytics, InsertAnalytics
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -117,6 +120,21 @@ export interface IStorage {
   createPlan(plan: InsertPlan): Promise<Plan>;
   updatePlan(id: number, updates: Partial<Omit<Plan, 'id'>>): Promise<Plan | undefined>;
   deletePlan(id: number): Promise<boolean>;
+  
+  // User Activity operations
+  getUserActivity(id: number): Promise<UserActivity | undefined>;
+  getUserActivitiesByUserId(userId: number, limit?: number): Promise<UserActivity[]>;
+  createUserActivity(activity: InsertUserActivity): Promise<UserActivity>;
+  
+  // Dashboard Preferences operations
+  getDashboardPreference(userId: number): Promise<DashboardPreference | undefined>;
+  createDashboardPreference(preference: InsertDashboardPreference): Promise<DashboardPreference>;
+  updateDashboardPreference(userId: number, updates: Partial<Omit<DashboardPreference, 'id' | 'userId'>>): Promise<DashboardPreference | undefined>;
+  
+  // Analytics operations
+  getUserAnalytics(userId: number, period: string): Promise<Analytics | undefined>;
+  createAnalytics(analytics: InsertAnalytics): Promise<Analytics>;
+  updateAnalytics(id: number, updates: Partial<Omit<Analytics, 'id'>>): Promise<Analytics | undefined>;
   
   // Session store
   sessionStore: any; // Using any for compatibility
