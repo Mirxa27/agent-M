@@ -1,29 +1,28 @@
-import { useTranslation } from 'react-i18next';
+import React from 'react';
 import { Link } from 'wouter';
-import { MoonIcon, SunIcon } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/ui/language-switcher';
 
 export function LanguageNav() {
   const { t } = useTranslation();
-  const { theme, setTheme } = useTheme();
-
+  
   return (
-    <div className="fixed top-4 right-4 flex items-center gap-2 z-50">
-      {/* Theme toggle */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        aria-label={theme === 'dark' ? t('settings.lightMode') : t('settings.darkMode')}
-      >
-        {theme === 'dark' ? (
-          <SunIcon className="h-5 w-5" />
-        ) : (
-          <MoonIcon className="h-5 w-5" />
-        )}
-      </Button>
+    <div className="bg-white dark:bg-gray-900 py-2 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      {/* Logo (in large screens) */}
+      <div className="hidden md:flex items-center space-x-2">
+        <Link href="/">
+          <div className="flex items-center space-x-2 cursor-pointer">
+            <img 
+              src="/assets/images/mirxa-logo.svg" 
+              alt="Mirxa Logo" 
+              className="h-8 w-8"
+            />
+            <span className="text-lg font-semibold text-primary">
+              {t('app.name')}
+            </span>
+          </div>
+        </Link>
+      </div>
       
       {/* Language switcher */}
       <LanguageSwitcher />
@@ -31,13 +30,13 @@ export function LanguageNav() {
       {/* Logo (in small screens) */}
       <div className="md:hidden">
         <Link href="/">
-          <a className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
             <img 
               src="/assets/images/mirxa-logo.svg" 
               alt="Mirxa Logo" 
               className="h-8 w-8"
             />
-          </a>
+          </div>
         </Link>
       </div>
     </div>

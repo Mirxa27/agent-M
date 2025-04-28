@@ -2,17 +2,17 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-// Translation resources
+// Import translation files
 import enTranslation from '../locales/en.json';
 import arTranslation from '../locales/ar.json';
 
-// Configure i18next
+// Initialize i18next
 i18n
-  // Use language detector to automatically detect preferred language
+  // detect user language
   .use(LanguageDetector)
-  // Pass i18n instance to react-i18next
+  // pass the i18n instance to react-i18next
   .use(initReactI18next)
-  // Initialize i18next
+  // init i18next
   .init({
     resources: {
       en: {
@@ -23,31 +23,19 @@ i18n
       }
     },
     fallbackLng: 'en',
-    // Debug enabled in development environment only
-    debug: import.meta.env.DEV,
-    
+    debug: true,
     interpolation: {
-      escapeValue: false // React already safes from XSS
+      escapeValue: false // not needed for react as it escapes by default
     },
-    
-    // Language detection options
     detection: {
-      // Order and from where user language should be detected
-      order: ['localStorage', 'navigator'],
-      
-      // Keys or params to lookup language from
-      lookupLocalStorage: 'mirxaLanguage',
-      
-      // Cache user language on localStorage
-      caches: ['localStorage'],
-      
-      // Only detect languages that are in the 'resources' list
-      checkWhitelist: true
-    },
-    
-    // React specific options
-    react: {
-      useSuspense: true,
+      // order and from where user language should be detected
+      order: ['querystring', 'cookie', 'localStorage', 'navigator', 'htmlTag'],
+      // keys or params to lookup language from
+      lookupQuerystring: 'lng',
+      lookupCookie: 'i18next',
+      lookupLocalStorage: 'i18nextLng',
+      // cache user language on
+      caches: ['localStorage', 'cookie'],
     }
   });
 
