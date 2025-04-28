@@ -153,6 +153,9 @@ export class MemStorage implements IStorage {
   private aiPrompts: Map<number, AiPrompt>;
   private aiProviders: Map<number, AiProvider>;
   private plans: Map<number, Plan>;
+  private userActivities: Map<number, UserActivity>;
+  private dashboardPreferences: Map<number, DashboardPreference>;
+  private analyticsEntries: Map<number, Analytics>;
   
   sessionStore: SessionStore;
   
@@ -168,6 +171,9 @@ export class MemStorage implements IStorage {
   private aiPromptIdCounter: number;
   private aiProviderIdCounter: number;
   private planIdCounter: number;
+  private userActivityIdCounter: number;
+  private dashboardPreferenceIdCounter: number;
+  private analyticsIdCounter: number;
 
   constructor() {
     this.users = new Map();
@@ -182,6 +188,9 @@ export class MemStorage implements IStorage {
     this.aiPrompts = new Map();
     this.aiProviders = new Map();
     this.plans = new Map();
+    this.userActivities = new Map();
+    this.dashboardPreferences = new Map();
+    this.analyticsEntries = new Map();
     
     this.userIdCounter = 1;
     this.agentToolIdCounter = 1;
@@ -195,6 +204,9 @@ export class MemStorage implements IStorage {
     this.aiPromptIdCounter = 1;
     this.aiProviderIdCounter = 1;
     this.planIdCounter = 1;
+    this.userActivityIdCounter = 1;
+    this.dashboardPreferenceIdCounter = 1;
+    this.analyticsIdCounter = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // prune expired entries every 24h
@@ -841,6 +853,122 @@ export class MemStorage implements IStorage {
   async deletePlan(id: number): Promise<boolean> {
     return this.plans.delete(id);
   }
+  
+  // User Activity operations
+  async getUserActivity(id: number): Promise<UserActivity | undefined> {
+    return this.userActivities.get(id);
+  }
+  
+  async getUserActivitiesByUserId(userId: number, limit?: number): Promise<UserActivity[]> {
+    let activities = Array.from(this.userActivities.values())
+      .filter(activity => activity.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    
+    if (limit) {
+      activities = activities.slice(0, limit);
+    }
+    
+    return activities;
+  }
+  
+  async createUserActivity(activity: InsertUserActivity): Promise<UserActivity> {
+    const id = this.userActivityIdCounter++;
+    const now = new Date();
+    const newActivity: UserActivity = {
+      id,
+      ...activity,
+      metadata: activity.metadata || {},
+      createdAt: now
+    };
+    
+    this.userActivities.set(id, newActivity);
+    return newActivity;
+  }
+  
+  // Dashboard Preferences operations
+  async getDashboardPreference(userId: number): Promise<DashboardPreference | undefined> {
+    return Array.from(this.dashboardPreferences.values())
+      .find(pref => pref.userId === userId);
+  }
+  
+  async createDashboardPreference(preference: InsertDashboardPreference): Promise<DashboardPreference> {
+    // First check if preference already exists for this user
+    const existingPreference = await this.getDashboardPreference(preference.userId);
+    if (existingPreference) {
+      // If it exists, update it instead
+      return this.updateDashboardPreference(preference.userId, {
+        layout: preference.layout,
+        favoriteAgents: preference.favoriteAgents,
+        recentTasks: preference.recentTasks,
+        widgets: preference.widgets,
+        theme: preference.theme
+      }) as Promise<DashboardPreference>;
+    }
+    
+    // Otherwise create new preference
+    const id = this.dashboardPreferenceIdCounter++;
+    const now = new Date();
+    const newPreference: DashboardPreference = {
+      id,
+      ...preference,
+      layout: preference.layout || {},
+      favoriteAgents: preference.favoriteAgents || [],
+      recentTasks: preference.recentTasks || [],
+      widgets: preference.widgets || [],
+      updatedAt: now
+    };
+    
+    this.dashboardPreferences.set(id, newPreference);
+    return newPreference;
+  }
+  
+  async updateDashboardPreference(userId: number, updates: Partial<Omit<DashboardPreference, 'id' | 'userId'>>): Promise<DashboardPreference | undefined> {
+    const preference = await this.getDashboardPreference(userId);
+    if (!preference) return undefined;
+    
+    const updatedPreference = {
+      ...preference,
+      ...updates,
+      updatedAt: new Date()
+    };
+    
+    this.dashboardPreferences.set(preference.id, updatedPreference);
+    return updatedPreference;
+  }
+  
+  // Analytics operations
+  async getUserAnalytics(userId: number, period: string): Promise<Analytics | undefined> {
+    return Array.from(this.analyticsEntries.values())
+      .filter(a => a.userId === userId && a.period === period)
+      .sort((a, b) => b.periodEnd.getTime() - a.periodEnd.getTime())[0];
+  }
+  
+  async createAnalytics(analyticsData: InsertAnalytics): Promise<Analytics> {
+    const id = this.analyticsIdCounter++;
+    const now = new Date();
+    const newAnalytics: Analytics = {
+      id,
+      ...analyticsData,
+      metadata: analyticsData.metadata || {},
+      createdAt: now
+    };
+    
+    this.analyticsEntries.set(id, newAnalytics);
+    return newAnalytics;
+  }
+  
+  async updateAnalytics(id: number, updates: Partial<Omit<Analytics, 'id'>>): Promise<Analytics | undefined> {
+    const analytics = this.analyticsEntries.get(id);
+    if (!analytics) return undefined;
+    
+    const updatedAnalytics = {
+      ...analytics,
+      ...updates
+    };
+    
+    this.analyticsEntries.set(id, updatedAnalytics);
+    return updatedAnalytics;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1486,6 +1614,97 @@ export class DatabaseStorage implements IStorage {
   async deletePlan(id: number): Promise<boolean> {
     const result = await db.delete(plans).where(eq(plans.id, id));
     return result.rowCount > 0;
+  }
+  
+  // User Activity operations
+  async getUserActivity(id: number): Promise<UserActivity | undefined> {
+    const [activity] = await db.select().from(userActivities).where(eq(userActivities.id, id));
+    return activity;
+  }
+  
+  async getUserActivitiesByUserId(userId: number, limit?: number): Promise<UserActivity[]> {
+    let query = db.select().from(userActivities)
+      .where(eq(userActivities.userId, userId))
+      .orderBy(desc(userActivities.createdAt));
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    return query;
+  }
+  
+  async createUserActivity(activity: InsertUserActivity): Promise<UserActivity> {
+    const [newActivity] = await db.insert(userActivities).values(activity).returning();
+    return newActivity;
+  }
+  
+  // Dashboard Preferences operations
+  async getDashboardPreference(userId: number): Promise<DashboardPreference | undefined> {
+    const [preference] = await db.select().from(dashboardPreferences)
+      .where(eq(dashboardPreferences.userId, userId));
+    return preference;
+  }
+  
+  async createDashboardPreference(preference: InsertDashboardPreference): Promise<DashboardPreference> {
+    // First check if preference already exists for this user
+    const existingPreference = await this.getDashboardPreference(preference.userId);
+    if (existingPreference) {
+      // If it exists, update it instead
+      return this.updateDashboardPreference(preference.userId, {
+        layout: preference.layout,
+        favoriteAgents: preference.favoriteAgents,
+        recentTasks: preference.recentTasks,
+        widgets: preference.widgets,
+        theme: preference.theme
+      }) as Promise<DashboardPreference>;
+    }
+    
+    // Otherwise create new preference
+    const [newPreference] = await db.insert(dashboardPreferences).values(preference).returning();
+    return newPreference;
+  }
+  
+  async updateDashboardPreference(userId: number, updates: Partial<Omit<DashboardPreference, 'id' | 'userId'>>): Promise<DashboardPreference | undefined> {
+    // Add updated timestamp
+    const updatesWithTimestamp = {
+      ...updates,
+      updatedAt: new Date()
+    };
+    
+    const result = await db.update(dashboardPreferences)
+      .set(updatesWithTimestamp)
+      .where(eq(dashboardPreferences.userId, userId))
+      .returning();
+    
+    return result[0];
+  }
+  
+  // Analytics operations
+  async getUserAnalytics(userId: number, period: string): Promise<Analytics | undefined> {
+    const [analyticsData] = await db.select().from(analytics)
+      .where(and(
+        eq(analytics.userId, userId),
+        eq(analytics.period, period)
+      ))
+      .orderBy(desc(analytics.periodEnd))
+      .limit(1);
+    
+    return analyticsData;
+  }
+  
+  async createAnalytics(analyticsData: InsertAnalytics): Promise<Analytics> {
+    const [newAnalytics] = await db.insert(analytics).values(analyticsData).returning();
+    return newAnalytics;
+  }
+  
+  async updateAnalytics(id: number, updates: Partial<Omit<Analytics, 'id'>>): Promise<Analytics | undefined> {
+    const result = await db.update(analytics)
+      .set(updates)
+      .where(eq(analytics.id, id))
+      .returning();
+    
+    return result[0];
   }
 }
 
