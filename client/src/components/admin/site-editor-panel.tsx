@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Loader2, Info, Save, PlusCircle, MinusCircle, Upload, Bot, LayoutGrid, MessageCircle, Settings, 
-  ArrowLeft, ArrowRight, Trash, Image, Type, Palette } from "lucide-react";
+  ArrowLeft, ArrowRight, Trash, Image, Type, Palette, Edit, ArrowUp, ArrowDown, X } from "lucide-react";
 import { SketchPicker } from 'react-color';
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -492,7 +492,7 @@ const SiteEditorPanel: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <Alert variant="warning">
+                  <Alert>
                     <Info className="h-4 w-4" />
                     <AlertTitle>{t("admin.customCodeWarningTitle")}</AlertTitle>
                     <AlertDescription>
