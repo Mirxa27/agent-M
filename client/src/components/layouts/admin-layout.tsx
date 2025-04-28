@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/navigation/header";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, Users, Bot, Settings, Database, PanelLeft, Tag, Languages, Palette, Menu, X, Sparkles } from "lucide-react";
+import { Loader2, Users, Bot, Settings, Database, PanelLeft, Tag, Languages, Palette, Menu, X, Sparkles, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -46,6 +46,7 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
     { href: "/admin/providers", label: "AI Providers", icon: <Database className="w-5 h-5 mr-3" /> },
     { href: "/admin/models", label: "AI Models", icon: <Bot className="w-5 h-5 mr-3" /> },
     { href: "/admin/prompts", label: "AI Prompts", icon: <Tag className="w-5 h-5 mr-3" /> },
+    { href: "/admin/agent-tools", label: "Agent Tools", icon: <Wrench className="w-5 h-5 mr-3" /> },
     { href: "/admin/content-builder", label: "Content Builder", icon: <Sparkles className="w-5 h-5 mr-3" /> },
     { href: "/admin/plans", label: "Plans", icon: <Settings className="w-5 h-5 mr-3" /> },
     { href: "/admin/translations", label: "Translations", icon: <Languages className="w-5 h-5 mr-3" /> },

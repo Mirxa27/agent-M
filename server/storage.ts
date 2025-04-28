@@ -152,6 +152,7 @@ export class MemStorage implements IStorage {
 
   constructor() {
     this.users = new Map();
+    this.agentTools = new Map();
     this.agents = new Map();
     this.credentials = new Map();
     this.files = new Map();
@@ -164,6 +165,7 @@ export class MemStorage implements IStorage {
     this.plans = new Map();
     
     this.userIdCounter = 1;
+    this.agentToolIdCounter = 1;
     this.agentIdCounter = 1;
     this.credentialIdCounter = 1;
     this.fileIdCounter = 1;
@@ -280,6 +282,64 @@ export class MemStorage implements IStorage {
     const updatedUser = { ...user, ...updates };
     this.users.set(id, updatedUser);
     return updatedUser;
+  }
+
+  // Agent Tool operations
+  async getAgentTool(id: number): Promise<AgentTool | undefined> {
+    return this.agentTools.get(id);
+  }
+  
+  async getAllAgentTools(): Promise<AgentTool[]> {
+    return Array.from(this.agentTools.values());
+  }
+  
+  async getAgentToolsByCategory(category: string): Promise<AgentTool[]> {
+    return Array.from(this.agentTools.values()).filter(
+      tool => tool.category === category
+    );
+  }
+  
+  async createAgentTool(tool: InsertAgentTool): Promise<AgentTool> {
+    const id = this.agentToolIdCounter++;
+    const now = new Date();
+    const newTool: AgentTool = {
+      id,
+      ...tool,
+      isSystem: false, // Default to false, only system can set to true
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.agentTools.set(id, newTool);
+    return newTool;
+  }
+  
+  async updateAgentTool(id: number, updates: Partial<Omit<AgentTool, 'id'>>): Promise<AgentTool | undefined> {
+    const tool = await this.getAgentTool(id);
+    if (!tool) return undefined;
+    
+    // Don't allow changing isSystem status if it's a system tool
+    if (tool.isSystem && updates.isSystem === false) {
+      throw new Error("Cannot change system status of a system tool");
+    }
+    
+    const updatedTool = {
+      ...tool,
+      ...updates,
+      updatedAt: new Date()
+    };
+    
+    this.agentTools.set(id, updatedTool);
+    return updatedTool;
+  }
+  
+  async deleteAgentTool(id: number): Promise<boolean> {
+    const tool = await this.getAgentTool(id);
+    if (tool && tool.isSystem) {
+      throw new Error("Cannot delete a system tool");
+    }
+    
+    return this.agentTools.delete(id);
   }
 
   // Agent operations
