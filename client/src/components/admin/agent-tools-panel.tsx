@@ -330,66 +330,70 @@ export default function AgentToolsPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Agent Tools</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Agent Tools</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Manage AI agent tools and templates for your platform
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button 
+            onClick={() => setCreateDialogOpen(true)}
+            className="h-9 text-xs sm:text-sm py-1 px-3"
+          >
+            <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
             Create Tool
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="relative w-full md:w-1/2">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-5 md:mb-6">
+        <div className="relative w-full sm:w-1/2">
+          <Search className="absolute left-2.5 top-2.5 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           <Input
             placeholder="Search tools and templates..."
-            className="pl-8"
+            className="pl-8 h-9 text-xs sm:text-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <Switch
             id="show-system-tools"
             checked={showSystemTools}
             onCheckedChange={setShowSystemTools}
+            className="scale-90 sm:scale-100"
           />
-          <Label htmlFor="show-system-tools">Show system tools</Label>
+          <Label htmlFor="show-system-tools" className="text-xs sm:text-sm">Show system tools</Label>
         </div>
       </div>
 
       <Tabs defaultValue="all" onValueChange={setActiveTab}>
-        <TabsList className="mb-4 flex flex-wrap h-auto">
-          <TabsTrigger value="all">All Tools</TabsTrigger>
-          <TabsTrigger value={TOOL_CATEGORIES.CONTENT_GENERATION}>Content Generation</TabsTrigger>
-          <TabsTrigger value={TOOL_CATEGORIES.DATA_PROCESSING}>Data Processing</TabsTrigger>
-          <TabsTrigger value={TOOL_CATEGORIES.COMMUNICATION}>Communication</TabsTrigger>
-          <TabsTrigger value={TOOL_CATEGORIES.KNOWLEDGE}>Knowledge</TabsTrigger>
-          <TabsTrigger value={TOOL_CATEGORIES.UTILITIES}>Utilities</TabsTrigger>
-          <TabsTrigger value={TOOL_CATEGORIES.INTEGRATIONS}>Integrations</TabsTrigger>
-          <TabsTrigger value={TOOL_CATEGORIES.CUSTOM}>Custom</TabsTrigger>
+        <TabsList className="mb-4 sm:mb-5 md:mb-6 flex flex-wrap h-auto gap-1 sm:gap-0">
+          <TabsTrigger className="text-xs sm:text-sm py-1 px-2 sm:px-3 h-8 sm:h-9" value="all">All Tools</TabsTrigger>
+          <TabsTrigger className="text-xs sm:text-sm py-1 px-2 sm:px-3 h-8 sm:h-9" value={TOOL_CATEGORIES.CONTENT_GENERATION}>Content Generation</TabsTrigger>
+          <TabsTrigger className="text-xs sm:text-sm py-1 px-2 sm:px-3 h-8 sm:h-9" value={TOOL_CATEGORIES.DATA_PROCESSING}>Data Processing</TabsTrigger>
+          <TabsTrigger className="text-xs sm:text-sm py-1 px-2 sm:px-3 h-8 sm:h-9" value={TOOL_CATEGORIES.COMMUNICATION}>Communication</TabsTrigger>
+          <TabsTrigger className="text-xs sm:text-sm py-1 px-2 sm:px-3 h-8 sm:h-9" value={TOOL_CATEGORIES.KNOWLEDGE}>Knowledge</TabsTrigger>
+          <TabsTrigger className="text-xs sm:text-sm py-1 px-2 sm:px-3 h-8 sm:h-9" value={TOOL_CATEGORIES.UTILITIES}>Utilities</TabsTrigger>
+          <TabsTrigger className="text-xs sm:text-sm py-1 px-2 sm:px-3 h-8 sm:h-9" value={TOOL_CATEGORIES.INTEGRATIONS}>Integrations</TabsTrigger>
+          <TabsTrigger className="text-xs sm:text-sm py-1 px-2 sm:px-3 h-8 sm:h-9" value={TOOL_CATEGORIES.CUSTOM}>Custom</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             {isLoading ? (
-              <div className="col-span-full flex justify-center py-12">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <div className="col-span-full flex justify-center py-8 sm:py-10 md:py-12">
+                <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-primary" />
               </div>
             ) : filteredTools.length === 0 && availableTemplates.length === 0 ? (
               <div className="col-span-full">
                 <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                    <Box className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No tools or templates found</h3>
-                    <p className="text-sm text-muted-foreground mb-6 max-w-md">
+                  <CardContent className="flex flex-col items-center justify-center py-8 sm:py-10 md:py-12 text-center">
+                    <Box className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mb-3 sm:mb-4" />
+                    <h3 className="text-base sm:text-lg font-medium mb-2">No tools or templates found</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-5 sm:mb-6 max-w-md mx-auto">
                       Try changing your search or create a new tool.
                     </p>
                     <Button onClick={() => setCreateDialogOpen(true)}>
@@ -403,8 +407,8 @@ export default function AgentToolsPanel() {
                 {/* Available Templates Section */}
                 {availableTemplates.length > 0 && (
                   <>
-                    <div className="col-span-full mb-2">
-                      <h3 className="text-lg font-medium mb-0">Available Templates</h3>
+                    <div className="col-span-full mb-2 sm:mb-3 md:mb-4">
+                      <h3 className="text-base sm:text-lg font-medium mb-0">Available Templates</h3>
                     </div>
                     {availableTemplates.map(template => {
                       const IconComponent = getIconByName(template.icon);
@@ -419,19 +423,19 @@ export default function AgentToolsPanel() {
                                   <IconComponent className="h-4 w-4" />
                                 </div>
                                 <div>
-                                  <CardTitle className="text-base">{template.name}</CardTitle>
-                                  <CardDescription className="capitalize">
+                                  <CardTitle className="text-sm sm:text-base">{template.name}</CardTitle>
+                                  <CardDescription className="capitalize text-xs sm:text-sm">
                                     {template.category.replace('_', ' ')}
                                   </CardDescription>
                                 </div>
                               </div>
-                              <Badge variant={isAdded ? "outline" : "secondary"}>
+                              <Badge variant={isAdded ? "outline" : "secondary"} className="text-xs">
                                 {isAdded ? "Added" : "Template"}
                               </Badge>
                             </div>
                           </CardHeader>
                           <CardContent className="pb-2">
-                            <p className="text-sm text-muted-foreground line-clamp-2">
+                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
                               {template.description}
                             </p>
                           </CardContent>
@@ -440,14 +444,16 @@ export default function AgentToolsPanel() {
                               variant="ghost" 
                               size="sm"
                               onClick={() => handleTemplateClick(template)}
+                              className="text-xs sm:text-sm h-8 px-2 sm:px-3"
                             >
-                              <Copy className="h-4 w-4 mr-1" /> Customize
+                              <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> Customize
                             </Button>
                             <Button
                               variant={isAdded ? "outline" : "default"}
                               size="sm"
                               disabled={isAdded}
                               onClick={() => handleAddTemplateClick(template)}
+                              className="text-xs sm:text-sm h-8 px-2 sm:px-3"
                             >
                               {isAdded ? "Already Added" : "Add Template"}
                             </Button>
@@ -461,8 +467,8 @@ export default function AgentToolsPanel() {
                 {/* Existing Tools Section */}
                 {filteredTools.length > 0 && (
                   <>
-                    <div className="col-span-full mt-6 mb-2">
-                      <h3 className="text-lg font-medium mb-0">Your Tools</h3>
+                    <div className="col-span-full mt-4 sm:mt-5 md:mt-6 mb-2 sm:mb-3 md:mb-4">
+                      <h3 className="text-base sm:text-lg font-medium mb-0">Your Tools</h3>
                     </div>
                     {filteredTools.map(tool => {
                       const IconComponent = getIconByName(tool.icon);
@@ -472,28 +478,28 @@ export default function AgentToolsPanel() {
                           <CardHeader className="pb-2">
                             <div className="flex justify-between items-start">
                               <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 flex items-center justify-center rounded-md bg-primary/10 text-primary">
-                                  <IconComponent className="h-4 w-4" />
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-md bg-primary/10 text-primary">
+                                  <IconComponent className="h-3 w-3 sm:h-4 sm:w-4" />
                                 </div>
                                 <div>
-                                  <CardTitle className="text-base flex items-center gap-2">
+                                  <CardTitle className="text-sm sm:text-base flex items-center gap-1 sm:gap-2 flex-wrap">
                                     {tool.name}
                                     {!tool.isActive && (
-                                      <Badge variant="outline" className="text-xs">Inactive</Badge>
+                                      <Badge variant="outline" className="text-xs whitespace-nowrap">Inactive</Badge>
                                     )}
                                     {tool.isSystem && (
-                                      <Badge variant="secondary" className="text-xs">System</Badge>
+                                      <Badge variant="secondary" className="text-xs whitespace-nowrap">System</Badge>
                                     )}
                                   </CardTitle>
-                                  <CardDescription className="capitalize">
+                                  <CardDescription className="capitalize text-xs sm:text-sm">
                                     {tool.category.replace('_', ' ')}
                                   </CardDescription>
                                 </div>
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <Filter className="h-4 w-4" />
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
+                                    <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
@@ -525,7 +531,7 @@ export default function AgentToolsPanel() {
                             </div>
                           </CardHeader>
                           <CardContent className="pb-2">
-                            <p className="text-sm text-muted-foreground line-clamp-2">
+                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
                               {tool.description}
                             </p>
                           </CardContent>
