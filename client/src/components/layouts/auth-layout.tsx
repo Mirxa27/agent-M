@@ -51,10 +51,10 @@ export function AuthLayout({
   };
 
   return (
-    <div className="min-h-screen flex flex-col overflow-hidden">
+    <div className="min-h-screen flex flex-col md:flex-row overflow-hidden">
       {/* Left Side - Form */}
       <motion.div
-        className="relative flex w-full lg:w-[55%] xl:w-[60%] p-4 sm:p-6 md:p-8 lg:p-12 xl:p-16 bg-gradient-to-b from-background/40 to-background"
+        className="relative flex w-full lg:w-1/2 p-4 sm:p-6 md:p-8 lg:p-12 xl:p-16 bg-gradient-to-b from-background/40 to-background"
         initial="hidden"
         animate="visible"
         variants={fadeIn}
@@ -117,7 +117,7 @@ export function AuthLayout({
 
       {/* Right Side - Hero */}
       <motion.div
-        className="hidden md:flex flex-1 bg-auth-gradient text-white items-center justify-center p-8 lg:p-12 xl:p-16 relative overflow-hidden"
+        className="hidden md:flex w-full lg:w-1/2 bg-auth-gradient text-white items-center justify-center p-8 lg:p-12 xl:p-16 relative overflow-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
