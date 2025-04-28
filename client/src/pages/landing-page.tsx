@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, Bot, Zap, ShieldCheck, FileText, User, CreditCard, PlugZap, Check } from "lucide-react";
 
 export default function LandingPage() {
@@ -16,11 +16,22 @@ export default function LandingPage() {
   }
   
   // Handle scroll events to change navbar appearance
-  if (typeof window !== "undefined") {
-    window.addEventListener("scroll", () => {
+  // Using useEffect to properly handle event listeners
+  // This prevents memory leaks and React render warnings
+  useEffect(() => {
+    const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
-    });
-  }
+    };
+    
+    if (typeof window !== "undefined") {
+      window.addEventListener("scroll", handleScroll);
+      
+      // Clean up event listener on component unmount
+      return () => {
+        window.removeEventListener("scroll", handleScroll);
+      };
+    }
+  }, []);
   
   // Features list for the platform
   const features = [
