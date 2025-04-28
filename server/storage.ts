@@ -5,7 +5,10 @@ import {
   files, File, InsertFile,
   tasks, Task, InsertTask,
   messages, Message, InsertMessage,
+  taskFiles, TaskFile, InsertTaskFile,
   aiProviders, AiProvider, InsertAiProvider,
+  aiModels, AiModel, InsertAiModel,
+  aiPrompts, AiPrompt, InsertAiPrompt,
   plans, Plan, InsertPlan
 } from "@shared/schema";
 import session from "express-session";
@@ -75,6 +78,22 @@ export interface IStorage {
   createAiProvider(provider: InsertAiProvider): Promise<AiProvider>;
   updateAiProvider(id: number, updates: Partial<Omit<AiProvider, 'id'>>): Promise<AiProvider | undefined>;
   deleteAiProvider(id: number): Promise<boolean>;
+  
+  // AI Model operations (admin only)
+  getAiModel(id: number): Promise<AiModel | undefined>;
+  getAllAiModels(): Promise<AiModel[]>;
+  getAiModelsByProviderId(providerId: number): Promise<AiModel[]>;
+  createAiModel(model: InsertAiModel): Promise<AiModel>;
+  updateAiModel(id: number, updates: Partial<Omit<AiModel, 'id'>>): Promise<AiModel | undefined>;
+  deleteAiModel(id: number): Promise<boolean>;
+  
+  // AI Prompt operations (admin only)
+  getAiPrompt(id: number): Promise<AiPrompt | undefined>;
+  getAllAiPrompts(): Promise<AiPrompt[]>;
+  getAiPromptsByModelId(modelId: number): Promise<AiPrompt[]>;
+  createAiPrompt(prompt: InsertAiPrompt): Promise<AiPrompt>;
+  updateAiPrompt(id: number, updates: Partial<Omit<AiPrompt, 'id'>>): Promise<AiPrompt | undefined>;
+  deleteAiPrompt(id: number): Promise<boolean>;
   
   // Plan operations (admin only)
   getPlan(id: number): Promise<Plan | undefined>;
@@ -569,6 +588,96 @@ export class MemStorage implements IStorage {
   async deleteAiProvider(id: number): Promise<boolean> {
     return this.aiProviders.delete(id);
   }
+  
+  // AI Model operations
+  async getAiModel(id: number): Promise<AiModel | undefined> {
+    return this.aiModels.get(id);
+  }
+  
+  async getAllAiModels(): Promise<AiModel[]> {
+    return Array.from(this.aiModels.values());
+  }
+  
+  async getAiModelsByProviderId(providerId: number): Promise<AiModel[]> {
+    return Array.from(this.aiModels.values()).filter(
+      (model) => model.providerId === providerId
+    );
+  }
+  
+  async createAiModel(model: InsertAiModel): Promise<AiModel> {
+    const id = this.aiModelIdCounter++;
+    const now = new Date();
+    const newModel: AiModel = {
+      id,
+      ...model,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.aiModels.set(id, newModel);
+    return newModel;
+  }
+  
+  async updateAiModel(id: number, updates: Partial<Omit<AiModel, 'id'>>): Promise<AiModel | undefined> {
+    const model = await this.getAiModel(id);
+    if (!model) return undefined;
+    
+    const updatedModel = { 
+      ...model, 
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.aiModels.set(id, updatedModel);
+    return updatedModel;
+  }
+  
+  async deleteAiModel(id: number): Promise<boolean> {
+    return this.aiModels.delete(id);
+  }
+  
+  // AI Prompt operations
+  async getAiPrompt(id: number): Promise<AiPrompt | undefined> {
+    return this.aiPrompts.get(id);
+  }
+  
+  async getAllAiPrompts(): Promise<AiPrompt[]> {
+    return Array.from(this.aiPrompts.values());
+  }
+  
+  async getAiPromptsByModelId(modelId: number): Promise<AiPrompt[]> {
+    return Array.from(this.aiPrompts.values()).filter(
+      (prompt) => prompt.modelId === modelId
+    );
+  }
+  
+  async createAiPrompt(prompt: InsertAiPrompt): Promise<AiPrompt> {
+    const id = this.aiPromptIdCounter++;
+    const now = new Date();
+    const newPrompt: AiPrompt = {
+      id,
+      ...prompt,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.aiPrompts.set(id, newPrompt);
+    return newPrompt;
+  }
+  
+  async updateAiPrompt(id: number, updates: Partial<Omit<AiPrompt, 'id'>>): Promise<AiPrompt | undefined> {
+    const prompt = await this.getAiPrompt(id);
+    if (!prompt) return undefined;
+    
+    const updatedPrompt = { 
+      ...prompt, 
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.aiPrompts.set(id, updatedPrompt);
+    return updatedPrompt;
+  }
+  
+  async deleteAiPrompt(id: number): Promise<boolean> {
+    return this.aiPrompts.delete(id);
+  }
 
   // Plan operations
   async getPlan(id: number): Promise<Plan | undefined> {
@@ -1011,14 +1120,20 @@ export class DatabaseStorage implements IStorage {
     const now = new Date();
     const [newProvider] = await db.insert(aiProviders).values({
       ...provider,
-      createdAt: now
+      createdAt: now,
+      updatedAt: now
     }).returning();
     return newProvider;
   }
   
   async updateAiProvider(id: number, updates: Partial<Omit<AiProvider, 'id'>>): Promise<AiProvider | undefined> {
+    const updatesWithTimestamp = {
+      ...updates,
+      updatedAt: new Date()
+    };
+    
     const [updatedProvider] = await db.update(aiProviders)
-      .set(updates)
+      .set(updatesWithTimestamp)
       .where(eq(aiProviders.id, id))
       .returning();
     return updatedProvider;
@@ -1026,6 +1141,90 @@ export class DatabaseStorage implements IStorage {
   
   async deleteAiProvider(id: number): Promise<boolean> {
     const result = await db.delete(aiProviders).where(eq(aiProviders.id, id));
+    return result.rowCount > 0;
+  }
+  
+  // AI Model operations
+  async getAiModel(id: number): Promise<AiModel | undefined> {
+    const [model] = await db.select().from(aiModels).where(eq(aiModels.id, id));
+    return model;
+  }
+  
+  async getAllAiModels(): Promise<AiModel[]> {
+    return await db.select().from(aiModels);
+  }
+  
+  async getAiModelsByProviderId(providerId: number): Promise<AiModel[]> {
+    return await db.select().from(aiModels).where(eq(aiModels.providerId, providerId));
+  }
+  
+  async createAiModel(model: InsertAiModel): Promise<AiModel> {
+    const now = new Date();
+    const [newModel] = await db.insert(aiModels).values({
+      ...model,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
+    return newModel;
+  }
+  
+  async updateAiModel(id: number, updates: Partial<Omit<AiModel, 'id'>>): Promise<AiModel | undefined> {
+    const updatesWithTimestamp = {
+      ...updates,
+      updatedAt: new Date()
+    };
+    
+    const [updatedModel] = await db.update(aiModels)
+      .set(updatesWithTimestamp)
+      .where(eq(aiModels.id, id))
+      .returning();
+    return updatedModel;
+  }
+  
+  async deleteAiModel(id: number): Promise<boolean> {
+    const result = await db.delete(aiModels).where(eq(aiModels.id, id));
+    return result.rowCount > 0;
+  }
+  
+  // AI Prompt operations
+  async getAiPrompt(id: number): Promise<AiPrompt | undefined> {
+    const [prompt] = await db.select().from(aiPrompts).where(eq(aiPrompts.id, id));
+    return prompt;
+  }
+  
+  async getAllAiPrompts(): Promise<AiPrompt[]> {
+    return await db.select().from(aiPrompts);
+  }
+  
+  async getAiPromptsByModelId(modelId: number): Promise<AiPrompt[]> {
+    return await db.select().from(aiPrompts).where(eq(aiPrompts.modelId, modelId));
+  }
+  
+  async createAiPrompt(prompt: InsertAiPrompt): Promise<AiPrompt> {
+    const now = new Date();
+    const [newPrompt] = await db.insert(aiPrompts).values({
+      ...prompt,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
+    return newPrompt;
+  }
+  
+  async updateAiPrompt(id: number, updates: Partial<Omit<AiPrompt, 'id'>>): Promise<AiPrompt | undefined> {
+    const updatesWithTimestamp = {
+      ...updates,
+      updatedAt: new Date()
+    };
+    
+    const [updatedPrompt] = await db.update(aiPrompts)
+      .set(updatesWithTimestamp)
+      .where(eq(aiPrompts.id, id))
+      .returning();
+    return updatedPrompt;
+  }
+  
+  async deleteAiPrompt(id: number): Promise<boolean> {
+    const result = await db.delete(aiPrompts).where(eq(aiPrompts.id, id));
     return result.rowCount > 0;
   }
 
