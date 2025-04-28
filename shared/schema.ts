@@ -326,5 +326,90 @@ export type InsertAiModel = z.infer<typeof insertAiModelSchema>;
 export type AiPrompt = typeof aiPrompts.$inferSelect;
 export type InsertAiPrompt = z.infer<typeof insertAiPromptSchema>;
 
+// User Activities schema
+export const userActivities = pgTable("user_activities", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  activityType: text("activity_type").notNull(), // 'login', 'agent_created', 'task_created', 'task_completed', etc.
+  resourceId: integer("resource_id"), // Related resource ID (e.g., taskId, agentId)
+  resourceType: text("resource_type"), // 'task', 'agent', 'credential', etc.
+  metadata: jsonb("metadata").default({}).notNull(), // Additional activity details
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertUserActivitySchema = createInsertSchema(userActivities)
+  .pick({
+    userId: true,
+    activityType: true,
+    resourceId: true,
+    resourceType: true,
+    metadata: true,
+  });
+
+// User Dashboard Preferences schema
+export const dashboardPreferences = pgTable("dashboard_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().unique(),
+  layout: jsonb("layout").default({}).notNull(), // Widget layout configuration
+  favoriteAgents: jsonb("favorite_agents").default([]).notNull(), // List of favorite agent IDs
+  recentTasks: jsonb("recent_tasks").default([]).notNull(), // List of recent task IDs
+  widgets: jsonb("widgets").default([]).notNull(), // Enabled widgets and their configs
+  theme: text("theme").default("light").notNull(), // 'light', 'dark', 'system'
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertDashboardPreferenceSchema = createInsertSchema(dashboardPreferences)
+  .pick({
+    userId: true,
+    layout: true,
+    favoriteAgents: true,
+    recentTasks: true,
+    widgets: true,
+    theme: true,
+  });
+
+// Analytics schema (for user insights)
+export const analytics = pgTable("analytics", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  period: text("period").notNull(), // 'day', 'week', 'month', 'year'
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  taskCount: integer("task_count").default(0).notNull(),
+  successfulTaskCount: integer("successful_task_count").default(0).notNull(),
+  failedTaskCount: integer("failed_task_count").default(0).notNull(),
+  tokenUsage: integer("token_usage").default(0).notNull(),
+  mostUsedAgentId: integer("most_used_agent_id"),
+  mostUsedToolType: text("most_used_tool_type"),
+  averageCompletionTime: integer("average_completion_time"), // in seconds
+  metadata: jsonb("metadata").default({}).notNull(), // Additional analytics data
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAnalyticsSchema = createInsertSchema(analytics)
+  .pick({
+    userId: true,
+    period: true,
+    periodStart: true,
+    periodEnd: true,
+    taskCount: true,
+    successfulTaskCount: true,
+    failedTaskCount: true,
+    tokenUsage: true,
+    mostUsedAgentId: true,
+    mostUsedToolType: true,
+    averageCompletionTime: true,
+    metadata: true,
+  });
+
 export type Plan = typeof plans.$inferSelect;
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
+
+export type UserActivity = typeof userActivities.$inferSelect;
+export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
+
+export type DashboardPreference = typeof dashboardPreferences.$inferSelect;
+export type InsertDashboardPreference = z.infer<typeof insertDashboardPreferenceSchema>;
+
+export type Analytics = typeof analytics.$inferSelect;
+export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
