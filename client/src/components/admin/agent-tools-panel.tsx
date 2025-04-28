@@ -18,7 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { Loader2, Plus, Trash, Edit, Eye, Copy, Box, Search, Filter } from "lucide-react";
+import { Loader2, Plus, Trash, Edit, Eye, Copy, Box, Search, Filter, X } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { LucideIcon } from "lucide-react";
 import * as LucideIcons from "lucide-react";
@@ -350,27 +350,39 @@ export default function AgentToolsPanel() {
 
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-5 md:mb-6">
         <div className="relative w-full sm:w-1/2">
-          <Search className="absolute left-2.5 top-2.5 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
           <Input
             placeholder="Search tools and templates..."
-            className="pl-8 h-9 text-xs sm:text-sm"
+            className="pl-8 h-9 sm:h-10 text-xs sm:text-sm rounded-md"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1.5 top-1/2 transform -translate-y-1/2 h-6 w-6 sm:h-7 sm:w-7 rounded-full"
+              onClick={() => setSearchQuery("")}
+            >
+              <X className="h-3 w-3 sm:h-4 sm:w-4" />
+            </Button>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 bg-muted/30 px-3 py-1.5 rounded-md border">
           <Switch
             id="show-system-tools"
             checked={showSystemTools}
             onCheckedChange={setShowSystemTools}
-            className="scale-90 sm:scale-100"
+            className="scale-90 sm:scale-100 data-[state=checked]:bg-primary"
           />
-          <Label htmlFor="show-system-tools" className="text-xs sm:text-sm">Show system tools</Label>
+          <Label htmlFor="show-system-tools" className="text-xs sm:text-sm font-medium cursor-pointer select-none">
+            Show system tools
+          </Label>
         </div>
       </div>
 
       <Tabs defaultValue="all" onValueChange={setActiveTab}>
-        <TabsList className="mb-4 sm:mb-5 md:mb-6 flex flex-wrap h-auto gap-1 sm:gap-0">
+        <TabsList className="mb-4 sm:mb-5 md:mb-6 flex flex-wrap h-auto gap-1.5 p-1 bg-muted/50 rounded-lg overflow-x-auto">
           <TabsTrigger className="text-xs sm:text-sm py-1 px-2 sm:px-3 h-8 sm:h-9" value="all">All Tools</TabsTrigger>
           <TabsTrigger className="text-xs sm:text-sm py-1 px-2 sm:px-3 h-8 sm:h-9" value={TOOL_CATEGORIES.CONTENT_GENERATION}>Content Generation</TabsTrigger>
           <TabsTrigger className="text-xs sm:text-sm py-1 px-2 sm:px-3 h-8 sm:h-9" value={TOOL_CATEGORIES.DATA_PROCESSING}>Data Processing</TabsTrigger>
@@ -382,21 +394,21 @@ export default function AgentToolsPanel() {
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5 px-0.5">
             {isLoading ? (
               <div className="col-span-full flex justify-center py-8 sm:py-10 md:py-12">
                 <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-primary" />
               </div>
             ) : filteredTools.length === 0 && availableTemplates.length === 0 ? (
               <div className="col-span-full">
-                <Card>
+                <Card className="border-dashed">
                   <CardContent className="flex flex-col items-center justify-center py-8 sm:py-10 md:py-12 text-center">
-                    <Box className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mb-3 sm:mb-4" />
+                    <Box className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mb-3 sm:mb-4 opacity-70" />
                     <h3 className="text-base sm:text-lg font-medium mb-2">No tools or templates found</h3>
                     <p className="text-xs sm:text-sm text-muted-foreground mb-5 sm:mb-6 max-w-md mx-auto">
                       Try changing your search or create a new tool.
                     </p>
-                    <Button onClick={() => setCreateDialogOpen(true)}>
+                    <Button onClick={() => setCreateDialogOpen(true)} className="h-9 px-4">
                       <Plus className="mr-2 h-4 w-4" /> Create Tool
                     </Button>
                   </CardContent>
@@ -416,30 +428,30 @@ export default function AgentToolsPanel() {
                       
                       return (
                         <Card key={template.name} className="hover:shadow-md transition-shadow duration-200">
-                          <CardHeader className="pb-2">
+                          <CardHeader className="pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
                             <div className="flex justify-between items-start">
                               <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 flex items-center justify-center rounded-md bg-primary/10 text-primary">
-                                  <IconComponent className="h-4 w-4" />
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-md bg-primary/10 text-primary">
+                                  <IconComponent className="h-3 w-3 sm:h-4 sm:w-4" />
                                 </div>
                                 <div>
-                                  <CardTitle className="text-sm sm:text-base">{template.name}</CardTitle>
-                                  <CardDescription className="capitalize text-xs sm:text-sm">
+                                  <CardTitle className="text-sm sm:text-base line-clamp-1">{template.name}</CardTitle>
+                                  <CardDescription className="capitalize text-[10px] sm:text-xs">
                                     {template.category.replace('_', ' ')}
                                   </CardDescription>
                                 </div>
                               </div>
-                              <Badge variant={isAdded ? "outline" : "secondary"} className="text-xs">
+                              <Badge variant={isAdded ? "outline" : "secondary"} className="text-[10px] sm:text-xs h-5 sm:h-6 px-1.5 sm:px-2.5">
                                 {isAdded ? "Added" : "Template"}
                               </Badge>
                             </div>
                           </CardHeader>
-                          <CardContent className="pb-2">
-                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
+                          <CardContent className="pb-2 px-3 sm:px-6">
+                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
                               {template.description}
                             </p>
                           </CardContent>
-                          <CardFooter className="pt-0 flex justify-between">
+                          <CardFooter className="pt-0 flex justify-between px-3 sm:px-6 pb-3 sm:pb-6">
                             <Button 
                               variant="ghost" 
                               size="sm"
@@ -475,7 +487,7 @@ export default function AgentToolsPanel() {
                       
                       return (
                         <Card key={tool.id} className={`${!tool.isActive ? 'opacity-70' : ''} hover:shadow-md transition-shadow duration-200`}>
-                          <CardHeader className="pb-2">
+                          <CardHeader className="pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
                             <div className="flex justify-between items-start">
                               <div className="flex items-center gap-2">
                                 <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -483,34 +495,34 @@ export default function AgentToolsPanel() {
                                 </div>
                                 <div>
                                   <CardTitle className="text-sm sm:text-base flex items-center gap-1 sm:gap-2 flex-wrap">
-                                    {tool.name}
+                                    <span className="line-clamp-1">{tool.name}</span>
                                     {!tool.isActive && (
-                                      <Badge variant="outline" className="text-xs whitespace-nowrap">Inactive</Badge>
+                                      <Badge variant="outline" className="text-[10px] sm:text-xs h-5 sm:h-6 px-1.5 sm:px-2.5 whitespace-nowrap">Inactive</Badge>
                                     )}
                                     {tool.isSystem && (
-                                      <Badge variant="secondary" className="text-xs whitespace-nowrap">System</Badge>
+                                      <Badge variant="secondary" className="text-[10px] sm:text-xs h-5 sm:h-6 px-1.5 sm:px-2.5 whitespace-nowrap">System</Badge>
                                     )}
                                   </CardTitle>
-                                  <CardDescription className="capitalize text-xs sm:text-sm">
+                                  <CardDescription className="capitalize text-[10px] sm:text-xs">
                                     {tool.category.replace('_', ' ')}
                                   </CardDescription>
                                 </div>
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-8 sm:w-8">
                                     <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleViewClick(tool)}>
-                                    <Eye className="mr-2 h-4 w-4" />
+                                <DropdownMenuContent align="end" className="min-w-[8rem]">
+                                  <DropdownMenuItem onClick={() => handleViewClick(tool)} className="text-xs sm:text-sm py-1.5 h-8">
+                                    <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                     View Details
                                   </DropdownMenuItem>
                                   {!tool.isSystem && (
                                     <>
-                                      <DropdownMenuItem onClick={() => handleEditClick(tool)}>
-                                        <Edit className="mr-2 h-4 w-4" />
+                                      <DropdownMenuItem onClick={() => handleEditClick(tool)} className="text-xs sm:text-sm py-1.5 h-8">
+                                        <Edit className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                         Edit
                                       </DropdownMenuItem>
                                       <DropdownMenuSeparator />
@@ -519,9 +531,9 @@ export default function AgentToolsPanel() {
                                           setSelectedTool(tool);
                                           setDeleteDialogOpen(true);
                                         }}
-                                        className="text-destructive"
+                                        className="text-destructive text-xs sm:text-sm py-1.5 h-8"
                                       >
-                                        <Trash className="mr-2 h-4 w-4" />
+                                        <Trash className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                         Delete
                                       </DropdownMenuItem>
                                     </>
@@ -530,13 +542,13 @@ export default function AgentToolsPanel() {
                               </DropdownMenu>
                             </div>
                           </CardHeader>
-                          <CardContent className="pb-2">
-                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
+                          <CardContent className="pb-2 px-3 sm:px-6">
+                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
                               {tool.description}
                             </p>
                           </CardContent>
-                          <CardFooter className="pt-0">
-                            <Badge variant="outline" className="text-xs">{tool.type}</Badge>
+                          <CardFooter className="pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
+                            <Badge variant="outline" className="text-[10px] sm:text-xs h-5 sm:h-6 px-1.5 sm:px-2.5">{tool.type}</Badge>
                           </CardFooter>
                         </Card>
                       );
