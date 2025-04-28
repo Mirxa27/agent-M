@@ -11,6 +11,7 @@ import {
   User,
   CreditCard,
   Settings,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
@@ -34,6 +35,11 @@ export default function MobileNav() {
       href: "/agents",
       label: "My Agents",
       icon: <Bot className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/ai-browser",
+      label: "AI Browser",
+      icon: <Globe className="w-5 h-5 mr-3" />,
     },
     {
       href: "/credentials",
