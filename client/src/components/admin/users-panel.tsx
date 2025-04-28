@@ -750,7 +750,7 @@ export default function UsersPanel() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No Plan</SelectItem>
+                          <SelectItem value="none">No Plan</SelectItem>
                           {isLoadingPlans ? (
                             <div className="flex items-center justify-center p-2">
                               <Skeleton className="h-5 w-full" />
