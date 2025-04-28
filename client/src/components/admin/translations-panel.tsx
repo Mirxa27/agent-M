@@ -5,7 +5,8 @@ import {
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle 
+  CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Loader2, Search, Save, Edit, Plus, X, Check } from "lucide-react";
+import { Loader2, Search, Save, Edit, Plus, X, Check, Languages, Wand2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,20 +31,35 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import i18next from "i18next";
+import { apiRequest } from "@/lib/queryClient";
 
 const TranslationsPanel: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
   const [activeSection, setActiveSection] = useState("common");
   const [searchQuery, setSearchQuery] = useState("");
   const [translations, setTranslations] = useState<Record<string, Record<string, any>>>({});
   const [selectedTranslation, setSelectedTranslation] = useState<{key: string, value: string, section: string} | null>(null);
   const [editMode, setEditMode] = useState<{key: string, value: string, section: string} | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isTranslateDialogOpen, setIsTranslateDialogOpen] = useState(false);
   const [newTranslation, setNewTranslation] = useState({key: "", value: "", section: activeSection});
+  const [translateOptions, setTranslateOptions] = useState({
+    sourceLanguage: i18n.language || "en",
+    targetLanguage: "",
+    text: ""
+  });
 
   // Load translations on component mount
   useEffect(() => {
@@ -255,57 +271,142 @@ const TranslationsPanel: React.FC = () => {
                 />
               </div>
               
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="w-full sm:w-auto">
-                    <Plus className="mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">{t("admin.addNewTranslation")}</span>
-                    <span className="sm:hidden">Add New</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{t("admin.addNewTranslation")}</DialogTitle>
-                    <DialogDescription>
-                      {t("common.addItemDescription", {item: t("admin.translation").toLowerCase()})}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="section">{t("admin.section")}</Label>
-                      <Input
-                        id="section"
-                        value={newTranslation.section}
-                        onChange={(e) => setNewTranslation({...newTranslation, section: e.target.value})}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="key">{t("admin.translationKey")}</Label>
-                      <Input
-                        id="key"
-                        value={newTranslation.key}
-                        onChange={(e) => setNewTranslation({...newTranslation, key: e.target.value})}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="value">{t("admin.translationValue")}</Label>
-                      <Input
-                        id="value"
-                        value={newTranslation.value}
-                        onChange={(e) => setNewTranslation({...newTranslation, value: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      {t("common.cancel")}
+              <div className="flex flex-wrap gap-2">
+                <Dialog open={isTranslateDialogOpen} onOpenChange={setIsTranslateDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="sm:w-auto">
+                      <Languages className="mr-2 h-4 w-4" />
+                      <span className="hidden sm:inline">AI Translation</span>
+                      <span className="sm:hidden">Translate</span>
                     </Button>
-                    <Button onClick={handleAddTranslation}>
-                      {t("common.add")}
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>AI-Powered Translation</DialogTitle>
+                      <DialogDescription>
+                        Translate content using OpenAI's advanced language model
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="sourceLanguage">Source Language</Label>
+                        <Select 
+                          value={translateOptions.sourceLanguage}
+                          onValueChange={(value) => setTranslateOptions({...translateOptions, sourceLanguage: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select source language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="ar">Arabic</SelectItem>
+                            <SelectItem value="fr">French</SelectItem>
+                            <SelectItem value="es">Spanish</SelectItem>
+                            <SelectItem value="de">German</SelectItem>
+                            <SelectItem value="zh">Chinese</SelectItem>
+                            <SelectItem value="ja">Japanese</SelectItem>
+                            <SelectItem value="ru">Russian</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="targetLanguage">Target Language</Label>
+                        <Select 
+                          value={translateOptions.targetLanguage}
+                          onValueChange={(value) => setTranslateOptions({...translateOptions, targetLanguage: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select target language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="ar">Arabic</SelectItem>
+                            <SelectItem value="fr">French</SelectItem>
+                            <SelectItem value="es">Spanish</SelectItem>
+                            <SelectItem value="de">German</SelectItem>
+                            <SelectItem value="zh">Chinese</SelectItem>
+                            <SelectItem value="ja">Japanese</SelectItem>
+                            <SelectItem value="ru">Russian</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="text">Text to Translate</Label>
+                        <Input
+                          id="text"
+                          value={translateOptions.text}
+                          onChange={(e) => setTranslateOptions({...translateOptions, text: e.target.value})}
+                          placeholder="Enter text to translate"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsTranslateDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleTranslateText}
+                        disabled={isTranslating || !translateOptions.text || !translateOptions.targetLanguage}
+                      >
+                        {isTranslating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Translate
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full sm:w-auto">
+                      <Plus className="mr-2 h-4 w-4" />
+                      <span className="hidden sm:inline">{t("admin.addNewTranslation")}</span>
+                      <span className="sm:hidden">Add New</span>
                     </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{t("admin.addNewTranslation")}</DialogTitle>
+                      <DialogDescription>
+                        {t("common.addItemDescription", {item: t("admin.translation").toLowerCase()})}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="section">{t("admin.section")}</Label>
+                        <Input
+                          id="section"
+                          value={newTranslation.section}
+                          onChange={(e) => setNewTranslation({...newTranslation, section: e.target.value})}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="key">{t("admin.translationKey")}</Label>
+                        <Input
+                          id="key"
+                          value={newTranslation.key}
+                          onChange={(e) => setNewTranslation({...newTranslation, key: e.target.value})}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="value">{t("admin.translationValue")}</Label>
+                        <Input
+                          id="value"
+                          value={newTranslation.value}
+                          onChange={(e) => setNewTranslation({...newTranslation, value: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                        {t("common.cancel")}
+                      </Button>
+                      <Button onClick={handleAddTranslation}>
+                        {t("common.add")}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
             
             <Tabs defaultValue={activeSection} onValueChange={setActiveSection}>
