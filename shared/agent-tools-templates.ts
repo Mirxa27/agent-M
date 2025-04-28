@@ -469,6 +469,120 @@ export const CUSTOM_API_TEMPLATE: AgentToolTemplate = {
 };
 
 /**
+ * Template for AI Video Analysis
+ */
+export const VIDEO_ANALYSIS_TEMPLATE: AgentToolTemplate = {
+  name: "Video Analysis",
+  description: "Analyze video content and extract insights, transcriptions, and scene descriptions",
+  category: TOOL_CATEGORIES.DATA_PROCESSING,
+  type: "openai",
+  icon: "Video",
+  config: {
+    model: "gpt-4o",
+    maxTokens: 4000,
+    extractCaptions: true,
+    analyzeScenes: true,
+    extractMetadata: true,
+    analyzeAudio: true,
+    maxVideoDuration: 600 // 10 minutes
+  }
+};
+
+/**
+ * Template for AI Document Summarization
+ */
+export const DOCUMENT_SUMMARIZATION_TEMPLATE: AgentToolTemplate = {
+  name: "Document Summarization",
+  description: "Generate concise summaries of documents with key points and insights",
+  category: TOOL_CATEGORIES.CONTENT_GENERATION,
+  type: "openai",
+  icon: "FileDigit",
+  config: {
+    model: "gpt-4o",
+    maxTokens: 2000,
+    summaryLength: "medium", // short, medium, long
+    style: "bullet", // bullet, paragraph, executive
+    includeKeyPoints: true,
+    includeTakeaways: true,
+    includeActionItems: true
+  }
+};
+
+/**
+ * Template for Sentiment Analysis
+ */
+export const SENTIMENT_ANALYSIS_TEMPLATE: AgentToolTemplate = {
+  name: "Sentiment Analysis",
+  description: "Analyze text to determine sentiment, emotional tone, and key themes",
+  category: TOOL_CATEGORIES.DATA_PROCESSING,
+  type: "openai",
+  icon: "HeartPulse",
+  config: {
+    model: "gpt-4o",
+    detailLevel: "high",
+    sentiment: true,
+    emotions: true,
+    themes: true,
+    metrics: ["positivity", "negativity", "objectivity", "subjectivity"]
+  }
+};
+
+/**
+ * Template for Social Media Publisher
+ */
+export const SOCIAL_MEDIA_PUBLISHER_TEMPLATE: AgentToolTemplate = {
+  name: "Social Media Publisher",
+  description: "Create and schedule posts for various social media platforms",
+  category: TOOL_CATEGORIES.COMMUNICATION,
+  type: "webhook",
+  icon: "Share2",
+  config: {
+    platforms: ["twitter", "linkedin", "facebook", "instagram"],
+    mediaSupport: true,
+    scheduling: true,
+    analytics: true,
+    contentCreation: true,
+    defaultFormat: "text"
+  }
+};
+
+/**
+ * Template for Voice Generator
+ */
+export const VOICE_GENERATOR_TEMPLATE: AgentToolTemplate = {
+  name: "Voice Generator",
+  description: "Convert text to realistic speech in various languages and voices",
+  category: TOOL_CATEGORIES.CONTENT_GENERATION,
+  type: "openai",
+  icon: "Mic",
+  config: {
+    model: "tts-1",
+    voice: "alloy", // alloy, echo, fable, onyx, nova, shimmer
+    speed: 1.0,
+    format: "mp3",
+    quality: "standard", // standard, high
+    languages: ["en", "es", "fr", "de", "it", "pt", "ja", "zh"]
+  }
+};
+
+/**
+ * Template for Anthropic Claude
+ */
+export const ANTHROPIC_CLAUDE_TEMPLATE: AgentToolTemplate = {
+  name: "Anthropic Claude",
+  description: "Generate responses using Anthropic's Claude model with its strengths in reasoning and safety",
+  category: TOOL_CATEGORIES.CONTENT_GENERATION,
+  type: "anthropic",
+  icon: "MessagesSquare",
+  config: {
+    model: "claude-3-opus-20240229",
+    temperature: 0.7,
+    maxTokens: 4000,
+    systemPrompt: "You are Claude, a helpful AI assistant created by Anthropic."
+  }
+};
+
+/**
  * All available templates
  */
 export const TOOL_TEMPLATES: Record<string, AgentToolTemplate> = {
@@ -477,6 +591,7 @@ export const TOOL_TEMPLATES: Record<string, AgentToolTemplate> = {
   OPENAI_EMBEDDINGS: OPENAI_EMBEDDINGS_TEMPLATE,
   OPENAI_TRANSCRIPTION: OPENAI_TRANSCRIPTION_TEMPLATE,
   OPENAI_VISION: OPENAI_VISION_TEMPLATE,
+  ANTHROPIC_CLAUDE: ANTHROPIC_CLAUDE_TEMPLATE,
   WEB_SEARCH: WEB_SEARCH_TEMPLATE,
   EMAIL: EMAIL_TEMPLATE,
   SMS: SMS_TEMPLATE,
@@ -495,7 +610,12 @@ export const TOOL_TEMPLATES: Record<string, AgentToolTemplate> = {
   DATA_VISUALIZER: DATA_VISUALIZER_TEMPLATE,
   CODE_GENERATOR: CODE_GENERATOR_TEMPLATE,
   MATH_SOLVER: MATH_SOLVER_TEMPLATE,
-  CUSTOM_API: CUSTOM_API_TEMPLATE
+  CUSTOM_API: CUSTOM_API_TEMPLATE,
+  VIDEO_ANALYSIS: VIDEO_ANALYSIS_TEMPLATE,
+  DOCUMENT_SUMMARIZATION: DOCUMENT_SUMMARIZATION_TEMPLATE,
+  SENTIMENT_ANALYSIS: SENTIMENT_ANALYSIS_TEMPLATE,
+  SOCIAL_MEDIA_PUBLISHER: SOCIAL_MEDIA_PUBLISHER_TEMPLATE,
+  VOICE_GENERATOR: VOICE_GENERATOR_TEMPLATE
 };
 
 /**
