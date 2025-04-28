@@ -1,2 +1,2 @@
-export { default as CredentialForm } from './credential-form';
-export { default as CredentialList } from './credential-list';
+export { CredentialForm } from './credential-form';
+export { CredentialList } from './credential-list';
