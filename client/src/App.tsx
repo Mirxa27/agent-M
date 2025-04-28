@@ -16,6 +16,7 @@ import CredentialsPage from "@/pages/credentials-page";
 import FilesPage from "@/pages/files-page";
 import TaskHistoryPage from "@/pages/task-history-page";
 import LoadersDemoPage from "@/pages/loaders-demo-page";
+import LanguageDemoPage from "@/pages/language-demo-page";
 import SubscriptionPage from "@/pages/subscription-page";
 import PaymentSuccessPage from "@/pages/payment-success";
 import PaymentFailedPage from "@/pages/payment-failed";
@@ -88,6 +89,7 @@ function Router() {
       
       {/* Demo Routes */}
       <ProtectedRoute path="/loaders-demo" component={LoadersDemoPage} />
+      <Route path="/language-demo" component={LanguageDemoPage} />
       
       {/* Catch-all for 404 */}
       <Route component={NotFound} />
