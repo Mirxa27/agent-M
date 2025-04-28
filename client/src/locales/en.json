@@ -50,7 +50,20 @@
     "dontHaveAccount": "Don't have an account?",
     "createOne": "Create one",
     "loginNow": "Login now",
-    "loggedInAs": "Logged in as"
+    "loggedInAs": "Logged in as",
+    "hero": {
+      "title": "Next-Generation AI Agent Platform",
+      "description": "Streamline your workflows with intelligent AI agents that work for you",
+      "feature1": "AI Agents that work for you",
+      "feature2": "Secure credential storage",
+      "feature3": "File and template management",
+      "feature4": "Task automation",
+      "feature1Description": "Create customized AI agents that can send emails, update websites, manage documents, and more.",
+      "feature2Description": "Store your API keys, passwords, and other sensitive data with end-to-end encryption.",
+      "feature3Description": "Store and manage files, templates, and documents that your agents can use automatically.",
+      "feature4Description": "Automate repetitive tasks and workflows with natural language instructions."
+    },
+    "createAccount": "Create Account"
   },
   "dashboard": {
     "title": "Dashboard",
