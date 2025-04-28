@@ -22,6 +22,7 @@ import AiProvidersPanel from "@/components/admin/ai-providers-panel";
 import AiModelsPanel from "@/components/admin/ai-models-panel";
 import AiPromptsPanel from "@/components/admin/ai-prompts-panel";
 import PlansPanel from "@/components/admin/plans-panel";
+import ContentBuilder from "@/components/admin/content-builder";
 
 // Demo pages - These can be removed in production
 import LoadersDemoPage from "@/pages/loaders-demo-page";
@@ -151,6 +152,14 @@ export const ADMIN_ROUTES: RouteConfig[] = [
     path: "/admin/dashboard",
     component: AdminDashboard,
     title: "Admin Dashboard",
+    isAdmin: true,
+    layout: "admin",
+    exact: true,
+  },
+  {
+    path: "/admin/content-builder",
+    component: ContentBuilder,
+    title: "AI Content Builder",
     isAdmin: true,
     layout: "admin",
     exact: true,
