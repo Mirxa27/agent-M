@@ -45,9 +45,15 @@ export interface IStorage {
   getFile(id: number): Promise<File | undefined>;
   getFilesByUserId(userId: number): Promise<File[]>;
   getTemplatesByUserId(userId: number): Promise<File[]>;
+  getFilesByTaskId(taskId: number): Promise<File[]>;
   createFile(file: InsertFile): Promise<File>;
   updateFile(id: number, updates: Partial<Omit<File, 'id'>>): Promise<File | undefined>;
   deleteFile(id: number): Promise<boolean>;
+  
+  // Task-File operations
+  linkFileToTask(taskId: number, fileId: number): Promise<TaskFile>;
+  getTaskFilesByTaskId(taskId: number): Promise<TaskFile[]>;
+  unlinkFileFromTask(taskId: number, fileId: number): Promise<boolean>;
   
   // Task operations
   getTask(id: number): Promise<Task | undefined>;
