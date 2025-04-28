@@ -23,7 +23,7 @@ import AiModelsPanel from "@/components/admin/ai-models-panel";
 import AiPromptsPanel from "@/components/admin/ai-prompts-panel";
 import PlansPanel from "@/components/admin/plans-panel";
 import ContentBuilder from "@/components/admin/content-builder";
-import AgentToolsPanel from "@/components/admin/agent-tools-panel";
+import { AgentToolsPanel } from "@/components/admin/fixed-agent-tools-panel";
 
 // Demo pages - These can be removed in production
 import LoadersDemoPage from "@/pages/loaders-demo-page";
