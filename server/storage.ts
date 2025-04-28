@@ -10,8 +10,13 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
+import { eq, and, desc, asc } from "drizzle-orm";
+import { pool } from "./db";
 
 const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // User operations
@@ -531,4 +536,402 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.SessionStore;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true
+    });
+    
+    // Initialize default plans if they don't exist
+    this.initializePlans();
+  }
+  
+  private async initializePlans(): Promise<void> {
+    const existingPlans = await this.getAllPlans();
+    if (existingPlans.length === 0) {
+      const defaultPlans: InsertPlan[] = [
+        {
+          name: "Free",
+          price: 0,
+          interval: "monthly",
+          features: {
+            agentLimit: 2,
+            storageLimit: 500, // MB
+            credentialLimit: 3,
+            taskLimit: 50
+          },
+          isActive: true
+        },
+        {
+          name: "Basic",
+          price: 49,
+          interval: "monthly",
+          features: {
+            agentLimit: 5,
+            storageLimit: 2000, // MB
+            credentialLimit: 10,
+            taskLimit: 500
+          },
+          isActive: true
+        },
+        {
+          name: "Professional",
+          price: 149,
+          interval: "monthly",
+          features: {
+            agentLimit: 20,
+            storageLimit: 5000, // MB
+            credentialLimit: 50,
+            taskLimit: 5000
+          },
+          isActive: true
+        },
+        {
+          name: "Enterprise",
+          price: 499,
+          interval: "monthly",
+          features: {
+            agentLimit: 100,
+            storageLimit: 20000, // MB
+            credentialLimit: 200,
+            taskLimit: 50000
+          },
+          isActive: true
+        }
+      ];
+      
+      for (const plan of defaultPlans) {
+        await this.createPlan(plan);
+      }
+    }
+  }
+
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const now = new Date();
+    const [user] = await db.insert(users).values({
+      ...insertUser,
+      plan: "free",
+      planExpiresAt: null,
+      role: "user"
+    }).returning();
+    return user;
+  }
+  
+  async updateUser(id: number, updates: Partial<Omit<User, 'id'>>): Promise<User | undefined> {
+    const [updatedUser] = await db.update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  // Agent operations
+  async getAgent(id: number): Promise<Agent | undefined> {
+    const [agent] = await db.select().from(agents).where(eq(agents.id, id));
+    return agent;
+  }
+  
+  async getAgentsByUserId(userId: number): Promise<Agent[]> {
+    return await db.select().from(agents).where(eq(agents.userId, userId));
+  }
+  
+  async createAgent(agent: InsertAgent): Promise<Agent> {
+    const now = new Date();
+    const [newAgent] = await db.insert(agents).values({
+      ...agent,
+      taskCount: 0,
+      createdAt: now
+    }).returning();
+    return newAgent;
+  }
+  
+  async updateAgent(id: number, updates: Partial<Omit<Agent, 'id'>>): Promise<Agent | undefined> {
+    const [updatedAgent] = await db.update(agents)
+      .set(updates)
+      .where(eq(agents.id, id))
+      .returning();
+    return updatedAgent;
+  }
+  
+  async deleteAgent(id: number): Promise<boolean> {
+    const result = await db.delete(agents).where(eq(agents.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Credential operations
+  async getCredential(id: number): Promise<Credential | undefined> {
+    const [credential] = await db.select().from(credentials).where(eq(credentials.id, id));
+    return credential;
+  }
+  
+  async getCredentialsByUserId(userId: number): Promise<Credential[]> {
+    return await db.select().from(credentials).where(eq(credentials.userId, userId));
+  }
+  
+  async getCredentialsByAgentId(agentId: number): Promise<Credential[]> {
+    // In a real implementation, we would have an agent-credential relationship
+    // For now, we get the agent first, then get credentials for that user
+    const agent = await this.getAgent(agentId);
+    if (!agent) return [];
+    
+    return this.getCredentialsByUserId(agent.userId);
+  }
+  
+  async createCredential(credential: InsertCredential): Promise<Credential> {
+    const now = new Date();
+    const [newCredential] = await db.insert(credentials).values({
+      ...credential,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
+    return newCredential;
+  }
+  
+  async updateCredential(id: number, updates: Partial<Omit<Credential, 'id'>>): Promise<Credential | undefined> {
+    const now = new Date();
+    const [updatedCredential] = await db.update(credentials)
+      .set({
+        ...updates,
+        updatedAt: now
+      })
+      .where(eq(credentials.id, id))
+      .returning();
+    return updatedCredential;
+  }
+  
+  async deleteCredential(id: number): Promise<boolean> {
+    const result = await db.delete(credentials).where(eq(credentials.id, id));
+    return result.rowCount > 0;
+  }
+
+  // File operations
+  async getFile(id: number): Promise<File | undefined> {
+    const [file] = await db.select().from(files).where(eq(files.id, id));
+    return file;
+  }
+  
+  async getFilesByUserId(userId: number): Promise<File[]> {
+    return await db.select().from(files).where(eq(files.userId, userId));
+  }
+  
+  async getTemplatesByUserId(userId: number): Promise<File[]> {
+    return await db.select().from(files)
+      .where(and(
+        eq(files.userId, userId),
+        eq(files.isTemplate, true)
+      ));
+  }
+  
+  async createFile(file: InsertFile): Promise<File> {
+    const now = new Date();
+    const [newFile] = await db.insert(files).values({
+      ...file,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
+    return newFile;
+  }
+  
+  async updateFile(id: number, updates: Partial<Omit<File, 'id'>>): Promise<File | undefined> {
+    const now = new Date();
+    const [updatedFile] = await db.update(files)
+      .set({
+        ...updates,
+        updatedAt: now
+      })
+      .where(eq(files.id, id))
+      .returning();
+    return updatedFile;
+  }
+  
+  async deleteFile(id: number): Promise<boolean> {
+    const result = await db.delete(files).where(eq(files.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Task operations
+  async getTask(id: number): Promise<Task | undefined> {
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
+    return task;
+  }
+  
+  async getTasksByUserId(userId: number, limit?: number): Promise<Task[]> {
+    let query = db.select().from(tasks)
+      .where(eq(tasks.userId, userId))
+      .orderBy(desc(tasks.createdAt));
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    return await query;
+  }
+  
+  async getTasksByAgentId(agentId: number): Promise<Task[]> {
+    return await db.select().from(tasks)
+      .where(eq(tasks.agentId, agentId))
+      .orderBy(desc(tasks.createdAt));
+  }
+  
+  async createTask(task: InsertTask): Promise<Task> {
+    const now = new Date();
+    const [newTask] = await db.insert(tasks).values({
+      ...task,
+      status: "pending",
+      result: null,
+      createdAt: now,
+      completedAt: null
+    }).returning();
+    
+    // Update agent task count
+    const agent = await this.getAgent(task.agentId);
+    if (agent) {
+      await this.updateAgent(agent.id, { taskCount: agent.taskCount + 1 });
+    }
+    
+    return newTask;
+  }
+  
+  async updateTask(id: number, updates: Partial<Omit<Task, 'id'>>): Promise<Task | undefined> {
+    // If status is changing to completed, set completedAt
+    let updatesWithTimestamp = { ...updates };
+    
+    if (updates.status === "completed") {
+      const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
+      if (task && !task.completedAt) {
+        updatesWithTimestamp.completedAt = new Date();
+      }
+    }
+    
+    const [updatedTask] = await db.update(tasks)
+      .set(updatesWithTimestamp)
+      .where(eq(tasks.id, id))
+      .returning();
+    
+    return updatedTask;
+  }
+  
+  async deleteTask(id: number): Promise<boolean> {
+    // Delete associated messages first
+    await db.delete(messages).where(eq(messages.taskId, id));
+    
+    const result = await db.delete(tasks).where(eq(tasks.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Message operations
+  async getMessage(id: number): Promise<Message | undefined> {
+    const [message] = await db.select().from(messages).where(eq(messages.id, id));
+    return message;
+  }
+  
+  async getMessagesByTaskId(taskId: number): Promise<Message[]> {
+    return await db.select().from(messages)
+      .where(eq(messages.taskId, taskId))
+      .orderBy(asc(messages.createdAt));
+  }
+  
+  async createMessage(message: InsertMessage): Promise<Message> {
+    const now = new Date();
+    const [newMessage] = await db.insert(messages).values({
+      ...message,
+      createdAt: now
+    }).returning();
+    return newMessage;
+  }
+
+  // AI Provider operations
+  async getAiProvider(id: number): Promise<AiProvider | undefined> {
+    const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, id));
+    return provider;
+  }
+  
+  async getAllAiProviders(): Promise<AiProvider[]> {
+    return await db.select().from(aiProviders);
+  }
+  
+  async getActiveAiProviders(): Promise<AiProvider[]> {
+    return await db.select().from(aiProviders).where(eq(aiProviders.isActive, true));
+  }
+  
+  async createAiProvider(provider: InsertAiProvider): Promise<AiProvider> {
+    const now = new Date();
+    const [newProvider] = await db.insert(aiProviders).values({
+      ...provider,
+      createdAt: now
+    }).returning();
+    return newProvider;
+  }
+  
+  async updateAiProvider(id: number, updates: Partial<Omit<AiProvider, 'id'>>): Promise<AiProvider | undefined> {
+    const [updatedProvider] = await db.update(aiProviders)
+      .set(updates)
+      .where(eq(aiProviders.id, id))
+      .returning();
+    return updatedProvider;
+  }
+  
+  async deleteAiProvider(id: number): Promise<boolean> {
+    const result = await db.delete(aiProviders).where(eq(aiProviders.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Plan operations
+  async getPlan(id: number): Promise<Plan | undefined> {
+    const [plan] = await db.select().from(plans).where(eq(plans.id, id));
+    return plan;
+  }
+  
+  async getPlanByName(name: string): Promise<Plan | undefined> {
+    const [plan] = await db.select().from(plans).where(eq(plans.name, name));
+    return plan;
+  }
+  
+  async getAllPlans(): Promise<Plan[]> {
+    return await db.select().from(plans);
+  }
+  
+  async getActivePlans(): Promise<Plan[]> {
+    return await db.select().from(plans).where(eq(plans.isActive, true));
+  }
+  
+  async createPlan(plan: InsertPlan): Promise<Plan> {
+    const [newPlan] = await db.insert(plans).values(plan).returning();
+    return newPlan;
+  }
+  
+  async updatePlan(id: number, updates: Partial<Omit<Plan, 'id'>>): Promise<Plan | undefined> {
+    const [updatedPlan] = await db.update(plans)
+      .set(updates)
+      .where(eq(plans.id, id))
+      .returning();
+    return updatedPlan;
+  }
+  
+  async deletePlan(id: number): Promise<boolean> {
+    const result = await db.delete(plans).where(eq(plans.id, id));
+    return result.rowCount > 0;
+  }
+}
+
+// Use database storage
+export const storage = new DatabaseStorage();

@@ -2,12 +2,20 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword } from "./auth";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import { 
   insertAgentSchema, 
   insertCredentialSchema, 
   insertFileSchema, 
   insertTaskSchema, 
-  insertMessageSchema 
+  insertMessageSchema,
+  insertAiProviderSchema,
+  insertAiModelSchema,
+  insertAiPromptSchema,
+  insertPlanSchema,
+  aiModels,
+  aiPrompts
 } from "@shared/schema";
 import { encrypt, decrypt } from "../client/src/lib/crypto";
 
@@ -599,6 +607,212 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedProvider);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // AI Models Admin Routes
+  app.get("/api/admin/ai-models", requireAdmin, async (req, res) => {
+    try {
+      // Note: We need to add this method to our storage interface
+      const models = await db.select().from(aiModels);
+      res.json(models);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/admin/ai-models/:id", requireAdmin, async (req, res) => {
+    try {
+      const modelId = parseInt(req.params.id);
+      // Note: We need to add this method to our storage interface
+      const [model] = await db.select().from(aiModels).where(eq(aiModels.id, modelId));
+      
+      if (!model) {
+        return res.status(404).json({ error: "AI Model not found" });
+      }
+      
+      res.json(model);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/admin/ai-models", requireAdmin, async (req, res) => {
+    try {
+      // Verify the provider exists
+      const provider = await storage.getAiProvider(req.body.providerId);
+      if (!provider) {
+        return res.status(400).json({ error: "AI Provider not found" });
+      }
+      
+      // Validate and create model
+      const validatedData = insertAiModelSchema.safeParse(req.body);
+      
+      if (!validatedData.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validatedData.error.format() 
+        });
+      }
+      
+      // Create the model
+      const [newModel] = await db.insert(aiModels).values(validatedData.data).returning();
+      res.status(201).json(newModel);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.patch("/api/admin/ai-models/:id", requireAdmin, async (req, res) => {
+    try {
+      const modelId = parseInt(req.params.id);
+      const [model] = await db.select().from(aiModels).where(eq(aiModels.id, modelId));
+      
+      if (!model) {
+        return res.status(404).json({ error: "AI Model not found" });
+      }
+      
+      // If provider is being updated, verify it exists
+      if (req.body.providerId) {
+        const provider = await storage.getAiProvider(req.body.providerId);
+        if (!provider) {
+          return res.status(400).json({ error: "AI Provider not found" });
+        }
+      }
+      
+      // Update model
+      const [updatedModel] = await db.update(aiModels)
+        .set(req.body)
+        .where(eq(aiModels.id, modelId))
+        .returning();
+      
+      res.json(updatedModel);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.delete("/api/admin/ai-models/:id", requireAdmin, async (req, res) => {
+    try {
+      const modelId = parseInt(req.params.id);
+      
+      // Check if any prompts are using this model
+      const [prompt] = await db.select().from(aiPrompts).where(eq(aiPrompts.modelId, modelId));
+      if (prompt) {
+        return res.status(400).json({ 
+          error: "Cannot delete model while prompts are using it" 
+        });
+      }
+      
+      // Delete model
+      const result = await db.delete(aiModels).where(eq(aiModels.id, modelId));
+      
+      if (result.rowCount > 0) {
+        res.sendStatus(204);
+      } else {
+        res.status(404).json({ error: "AI Model not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // AI Prompts Admin Routes
+  app.get("/api/admin/ai-prompts", requireAdmin, async (req, res) => {
+    try {
+      // Note: We need to add this method to our storage interface
+      const prompts = await db.select().from(aiPrompts);
+      res.json(prompts);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/admin/ai-prompts/:id", requireAdmin, async (req, res) => {
+    try {
+      const promptId = parseInt(req.params.id);
+      // Note: We need to add this method to our storage interface
+      const [prompt] = await db.select().from(aiPrompts).where(eq(aiPrompts.id, promptId));
+      
+      if (!prompt) {
+        return res.status(404).json({ error: "AI Prompt not found" });
+      }
+      
+      res.json(prompt);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/admin/ai-prompts", requireAdmin, async (req, res) => {
+    try {
+      // Verify the model exists
+      const [model] = await db.select().from(aiModels).where(eq(aiModels.id, req.body.modelId));
+      if (!model) {
+        return res.status(400).json({ error: "AI Model not found" });
+      }
+      
+      // Validate and create prompt
+      const validatedData = insertAiPromptSchema.safeParse(req.body);
+      
+      if (!validatedData.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validatedData.error.format() 
+        });
+      }
+      
+      // Create the prompt
+      const [newPrompt] = await db.insert(aiPrompts).values(validatedData.data).returning();
+      res.status(201).json(newPrompt);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.patch("/api/admin/ai-prompts/:id", requireAdmin, async (req, res) => {
+    try {
+      const promptId = parseInt(req.params.id);
+      const [prompt] = await db.select().from(aiPrompts).where(eq(aiPrompts.id, promptId));
+      
+      if (!prompt) {
+        return res.status(404).json({ error: "AI Prompt not found" });
+      }
+      
+      // If model is being updated, verify it exists
+      if (req.body.modelId) {
+        const [model] = await db.select().from(aiModels).where(eq(aiModels.id, req.body.modelId));
+        if (!model) {
+          return res.status(400).json({ error: "AI Model not found" });
+        }
+      }
+      
+      // Update prompt
+      const [updatedPrompt] = await db.update(aiPrompts)
+        .set(req.body)
+        .where(eq(aiPrompts.id, promptId))
+        .returning();
+      
+      res.json(updatedPrompt);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.delete("/api/admin/ai-prompts/:id", requireAdmin, async (req, res) => {
+    try {
+      const promptId = parseInt(req.params.id);
+      
+      // Delete prompt
+      const result = await db.delete(aiPrompts).where(eq(aiPrompts.id, promptId));
+      
+      if (result.rowCount > 0) {
+        res.sendStatus(204);
+      } else {
+        res.status(404).json({ error: "AI Prompt not found" });
+      }
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
