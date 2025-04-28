@@ -84,7 +84,7 @@ export class PaymentService {
         sessionId: response.data.Data.InvoiceId.toString(),
         paymentUrl: response.data.Data.InvoiceURL
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('MyFatoorah payment creation error:', error);
       if (error.response && error.response.data) {
         console.error('MyFatoorah error details:', error.response.data);
@@ -134,7 +134,7 @@ export class PaymentService {
           isValid: false
         };
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('MyFatoorah payment verification error:', error);
       if (error.response && error.response.data) {
         console.error('MyFatoorah error details:', error.response.data);
