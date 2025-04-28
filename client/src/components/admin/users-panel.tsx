@@ -172,7 +172,7 @@ export default function UsersPanel() {
         description: "The user has been successfully deleted.",
       });
       setIsDeleteDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: "/api/admin/users" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
     },
     onError: (error) => {
       toast({
