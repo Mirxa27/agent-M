@@ -96,6 +96,9 @@ export class MemStorage implements IStorage {
   private files: Map<number, File>;
   private tasks: Map<number, Task>;
   private messages: Map<number, Message>;
+  private taskFiles: Map<number, TaskFile>;
+  private aiModels: Map<number, AiModel>;
+  private aiPrompts: Map<number, AiPrompt>;
   private aiProviders: Map<number, AiProvider>;
   private plans: Map<number, Plan>;
   
@@ -107,6 +110,9 @@ export class MemStorage implements IStorage {
   private fileIdCounter: number;
   private taskIdCounter: number;
   private messageIdCounter: number;
+  private taskFileIdCounter: number;
+  private aiModelIdCounter: number;
+  private aiPromptIdCounter: number;
   private aiProviderIdCounter: number;
   private planIdCounter: number;
 
@@ -117,6 +123,9 @@ export class MemStorage implements IStorage {
     this.files = new Map();
     this.tasks = new Map();
     this.messages = new Map();
+    this.taskFiles = new Map();
+    this.aiModels = new Map();
+    this.aiPrompts = new Map();
     this.aiProviders = new Map();
     this.plans = new Map();
     
@@ -126,6 +135,9 @@ export class MemStorage implements IStorage {
     this.fileIdCounter = 1;
     this.taskIdCounter = 1;
     this.messageIdCounter = 1;
+    this.taskFileIdCounter = 1;
+    this.aiModelIdCounter = 1;
+    this.aiPromptIdCounter = 1;
     this.aiProviderIdCounter = 1;
     this.planIdCounter = 1;
     
@@ -364,6 +376,66 @@ export class MemStorage implements IStorage {
   
   async deleteFile(id: number): Promise<boolean> {
     return this.files.delete(id);
+  }
+  
+  // Get files associated with a task through the task-file relationship
+  async getFilesByTaskId(taskId: number): Promise<File[]> {
+    // Get all task-file relationships for this task
+    const taskFileRelations = Array.from(this.taskFiles.values()).filter(
+      (tf) => tf.taskId === taskId
+    );
+    
+    // Get the actual files
+    const files = taskFileRelations.map(tf => this.files.get(tf.fileId)).filter(Boolean) as File[];
+    
+    return files;
+  }
+  
+  // Task-File relationship operations
+  async linkFileToTask(taskId: number, fileId: number): Promise<TaskFile> {
+    // Make sure the task and file exist
+    const task = await this.getTask(taskId);
+    if (!task) {
+      throw new Error(`Task with ID ${taskId} not found`);
+    }
+    
+    const file = await this.getFile(fileId);
+    if (!file) {
+      throw new Error(`File with ID ${fileId} not found`);
+    }
+    
+    // Create new task-file relationship
+    const id = this.taskFileIdCounter++;
+    const now = new Date();
+    const taskFile: TaskFile = {
+      id,
+      taskId,
+      fileId,
+      createdAt: now
+    };
+    
+    this.taskFiles.set(id, taskFile);
+    return taskFile;
+  }
+  
+  async getTaskFilesByTaskId(taskId: number): Promise<TaskFile[]> {
+    return Array.from(this.taskFiles.values()).filter(
+      (taskFile) => taskFile.taskId === taskId
+    );
+  }
+  
+  async unlinkFileFromTask(taskId: number, fileId: number): Promise<boolean> {
+    // Find the task-file relationship to remove
+    const taskFileToRemove = Array.from(this.taskFiles.values()).find(
+      (tf) => tf.taskId === taskId && tf.fileId === fileId
+    );
+    
+    if (!taskFileToRemove) {
+      return false;
+    }
+    
+    // Remove the relationship
+    return this.taskFiles.delete(taskFileToRemove.id);
   }
 
   // Task operations

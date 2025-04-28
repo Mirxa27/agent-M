@@ -129,9 +129,17 @@ export async function saveFile(
 
 // Get files associated with a task
 export async function getFilesByTaskId(taskId: number): Promise<FileModel[]> {
-  // This would require a join table between tasks and files
-  // For now, return an empty array until the schema is updated
-  return [];
+  return await storage.getFilesByTaskId(taskId);
+}
+
+// Associate a file with a task
+export async function linkFileToTask(taskId: number, fileId: number): Promise<void> {
+  await storage.linkFileToTask(taskId, fileId);
+}
+
+// Remove an association between a file and a task
+export async function unlinkFileFromTask(taskId: number, fileId: number): Promise<boolean> {
+  return await storage.unlinkFileFromTask(taskId, fileId);
 }
 
 // Delete a file from storage
