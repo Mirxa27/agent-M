@@ -91,41 +91,29 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center">
-              <Link href="/">
-                <a className="flex items-center space-x-2">
-                  <Bot className="h-8 w-8 text-primary" />
-                  <span className="font-bold text-2xl bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
-                    Mirxa.io
-                  </span>
-                </a>
+              <Link href="/" className="flex items-center space-x-2">
+                <Bot className="h-8 w-8 text-primary" />
+                <span className="font-bold text-2xl bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
+                  Mirxa.io
+                </span>
               </Link>
             </div>
             <nav className="hidden md:flex items-center space-x-6">
-              <Link href="#features">
-                <a className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-                  Features
-                </a>
+              <Link href="#features" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+                Features
               </Link>
-              <Link href="#pricing">
-                <a className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-                  Pricing
-                </a>
+              <Link href="#pricing" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+                Pricing
               </Link>
-              <Link href="#testimonials">
-                <a className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-                  Testimonials
-                </a>
+              <Link href="#testimonials" className="text-sm font-medium text-gray-600 hover:text-primary transition-colors">
+                Testimonials
               </Link>
             </nav>
             <div className="flex items-center space-x-2">
-              <Link href="/auth">
-                <Button variant="ghost">Sign In</Button>
-              </Link>
-              <Link href="/auth">
-                <Button>
-                  <span>Get Started</span>
-                </Button>
-              </Link>
+              <Button variant="ghost" onClick={() => location.href = '/auth'}>Sign In</Button>
+              <Button onClick={() => location.href = '/auth'}>
+                <span>Get Started</span>
+              </Button>
             </div>
           </div>
         </div>
@@ -148,11 +136,9 @@ export default function LandingPage() {
                   Create, manage, and automate intelligent AI agents that perform complex tasks securely with your credentials and templates.
                 </p>
                 <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                  <Link href="/auth">
-                    <Button size="lg" className="px-8">
-                      Get Started Free
-                    </Button>
-                  </Link>
+                  <Button size="lg" className="px-8" onClick={() => location.href = '/auth'}>
+                    Get Started Free
+                  </Button>
                   <Button size="lg" variant="outline" className="px-8">
                     Watch Demo
                   </Button>
@@ -233,14 +219,13 @@ export default function LandingPage() {
                         </li>
                       ))}
                     </ul>
-                    <Link href="/auth">
-                      <Button 
-                        className="w-full" 
-                        variant={plan.popular ? "default" : "outline"}
-                      >
-                        {plan.buttonText}
-                      </Button>
-                    </Link>
+                    <Button 
+                      className="w-full" 
+                      variant={plan.popular ? "default" : "outline"}
+                      onClick={() => location.href = '/auth'}
+                    >
+                      {plan.buttonText}
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -289,11 +274,9 @@ export default function LandingPage() {
               <p className="text-xl mb-8 opacity-90">
                 Join thousands of users who are already automating their tasks with Mirxa.io's AI agents.
               </p>
-              <Link href="/auth">
-                <Button size="lg" variant="secondary" className="px-8">
-                  Get Started Free
-                </Button>
-              </Link>
+              <Button size="lg" variant="secondary" className="px-8" onClick={() => location.href = '/auth'}>
+                Get Started Free
+              </Button>
             </div>
           </div>
         </section>
