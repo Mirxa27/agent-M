@@ -17,7 +17,7 @@ import {
   aiModels,
   aiPrompts
 } from "@shared/schema";
-import { encrypt, decrypt } from "../client/src/lib/crypto";
+import { encrypt, decrypt } from "../shared/crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
