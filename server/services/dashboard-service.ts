@@ -1,7 +1,4 @@
-import {
-  DashboardPreference,
-  InsertDashboardPreference,
-} from "@shared/schema";
+import { DashboardPreference, InsertDashboardPreference } from "@shared/schema";
 import { storage } from "../storage";
 
 /**
@@ -10,12 +7,12 @@ import { storage } from "../storage";
  * @returns The user's dashboard preferences
  */
 export async function getUserDashboardPreferences(
-  userId: number
+  userId: number,
 ): Promise<DashboardPreference> {
   try {
     // Check if user already has dashboard preferences
     let preferences = await storage.getDashboardPreferenceByUserId(userId);
-    
+
     // If no preferences exist, create default settings
     if (!preferences) {
       const defaultPreferences: InsertDashboardPreference = {
@@ -37,10 +34,10 @@ export async function getUserDashboardPreferences(
         theme: "system",
         updatedAt: new Date(),
       };
-      
+
       preferences = await storage.createDashboardPreference(defaultPreferences);
     }
-    
+
     return preferences;
   } catch (error) {
     console.error("Error getting dashboard preferences:", error);
@@ -56,12 +53,13 @@ export async function getUserDashboardPreferences(
  */
 export async function updateDashboardPreferences(
   userId: number,
-  updates: Partial<Omit<DashboardPreference, "id" | "userId">>
+  updates: Partial<Omit<DashboardPreference, "id" | "userId">>,
 ): Promise<DashboardPreference | null> {
   try {
     // Check if dashboard preferences exist
-    const existingPreferences = await storage.getDashboardPreferenceByUserId(userId);
-    
+    const existingPreferences =
+      await storage.getDashboardPreferenceByUserId(userId);
+
     if (!existingPreferences) {
       // Create if doesn't exist
       const defaultPreferences: InsertDashboardPreference = {
@@ -83,19 +81,19 @@ export async function updateDashboardPreferences(
         theme: updates.theme || "system",
         updatedAt: new Date(),
       };
-      
+
       return await storage.createDashboardPreference(defaultPreferences);
     }
-    
+
     // Update existing preferences
     const updatedPreferences = await storage.updateDashboardPreference(
       existingPreferences.id,
       {
         ...updates,
         updatedAt: new Date(),
-      }
+      },
     );
-    
+
     return updatedPreferences;
   } catch (error) {
     console.error("Error updating dashboard preferences:", error);
@@ -111,24 +109,23 @@ export async function updateDashboardPreferences(
  */
 export async function addFavoriteAgent(
   userId: number,
-  agentId: number
+  agentId: number,
 ): Promise<boolean> {
   try {
     const preferences = await getUserDashboardPreferences(userId);
-    
+
     // Check if agent exists in user's favorites
-    const favorites = preferences.favoriteAgents as any[] || [];
+    const favorites = (preferences.favoriteAgents as any[]) || [];
     if (!favorites.includes(agentId)) {
       // Add to favorites (max 5)
-      const updatedFavorites = 
-        [...favorites, agentId].slice(-5);
-      
+      const updatedFavorites = [...favorites, agentId].slice(-5);
+
       await storage.updateDashboardPreference(preferences.id, {
         favoriteAgents: updatedFavorites,
         updatedAt: new Date(),
       });
     }
-    
+
     return true;
   } catch (error) {
     console.error("Error adding favorite agent:", error);
@@ -144,20 +141,20 @@ export async function addFavoriteAgent(
  */
 export async function removeFavoriteAgent(
   userId: number,
-  agentId: number
+  agentId: number,
 ): Promise<boolean> {
   try {
     const preferences = await getUserDashboardPreferences(userId);
-    
+
     // Remove agent from favorites
-    const favorites = preferences.favoriteAgents as any[] || [];
-    const updatedFavorites = favorites.filter(id => id !== agentId);
-    
+    const favorites = (preferences.favoriteAgents as any[]) || [];
+    const updatedFavorites = favorites.filter((id) => id !== agentId);
+
     await storage.updateDashboardPreference(preferences.id, {
       favoriteAgents: updatedFavorites,
       updatedAt: new Date(),
     });
-    
+
     return true;
   } catch (error) {
     console.error("Error removing favorite agent:", error);
@@ -173,21 +170,23 @@ export async function removeFavoriteAgent(
  */
 export async function updateRecentTasks(
   userId: number,
-  taskId: number
+  taskId: number,
 ): Promise<boolean> {
   try {
     const preferences = await getUserDashboardPreferences(userId);
-    
+
     // Add new task ID to the front, limit to 5 tasks
-    const recentTasks = preferences.recentTasks as any[] || [];
-    const updatedTasks = 
-      [taskId, ...recentTasks.filter(id => id !== taskId)].slice(0, 5);
-    
+    const recentTasks = (preferences.recentTasks as any[]) || [];
+    const updatedTasks = [
+      taskId,
+      ...recentTasks.filter((id) => id !== taskId),
+    ].slice(0, 5);
+
     await storage.updateDashboardPreference(preferences.id, {
       recentTasks: updatedTasks,
       updatedAt: new Date(),
     });
-    
+
     return true;
   } catch (error) {
     console.error("Error updating recent tasks:", error);

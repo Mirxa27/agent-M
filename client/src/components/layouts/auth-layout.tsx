@@ -1,4 +1,3 @@
-
 import React, { ReactNode, useState, useEffect } from "react";
 import { Link } from "wouter";
 import { AnimatedLogo } from "@/components/ui/animated-logo";
@@ -54,7 +53,7 @@ export function AuthLayout({
   return (
     <div className="min-h-screen flex flex-col md:flex-row overflow-hidden">
       {/* Left Side - Form */}
-      <motion.div 
+      <motion.div
         className="relative flex flex-col w-full md:w-3/5 p-4 sm:p-6 md:p-8 lg:p-16 xl:p-20 justify-center bg-gradient-to-b from-background/40 to-background"
         initial="hidden"
         animate="visible"
@@ -65,7 +64,7 @@ export function AuthLayout({
         </div>
         <div className="w-full max-w-md mx-auto md:mx-0 relative">
           {showLogo && (
-            <motion.div 
+            <motion.div
               className="mb-8 md:mb-10 lg:mb-12 flex items-center"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -91,7 +90,7 @@ export function AuthLayout({
               </Link>
             </motion.div>
           )}
-          <motion.div 
+          <motion.div
             className="mb-8 md:mb-10 lg:mb-12"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -117,7 +116,7 @@ export function AuthLayout({
       </motion.div>
 
       {/* Right Side - Hero */}
-      <motion.div 
+      <motion.div
         className="hidden md:flex w-2/5 bg-auth-gradient text-white items-center justify-center p-8 xl:p-12 2xl:p-16 relative overflow-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -128,14 +127,14 @@ export function AuthLayout({
           <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-white rounded-full blur-3xl opacity-10 translate-y-1/3 -translate-x-1/3"></div>
         </div>
-        
-        <motion.div 
+
+        <motion.div
           className="max-w-md lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl relative z-10"
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
         >
-          <motion.h2 
+          <motion.h2
             className="text-3xl lg:text-4xl xl:text-5xl font-bold mb-4 lg:mb-6 leading-tight"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -143,7 +142,7 @@ export function AuthLayout({
           >
             {t("auth.hero.title")}
           </motion.h2>
-          <motion.p 
+          <motion.p
             className="mb-8 lg:mb-10 text-base lg:text-lg xl:text-xl opacity-90"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -151,7 +150,7 @@ export function AuthLayout({
           >
             {t("auth.hero.description")}
           </motion.p>
-          <motion.ul 
+          <motion.ul
             className="space-y-4 sm:space-y-5 lg:space-y-6"
             variants={staggerFeatures}
             initial="hidden"

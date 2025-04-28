@@ -5,29 +5,42 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MainLayout } from "@/components/layouts/main-layout";
-import { 
-  BarChart, 
-  Bar, 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import {
   ActivityIcon,
@@ -85,9 +98,7 @@ const ActivityItem = ({ activity }: { activity: any }) => {
 
   return (
     <div className="flex items-start space-x-3 py-3 border-b border-gray-100 last:border-0">
-      <div className="p-1.5 bg-gray-50 rounded-full">
-        {getIcon()}
-      </div>
+      <div className="p-1.5 bg-gray-50 rounded-full">{getIcon()}</div>
       <div className="flex-1 min-w-0">
         <div className="font-medium">{getMessage()}</div>
         <div className="text-xs text-gray-500">
@@ -102,9 +113,9 @@ const ActivityItem = ({ activity }: { activity: any }) => {
 const ActivityFeed = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  
+
   const { isLoading, error, data } = useQuery({
-    queryKey: ['/api/user/activity'],
+    queryKey: ["/api/user/activity"],
     retry: 1,
     enabled: !!user, // Only run query if user is logged in
   });
@@ -161,9 +172,9 @@ const ActivityFeed = () => {
 const UserStats = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  
+
   const { isLoading, error, data } = useQuery({
-    queryKey: ['/api/user/analytics'],
+    queryKey: ["/api/user/analytics"],
     retry: 1,
     enabled: !!user, // Only run query if user is logged in
   });
@@ -201,42 +212,62 @@ const UserStats = () => {
     failedTaskCount: 0,
     tokenUsage: 0,
     mostUsedAgent: null,
-    averageCompletionTime: null
+    averageCompletionTime: null,
   };
-  
+
   // Safely extract analytics data with fallbacks
-  const analytics = data && typeof data === 'object' && data.thisMonth ? 
-    { ...defaultAnalytics, ...data.thisMonth } : defaultAnalytics;
-    
-  const previousMonth = data && typeof data === 'object' && data.previousMonth ? 
-    data.previousMonth : null;
-  
+  const analytics =
+    data && typeof data === "object" && data.thisMonth
+      ? { ...defaultAnalytics, ...data.thisMonth }
+      : defaultAnalytics;
+
+  const previousMonth =
+    data && typeof data === "object" && data.previousMonth
+      ? data.previousMonth
+      : null;
+
   // Helper function to get trend indicator
   const getTrendIndicator = (current: number, previous: number | undefined) => {
     if (!previous) return null;
-    
+
     const diff = current - previous;
-    const percentage = previous === 0 ? 
-      (current > 0 ? 100 : 0) : 
-      Math.round((diff / previous) * 100);
-      
+    const percentage =
+      previous === 0
+        ? current > 0
+          ? 100
+          : 0
+        : Math.round((diff / previous) * 100);
+
     if (percentage === 0) return null;
-    
+
     return (
-      <Badge variant={percentage > 0 ? "success" : "destructive"} className="ml-2">
-        {percentage > 0 ? "+" : ""}{percentage}%
+      <Badge
+        variant={percentage > 0 ? "success" : "destructive"}
+        className="ml-2"
+      >
+        {percentage > 0 ? "+" : ""}
+        {percentage}%
       </Badge>
     );
   };
-  
+
   // Chart data for tasks
   const taskData = [
-    { name: 'Successful', value: analytics.successfulTaskCount || 0, color: '#10b981' },
-    { name: 'Failed', value: analytics.failedTaskCount || 0, color: '#ef4444' },
-    { name: 'Pending', value: (analytics.taskCount || 0) - 
-      ((analytics.successfulTaskCount || 0) + (analytics.failedTaskCount || 0)), 
-      color: '#f59e0b' }
-  ].filter(item => item.value > 0);
+    {
+      name: "Successful",
+      value: analytics.successfulTaskCount || 0,
+      color: "#10b981",
+    },
+    { name: "Failed", value: analytics.failedTaskCount || 0, color: "#ef4444" },
+    {
+      name: "Pending",
+      value:
+        (analytics.taskCount || 0) -
+        ((analytics.successfulTaskCount || 0) +
+          (analytics.failedTaskCount || 0)),
+      color: "#f59e0b",
+    },
+  ].filter((item) => item.value > 0);
 
   return (
     <>
@@ -247,45 +278,53 @@ const UserStats = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline">
-              <span className="text-2xl font-bold">{analytics.taskCount || 0}</span>
+              <span className="text-2xl font-bold">
+                {analytics.taskCount || 0}
+              </span>
               {getTrendIndicator(
-                analytics.taskCount || 0, 
-                previousMonth?.taskCount
+                analytics.taskCount || 0,
+                previousMonth?.taskCount,
               )}
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Successful Tasks</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Successful Tasks
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline">
-              <span className="text-2xl font-bold">{analytics.successfulTaskCount || 0}</span>
+              <span className="text-2xl font-bold">
+                {analytics.successfulTaskCount || 0}
+              </span>
               {getTrendIndicator(
-                analytics.successfulTaskCount || 0, 
-                previousMonth?.successfulTaskCount
+                analytics.successfulTaskCount || 0,
+                previousMonth?.successfulTaskCount,
               )}
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Token Usage</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline">
-              <span className="text-2xl font-bold">{analytics.tokenUsage || 0}</span>
+              <span className="text-2xl font-bold">
+                {analytics.tokenUsage || 0}
+              </span>
               {getTrendIndicator(
-                analytics.tokenUsage || 0, 
-                previousMonth?.tokenUsage
+                analytics.tokenUsage || 0,
+                previousMonth?.tokenUsage,
               )}
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
@@ -294,14 +333,18 @@ const UserStats = () => {
           </CardHeader>
           <CardContent>
             {analytics.mostUsedAgent ? (
-              <span className="text-lg font-medium">{analytics.mostUsedAgent}</span>
+              <span className="text-lg font-medium">
+                {analytics.mostUsedAgent}
+              </span>
             ) : (
-              <span className="text-lg font-medium text-gray-500">No agents used yet</span>
+              <span className="text-lg font-medium text-gray-500">
+                No agents used yet
+              </span>
             )}
           </CardContent>
         </Card>
       </div>
-      
+
       {taskData.length > 0 && (
         <ResponsiveContainer width="100%" height={240}>
           <PieChart>
@@ -313,15 +356,17 @@ const UserStats = () => {
               outerRadius={80}
               paddingAngle={5}
               dataKey="value"
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              label={({ name, percent }) =>
+                `${name} ${(percent * 100).toFixed(0)}%`
+              }
             >
               {taskData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip 
-              formatter={(value: any) => [value, 'Tasks']} 
-              labelFormatter={() => ''} 
+            <Tooltip
+              formatter={(value: any) => [value, "Tasks"]}
+              labelFormatter={() => ""}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -334,20 +379,22 @@ const UserStats = () => {
 const DashboardWidgets = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  
+
   // Fetch dashboard preferences
   const { isLoading, error, data } = useQuery({
-    queryKey: ['/api/user/dashboard/preferences'],
+    queryKey: ["/api/user/dashboard/preferences"],
     retry: 1,
     enabled: !!user, // Only run query if user is logged in
   });
-  
+
   // Update dashboard preferences
   const { mutate: updatePreferences } = useMutation({
-    mutationFn: (updates: any) => 
-      apiRequest('PATCH', '/api/user/dashboard/preferences', updates),
+    mutationFn: (updates: any) =>
+      apiRequest("PATCH", "/api/user/dashboard/preferences", updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user/dashboard/preferences'] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/user/dashboard/preferences"],
+      });
       toast({
         title: "Dashboard Updated",
         description: "Your dashboard preferences have been saved.",
@@ -361,37 +408,37 @@ const DashboardWidgets = () => {
       });
     },
   });
-  
+
   // Handle widget toggle
   const handleWidgetToggle = (widgetId: string, enabled: boolean) => {
     if (!data) return;
-    
-    const updatedWidgets = data.widgets.map((widget: any) => 
-      widget.id === widgetId ? { ...widget, enabled } : widget
+
+    const updatedWidgets = data.widgets.map((widget: any) =>
+      widget.id === widgetId ? { ...widget, enabled } : widget,
     );
-    
+
     updatePreferences({ widgets: updatedWidgets });
   };
-  
+
   // Handle layout change
   const handleLayoutChange = (columns: number) => {
     if (!data) return;
-    
-    updatePreferences({ 
-      layout: { 
+
+    updatePreferences({
+      layout: {
         ...data.layout,
-        columns 
-      } 
+        columns,
+      },
     });
   };
-  
+
   // Handle theme change
   const handleThemeChange = (theme: string) => {
     if (!data) return;
-    
+
     updatePreferences({ theme });
   };
-  
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -403,7 +450,7 @@ const DashboardWidgets = () => {
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="py-8 text-center">
@@ -412,7 +459,7 @@ const DashboardWidgets = () => {
       </div>
     );
   }
-  
+
   // Ensure we have valid data structure if API returns unexpected format
   const defaultPreferences = {
     layout: { columns: 2, showWelcome: true },
@@ -422,22 +469,27 @@ const DashboardWidgets = () => {
       { id: "quickActions", position: 2, enabled: true },
       { id: "agentStatus", position: 3, enabled: true },
     ],
-    theme: "system"
+    theme: "system",
   };
-  
+
   // Data validation and fallback
-  const preferences = data && typeof data === 'object' ? {
-    ...defaultPreferences,
-    ...data,
-    // Ensure layout structure
-    layout: {
-      ...defaultPreferences.layout,
-      ...(data.layout || {}),
-    },
-    // Ensure widgets array
-    widgets: Array.isArray(data.widgets) ? data.widgets : defaultPreferences.widgets
-  } : defaultPreferences;
-  
+  const preferences =
+    data && typeof data === "object"
+      ? {
+          ...defaultPreferences,
+          ...data,
+          // Ensure layout structure
+          layout: {
+            ...defaultPreferences.layout,
+            ...(data.layout || {}),
+          },
+          // Ensure widgets array
+          widgets: Array.isArray(data.widgets)
+            ? data.widgets
+            : defaultPreferences.widgets,
+        }
+      : defaultPreferences;
+
   return (
     <>
       {preferences.layout.showWelcome && (
@@ -446,10 +498,11 @@ const DashboardWidgets = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold mb-2">
-                  Welcome back, {user?.fullName || 'User'}!
+                  Welcome back, {user?.fullName || "User"}!
                 </h2>
                 <p className="text-gray-600 max-w-md">
-                  Here's an overview of your activity and platform usage. Customize your dashboard with the options below.
+                  Here's an overview of your activity and platform usage.
+                  Customize your dashboard with the options below.
                 </p>
               </div>
               <LayoutDashboardIcon className="h-12 w-12 text-blue-400 opacity-75" />
@@ -457,34 +510,38 @@ const DashboardWidgets = () => {
           </CardContent>
         </Card>
       )}
-      
+
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold mb-1">Dashboard Settings</h2>
-          <p className="text-sm text-gray-500">Customize how your dashboard looks and feels</p>
+          <p className="text-sm text-gray-500">
+            Customize how your dashboard looks and feels
+          </p>
         </div>
-        
+
         <div className="flex flex-wrap gap-3">
           <div className="flex items-center space-x-2">
             <Label htmlFor="welcome-toggle">Show Welcome</Label>
-            <Switch 
-              id="welcome-toggle" 
+            <Switch
+              id="welcome-toggle"
               checked={preferences.layout.showWelcome}
               onCheckedChange={(checked) => {
-                updatePreferences({ 
-                  layout: { 
+                updatePreferences({
+                  layout: {
                     ...preferences.layout,
-                    showWelcome: checked 
-                  } 
+                    showWelcome: checked,
+                  },
                 });
               }}
             />
           </div>
-          
+
           <div>
-            <Label htmlFor="layout-select" className="mr-2">Layout</Label>
-            <Select 
-              value={preferences.layout.columns.toString()} 
+            <Label htmlFor="layout-select" className="mr-2">
+              Layout
+            </Label>
+            <Select
+              value={preferences.layout.columns.toString()}
               onValueChange={(value) => handleLayoutChange(parseInt(value))}
             >
               <SelectTrigger id="layout-select" className="w-[120px]">
@@ -497,13 +554,12 @@ const DashboardWidgets = () => {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div>
-            <Label htmlFor="theme-select" className="mr-2">Theme</Label>
-            <Select 
-              value={preferences.theme} 
-              onValueChange={handleThemeChange}
-            >
+            <Label htmlFor="theme-select" className="mr-2">
+              Theme
+            </Label>
+            <Select value={preferences.theme} onValueChange={handleThemeChange}>
               <SelectTrigger id="theme-select" className="w-[120px]">
                 <SelectValue placeholder="Theme" />
               </SelectTrigger>
@@ -516,90 +572,108 @@ const DashboardWidgets = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="mb-4">
         <h3 className="text-md font-medium mb-2">Widgets</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {preferences.widgets.map((widget: any) => (
             <div key={widget.id} className="flex items-center space-x-2">
-              <Switch 
-                id={`widget-${widget.id}`} 
+              <Switch
+                id={`widget-${widget.id}`}
                 checked={widget.enabled}
-                onCheckedChange={(checked) => handleWidgetToggle(widget.id, checked)}
+                onCheckedChange={(checked) =>
+                  handleWidgetToggle(widget.id, checked)
+                }
               />
               <Label htmlFor={`widget-${widget.id}`} className="capitalize">
-                {widget.id.replace(/([A-Z])/g, ' $1')}
+                {widget.id.replace(/([A-Z])/g, " $1")}
               </Label>
             </div>
           ))}
         </div>
       </div>
-      
-      <div className={`grid gap-6 ${
-        preferences.layout.columns === 1 ? 'grid-cols-1' : 
-        preferences.layout.columns === 3 ? 'grid-cols-1 md:grid-cols-3' : 
-        'grid-cols-1 md:grid-cols-2'
-      }`}>
-        {preferences.widgets.find((w: any) => w.id === "activity" && w.enabled) && (
+
+      <div
+        className={`grid gap-6 ${
+          preferences.layout.columns === 1
+            ? "grid-cols-1"
+            : preferences.layout.columns === 3
+              ? "grid-cols-1 md:grid-cols-3"
+              : "grid-cols-1 md:grid-cols-2"
+        }`}
+      >
+        {preferences.widgets.find(
+          (w: any) => w.id === "activity" && w.enabled,
+        ) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ActivityIcon className="h-5 w-5" />
                 <span>Recent Activity</span>
               </CardTitle>
-              <CardDescription>
-                Your latest actions and events
-              </CardDescription>
+              <CardDescription>Your latest actions and events</CardDescription>
             </CardHeader>
             <CardContent>
               <ActivityFeed />
             </CardContent>
           </Card>
         )}
-        
-        {preferences.widgets.find((w: any) => w.id === "stats" && w.enabled) && (
+
+        {preferences.widgets.find(
+          (w: any) => w.id === "stats" && w.enabled,
+        ) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart2Icon className="h-5 w-5" />
                 <span>Analytics</span>
               </CardTitle>
-              <CardDescription>
-                Your platform usage statistics
-              </CardDescription>
+              <CardDescription>Your platform usage statistics</CardDescription>
             </CardHeader>
             <CardContent>
               <UserStats />
             </CardContent>
           </Card>
         )}
-        
-        {preferences.widgets.find((w: any) => w.id === "quickActions" && w.enabled) && (
+
+        {preferences.widgets.find(
+          (w: any) => w.id === "quickActions" && w.enabled,
+        ) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <PackageIcon className="h-5 w-5" />
                 <span>Quick Actions</span>
               </CardTitle>
-              <CardDescription>
-                Common tasks and shortcuts
-              </CardDescription>
+              <CardDescription>Common tasks and shortcuts</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                >
                   <PackageIcon className="h-5 w-5" />
                   <span>New Agent</span>
                 </Button>
-                <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                >
                   <FilesIcon className="h-5 w-5" />
                   <span>Create Task</span>
                 </Button>
-                <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                >
                   <ActivityIcon className="h-5 w-5" />
                   <span>Add Credential</span>
                 </Button>
-                <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                >
                   <SettingsIcon className="h-5 w-5" />
                   <span>Settings</span>
                 </Button>
@@ -607,20 +681,22 @@ const DashboardWidgets = () => {
             </CardContent>
           </Card>
         )}
-        
-        {preferences.widgets.find((w: any) => w.id === "agentStatus" && w.enabled) && (
+
+        {preferences.widgets.find(
+          (w: any) => w.id === "agentStatus" && w.enabled,
+        ) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <GaugeIcon className="h-5 w-5" />
                 <span>Agent Status</span>
               </CardTitle>
-              <CardDescription>
-                Current state of your agents
-              </CardDescription>
+              <CardDescription>Current state of your agents</CardDescription>
             </CardHeader>
             <CardContent className="text-center py-12">
-              <p className="text-gray-500">This feature will be available soon.</p>
+              <p className="text-gray-500">
+                This feature will be available soon.
+              </p>
             </CardContent>
           </Card>
         )}
@@ -657,11 +733,11 @@ const DashboardPage = () => {
             </TabsTrigger>
           </TabsList>
         </div>
-        
+
         <TabsContent value="dashboard" className="mt-0">
           <DashboardWidgets />
         </TabsContent>
-        
+
         <TabsContent value="activity" className="mt-0">
           <Card>
             <CardHeader>
@@ -675,7 +751,7 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="analytics" className="mt-0">
           <Card>
             <CardHeader>
