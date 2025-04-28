@@ -1,329 +1,262 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Credential } from "@shared/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Edit, Key, MoreHorizontal, PlusCircle, Trash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { CredentialForm } from "@/components/credentials";
-import { 
-  Plus, 
-  Search, 
-  Key, 
-  Trash2, 
-  Loader2, 
-  Eye,
-  EyeOff,
-  Copy, 
-  Check,
-  Edit
-} from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { CredentialForm } from "./credential-form";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
-interface CredentialListProps {
-  agentId?: number; // Optional agentId for filtering credentials by agent
-}
+// Provider icon mapping
+const ProviderIconMap: Record<string, string> = {
+  'openai': '🤖',
+  'anthropic': '🧠',
+  'perplexity': '🔍',
+  'xai': '🔮',
+  'custom': '🔑'
+};
 
-export default function CredentialList({ agentId }: CredentialListProps) {
+export function CredentialList() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  type Credential = {
+    id: number;
+    name: string;
+    type: string;
+  };
+  
   const [selectedCredential, setSelectedCredential] = useState<Credential | null>(null);
-  const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({});
-  const [copiedField, setCopiedField] = useState<string | null>(null);
-
-  // Fetch credentials (filtered by agentId if provided)
-  const { 
-    data: credentials = [], 
-    isLoading,
-    error
-  } = useQuery<Credential[]>({
-    queryKey: agentId ? ["/api/credentials", agentId] : ["/api/credentials"],
+  
+  // Fetch credentials
+  const { data: credentials, isLoading, error } = useQuery({
+    queryKey: ["/api/credentials"],
     queryFn: async () => {
-      const url = agentId 
-        ? `/api/credentials?agentId=${agentId}` 
-        : '/api/credentials';
-      const res = await apiRequest("GET", url);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to fetch credentials");
+      const response = await fetch("/api/credentials");
+      if (!response.ok) {
+        throw new Error("Failed to fetch credentials");
       }
-      return res.json();
+      return response.json();
     }
   });
-
-  // Delete credential mutation
-  const deleteCredentialMutation = useMutation({
-    mutationFn: async (credentialId: number) => {
-      const res = await apiRequest("DELETE", `/api/credentials/${credentialId}`);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to delete credential");
-      }
+  
+  // Delete mutation
+  const deleteCredential = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/credentials/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: agentId ? ["/api/credentials", agentId] : ["/api/credentials"]
-      });
       toast({
         title: "Credential deleted",
-        description: "The credential has been deleted successfully",
+        description: "The credential has been deleted successfully."
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/credentials"] });
+      setDeleteDialogOpen(false);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Failed to delete credential",
         description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Toggle field visibility
-  const toggleFieldVisibility = (field: string) => {
-    setVisibleFields(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
-  };
-
-  // Copy field value to clipboard
-  const copyToClipboard = (text: string, field: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
-
-  // Get a single credential
-  const fetchCredential = async (id: number) => {
-    try {
-      const res = await apiRequest("GET", `/api/credentials/${id}`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch credential details");
-      }
-      const data = await res.json();
-      setSelectedCredential(data);
-      return data;
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive"
       });
     }
+  });
+  
+  // Handle edit
+  const handleEdit = (credential: Credential) => {
+    setSelectedCredential(credential);
+    setEditDialogOpen(true);
   };
-
-  // Filter credentials based on search term
-  const filteredCredentials = credentials.filter(credential => 
-    credential.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    credential.type.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Get color based on credential type
-  const getCredentialColor = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'openai':
-        return 'bg-green-100 text-green-800';
-      case 'anthropic':
-        return 'bg-purple-100 text-purple-800';
-      case 'perplexity':
-        return 'bg-blue-100 text-blue-800';
-      case 'xai':
-        return 'bg-red-100 text-red-800';
-      case 'email':
-        return 'bg-blue-100 text-blue-800';
-      case 'database':
-        return 'bg-emerald-100 text-emerald-800';
-      case 'api':
-        return 'bg-indigo-100 text-indigo-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  
+  // Handle delete
+  const handleDelete = (credential: Credential) => {
+    setSelectedCredential(credential);
+    setDeleteDialogOpen(true);
+  };
+  
+  // Confirm delete
+  const confirmDelete = () => {
+    if (selectedCredential) {
+      deleteCredential.mutate(selectedCredential.id);
     }
   };
-
+  
+  // Show loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex justify-center p-8">
+        <div className="animate-pulse text-primary">Loading credentials...</div>
       </div>
     );
   }
-
+  
+  // Show error state
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 my-4">
-        <p className="font-medium">Error loading credentials</p>
-        <p className="text-sm">{error instanceof Error ? error.message : "An unknown error occurred"}</p>
+      <div className="text-center p-8 text-destructive">
+        <p>Error loading credentials</p>
+        <Button 
+          variant="outline" 
+          className="mt-4"
+          onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/credentials"] })}
+        >
+          Try Again
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Actions bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search credentials..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        
-        <Button 
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="flex items-center"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          <span>New Credential</span>
-        </Button>
-      </div>
-
-      {/* Credential form dialog */}
-      <CredentialForm
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        agentId={agentId}
-      />
-
-      {/* Credentials grid/list */}
-      {filteredCredentials.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCredentials.map((credential) => (
-            <Card key={credential.id} className="shadow-sm hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle className="text-lg font-medium">{credential.name}</CardTitle>
-                  <CardDescription>
-                    <Badge className={`mt-1 ${getCredentialColor(credential.type)}`}>
-                      {credential.type}
-                    </Badge>
-                  </CardDescription>
-                </div>
-                <div className="flex space-x-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => fetchCredential(credential.id)}
-                  >
-                    <Eye className="h-4 w-4 text-gray-500" />
-                  </Button>
-                  
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently delete the credential "{credential.name}". 
-                          This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => deleteCredentialMutation.mutate(credential.id)}
-                          className="bg-red-600 hover:bg-red-700"
-                        >
-                          {deleteCredentialMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            "Delete"
-                          )}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="text-sm">
-                    <div className="flex items-center text-muted-foreground">
-                      <Key className="h-3.5 w-3.5 mr-1" />
-                      <span>
-                        {Object.keys(credential.data).length} stored fields
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Credentials</CardTitle>
+            <CardDescription>
+              Manage your API keys and authentication credentials securely.
+            </CardDescription>
+          </div>
+          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Credential
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Add New Credential</DialogTitle>
+                <DialogDescription>
+                  Create a new credential for your AI agents to use.
+                </DialogDescription>
+              </DialogHeader>
+              <CredentialForm 
+                onSuccess={() => setCreateDialogOpen(false)} 
+              />
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {credentials && credentials.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {credentials.map((credential: Credential) => (
+                <Card key={credential.id} className="overflow-hidden">
+                  <CardHeader className="bg-muted/50 p-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xl">
+                          {ProviderIconMap[credential.type] || '🔑'}
+                        </span>
+                        <div>
+                          <CardTitle className="text-base">{credential.name}</CardTitle>
+                          <CardDescription className="capitalize">{credential.type}</CardDescription>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleEdit(credential)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => handleDelete(credential)}
+                          >
+                            <Trash className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-2 text-sm">
+                      <Key className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        Securely encrypted credential
                       </span>
                     </div>
-                    <p className="text-muted-foreground text-xs mt-1">
-                      Last updated: {new Date(credential.updatedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-              
-              <CardFooter className="border-t pt-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full"
-                  onClick={() => {
-                    toast({
-                      title: "Coming soon",
-                      description: "Credential editing is coming soon",
-                    });
-                  }}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Manage Credential
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
-          {searchQuery ? (
-            <>
-              <p className="text-lg font-medium text-gray-700">
-                No credentials found matching "{searchQuery}"
-              </p>
-              <p className="text-gray-500 mt-1">
-                Try adjusting your search or add a new credential
-              </p>
-            </>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : (
-            <>
-              <p className="text-lg font-medium text-gray-700">No credentials found</p>
-              <p className="text-gray-500 mt-1">
-                Add your first credential to use with your AI agents
+            <div className="text-center py-8 px-4">
+              <Key className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No credentials yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Add credentials to securely store API keys and access tokens for your agents.
               </p>
-              <Button className="mt-4" onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                <span>Add Credential</span>
-              </Button>
-            </>
+              <DialogTrigger asChild>
+                <Button onClick={() => setCreateDialogOpen(true)}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Your First Credential
+                </Button>
+              </DialogTrigger>
+            </div>
           )}
-        </div>
-      )}
-    </div>
+        </CardContent>
+      </Card>
+      
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Credential</DialogTitle>
+            <DialogDescription>
+              Update your credential details.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedCredential && (
+            <CredentialForm 
+              onSuccess={() => setEditDialogOpen(false)}
+              defaultValues={{
+                name: selectedCredential.name,
+                type: selectedCredential.type,
+                data: {} // The actual data will be fetched when needed
+              }}
+              isEditing={true}
+              credentialId={selectedCredential.id}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the credential and remove it from any agents using it.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              disabled={deleteCredential.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteCredential.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
