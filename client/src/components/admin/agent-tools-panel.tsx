@@ -382,7 +382,7 @@ export default function AgentToolsPanel() {
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {isLoading ? (
               <div className="col-span-full flex justify-center py-8 sm:py-10 md:py-12">
                 <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-primary" />
@@ -551,7 +551,7 @@ export default function AgentToolsPanel() {
 
       {/* Create Tool Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-lg p-4 sm:p-6">
+        <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[92vh]">
           <DialogHeader className="mb-1 sm:mb-2">
             <DialogTitle className="text-lg sm:text-xl">Create Tool</DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
@@ -759,7 +759,7 @@ export default function AgentToolsPanel() {
 
       {/* Edit Tool Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg p-4 sm:p-6">
+        <DialogContent className="max-w-lg p-3 sm:p-6 overflow-y-auto max-h-[92vh]">
           <DialogHeader className="mb-1 sm:mb-2">
             <DialogTitle className="text-lg sm:text-xl">Edit Tool</DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
