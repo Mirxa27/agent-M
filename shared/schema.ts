@@ -81,6 +81,8 @@ export const files = pgTable("files", {
   path: text("path").notNull(),
   isTemplate: boolean("is_template").default(false).notNull(),
   templateType: text("template_type"),
+  templateCategory: text("template_category"), // New: category for organizing templates
+  description: text("description"), // New: description for templates
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -95,6 +97,8 @@ export const insertFileSchema = createInsertSchema(files)
     path: true,
     isTemplate: true,
     templateType: true,
+    templateCategory: true,
+    description: true,
   });
 
 // Task schema
