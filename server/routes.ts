@@ -700,8 +700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Models Admin Routes
   app.get("/api/admin/ai-models", requireAdmin, async (req, res) => {
     try {
-      // Note: We need to add this method to our storage interface
-      const models = await db.select().from(aiModels);
+      const models = await storage.getAllAiModels();
       res.json(models);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -711,8 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/ai-models/:id", requireAdmin, async (req, res) => {
     try {
       const modelId = parseInt(req.params.id);
-      // Note: We need to add this method to our storage interface
-      const [model] = await db.select().from(aiModels).where(eq(aiModels.id, modelId));
+      const model = await storage.getAiModel(modelId);
       
       if (!model) {
         return res.status(404).json({ error: "AI Model not found" });
@@ -743,7 +741,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create the model
-      const [newModel] = await db.insert(aiModels).values(validatedData.data).returning();
+      const newModel = await storage.createAiModel(validatedData.data);
       res.status(201).json(newModel);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -753,7 +751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/ai-models/:id", requireAdmin, async (req, res) => {
     try {
       const modelId = parseInt(req.params.id);
-      const [model] = await db.select().from(aiModels).where(eq(aiModels.id, modelId));
+      const model = await storage.getAiModel(modelId);
       
       if (!model) {
         return res.status(404).json({ error: "AI Model not found" });
@@ -768,11 +766,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Update model
-      const [updatedModel] = await db.update(aiModels)
-        .set(req.body)
-        .where(eq(aiModels.id, modelId))
-        .returning();
-      
+      const updatedModel = await storage.updateAiModel(modelId, req.body);
       res.json(updatedModel);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -784,20 +778,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const modelId = parseInt(req.params.id);
       
       // Check if any prompts are using this model
-      const promptCount = await db.select({ count: count() })
-        .from(aiPrompts)
-        .where(eq(aiPrompts.modelId, modelId));
+      const prompts = await storage.getAiPromptsByModelId(modelId);
         
-      if (promptCount[0].count > 0) {
+      if (prompts.length > 0) {
         return res.status(400).json({ 
           error: "Cannot delete model while prompts are using it" 
         });
       }
       
       // Delete model
-      const result = await db.delete(aiModels).where(eq(aiModels.id, modelId));
+      const success = await storage.deleteAiModel(modelId);
       
-      if (result.rowCount > 0) {
+      if (success) {
         res.sendStatus(204);
       } else {
         res.status(404).json({ error: "AI Model not found" });
@@ -810,8 +802,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Prompts Admin Routes
   app.get("/api/admin/ai-prompts", requireAdmin, async (req, res) => {
     try {
-      // Note: We need to add this method to our storage interface
-      const prompts = await db.select().from(aiPrompts);
+      const prompts = await storage.getAllAiPrompts();
       res.json(prompts);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -821,8 +812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/ai-prompts/:id", requireAdmin, async (req, res) => {
     try {
       const promptId = parseInt(req.params.id);
-      // Note: We need to add this method to our storage interface
-      const [prompt] = await db.select().from(aiPrompts).where(eq(aiPrompts.id, promptId));
+      const prompt = await storage.getAiPrompt(promptId);
       
       if (!prompt) {
         return res.status(404).json({ error: "AI Prompt not found" });
@@ -837,7 +827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/ai-prompts", requireAdmin, async (req, res) => {
     try {
       // Verify the model exists
-      const [model] = await db.select().from(aiModels).where(eq(aiModels.id, req.body.modelId));
+      const model = await storage.getAiModel(req.body.modelId);
       if (!model) {
         return res.status(400).json({ error: "AI Model not found" });
       }
@@ -853,7 +843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create the prompt
-      const [newPrompt] = await db.insert(aiPrompts).values(validatedData.data).returning();
+      const newPrompt = await storage.createAiPrompt(validatedData.data);
       res.status(201).json(newPrompt);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -863,7 +853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/ai-prompts/:id", requireAdmin, async (req, res) => {
     try {
       const promptId = parseInt(req.params.id);
-      const [prompt] = await db.select().from(aiPrompts).where(eq(aiPrompts.id, promptId));
+      const prompt = await storage.getAiPrompt(promptId);
       
       if (!prompt) {
         return res.status(404).json({ error: "AI Prompt not found" });
@@ -871,18 +861,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If model is being updated, verify it exists
       if (req.body.modelId) {
-        const [model] = await db.select().from(aiModels).where(eq(aiModels.id, req.body.modelId));
+        const model = await storage.getAiModel(req.body.modelId);
         if (!model) {
           return res.status(400).json({ error: "AI Model not found" });
         }
       }
       
       // Update prompt
-      const [updatedPrompt] = await db.update(aiPrompts)
-        .set(req.body)
-        .where(eq(aiPrompts.id, promptId))
-        .returning();
-      
+      const updatedPrompt = await storage.updateAiPrompt(promptId, req.body);
       res.json(updatedPrompt);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -894,9 +880,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const promptId = parseInt(req.params.id);
       
       // Delete prompt
-      const result = await db.delete(aiPrompts).where(eq(aiPrompts.id, promptId));
+      const success = await storage.deleteAiPrompt(promptId);
       
-      if (result.rowCount > 0) {
+      if (success) {
         res.sendStatus(204);
       } else {
         res.status(404).json({ error: "AI Prompt not found" });
