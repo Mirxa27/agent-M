@@ -147,7 +147,7 @@ export default function PlansPanel() {
     isLoading,
     error 
   } = useQuery({
-    queryKey: "/api/admin/plans"
+    queryKey: ["/api/admin/plans"]
   });
 
   // Create plan mutation
@@ -166,7 +166,7 @@ export default function PlansPanel() {
         description: "The subscription plan has been successfully created.",
       });
       setIsCreateDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: "/api/admin/plans" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
       resetForm();
     },
     onError: (error) => {
@@ -194,7 +194,7 @@ export default function PlansPanel() {
         description: "The subscription plan has been successfully updated.",
       });
       setIsEditDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: "/api/admin/plans" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
     },
     onError: (error) => {
       toast({
