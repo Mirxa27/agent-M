@@ -173,7 +173,7 @@ export default function LandingPage() {
             : "bg-transparent"
         }`}
       >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center">
               <Link href="/" className="flex items-center space-x-2">
@@ -337,7 +337,7 @@ export default function LandingPage() {
       <main>
         {/* Hero Section */}
         <section className="relative pt-20 pb-20 md:pt-32 md:pb-32 overflow-hidden">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row items-center">
               <div className="md:w-1/2 md:pr-12 mb-10 md:mb-0">
                 <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6">
@@ -366,7 +366,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="md:w-1/2 relative">
-                <div className="w-full h-[400px] rounded-xl bg-gradient-to-br from-primary/20 to-primary-foreground/20 relative overflow-hidden">
+                <div className="w-full h-[400px] rounded-xl bg-gradient-to-br from-primary/20 to-primary-foreground/20 relative overflow-hidden shadow-lg">
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Bot className="h-32 w-32 text-primary/40" />
                   </div>
@@ -379,7 +379,7 @@ export default function LandingPage() {
 
         {/* Features Section */}
         <section id="features" className="py-20 bg-gray-50">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-4">
                 Powerful AI Agent Capabilities
@@ -410,7 +410,7 @@ export default function LandingPage() {
 
         {/* Pricing Section */}
         <section id="pricing" className="py-20">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-4">
                 Simple, Transparent Pricing
@@ -420,7 +420,7 @@ export default function LandingPage() {
                 (SAR).
               </p>
             </div>
-            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               {plans.map((plan, index) => (
                 <div
                   key={index}
@@ -475,7 +475,7 @@ export default function LandingPage() {
           id="testimonials"
           className="py-20 bg-gray-50 dark:bg-gray-900"
         >
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-4">
                 What Our Customers Say
@@ -485,7 +485,7 @@ export default function LandingPage() {
                 their workflows with Mirxa.io.
               </p>
             </div>
-            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-6">
                   <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mr-4">
