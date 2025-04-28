@@ -2,7 +2,7 @@ import { createAIService, AIServiceResponse } from "./ai-service";
 import { storage } from "../storage";
 import { Agent, Credential, Task, InsertTask, File } from "@shared/schema";
 import { decrypt } from "@shared/crypto";
-import { loadAndProcessFile } from "./file-service";
+import { loadAndProcessFile, getFilesByTaskId } from "./file-service";
 
 // Types for agent execution
 export interface AgentTaskContext {
@@ -43,7 +43,7 @@ export class AgentExecutionService {
       const credentials = await storage.getCredentialsByAgentId(agent.id);
       
       // Get any files associated with this task
-      const files = await storage.getFilesByTaskId(task.id);
+      const files = await getFilesByTaskId(task.id);
       
       // Set up execution context
       const context: AgentTaskContext = {
