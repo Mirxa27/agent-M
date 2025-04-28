@@ -126,7 +126,7 @@ export function Header() {
                     </NavigationMenuItem>
                   ))}
 
-                  {user.role === "admin" && (
+                  {user && user.role === "admin" && (
                     <NavigationMenuItem>
                       <NavigationMenuTrigger>Admin</NavigationMenuTrigger>
                       <NavigationMenuContent>
@@ -170,15 +170,15 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Avatar className="h-8 w-8 cursor-pointer">
                     <AvatarFallback className="bg-primary/10 text-primary">
-                      {getUserInitials()}
+                      {user ? getUserInitials() : ""}
                     </AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{user.fullName || user.username}</p>
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                      <p className="text-sm font-medium">{user?.fullName || user?.username}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -272,7 +272,7 @@ export function Header() {
                   </Link>
                 ))}
 
-                {user.role === "admin" && (
+                {user && user.role === "admin" && (
                   <>
                     <div className="pt-4 pb-2">
                       <div className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
