@@ -1032,6 +1032,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message || "Failed to retrieve subscription information" });
     }
   });
+  
+  // User Admin Routes
+  app.get("/api/admin/users", requireAdmin, async (req, res) => {
+    try {
+      // Get all users (only admin can access)
+      const users = await storage.getAllUsers();
+      
+      // Remove sensitive data from the response
+      const sanitizedUsers = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
+      res.json(sanitizedUsers);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Remove sensitive data
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Process updates
+      const updates: any = {};
+      
+      // Only allow certain fields to be updated
+      if (req.body.username) updates.username = req.body.username;
+      if (req.body.email) updates.email = req.body.email;
+      if (req.body.fullName) updates.fullName = req.body.fullName;
+      if (req.body.role) updates.role = req.body.role;
+      if (req.body.isActive !== undefined) updates.isActive = req.body.isActive;
+      if (req.body.plan) updates.plan = req.body.plan;
+      if (req.body.planId) updates.planId = req.body.planId;
+      if (req.body.planExpiresAt) updates.planExpiresAt = new Date(req.body.planExpiresAt);
+      
+      // If password is being updated, hash it
+      if (req.body.password) {
+        updates.password = await hashPassword(req.body.password);
+      }
+      
+      const updatedUser = await storage.updateUser(userId, updates);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Remove sensitive data
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
