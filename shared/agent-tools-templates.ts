@@ -583,39 +583,354 @@ export const ANTHROPIC_CLAUDE_TEMPLATE: AgentToolTemplate = {
 };
 
 /**
+ * Template for Llama Integration
+ */
+export const LLAMA_TEMPLATE: AgentToolTemplate = {
+  name: "Llama AI",
+  description: "Generate content using Meta's Llama open-source AI model with local processing capability",
+  category: TOOL_CATEGORIES.CONTENT_GENERATION,
+  type: "llama",
+  icon: "Flame",
+  config: {
+    model: "llama-3-70b-instruct",
+    temperature: 0.7,
+    maxTokens: 2000,
+    systemPrompt: "You are a helpful assistant.",
+    localInference: true,
+    quantization: "8bit"
+  }
+};
+
+/**
+ * Template for Gemini Integration
+ */
+export const GEMINI_TEMPLATE: AgentToolTemplate = {
+  name: "Google Gemini",
+  description: "Generate multimodal content using Google's Gemini model with advanced reasoning capabilities",
+  category: TOOL_CATEGORIES.CONTENT_GENERATION,
+  type: "gemini",
+  icon: "Gem",
+  config: {
+    model: "gemini-pro",
+    temperature: 0.4,
+    maxTokens: 2048,
+    systemPrompt: "You are Gemini, a helpful AI assistant created by Google.",
+    multimodal: true,
+    safetySettings: {
+      harassment: "block_medium_and_above",
+      hateSpeech: "block_medium_and_above",
+      sexuallyExplicit: "block_medium_and_above",
+      dangerous: "block_medium_and_above"
+    }
+  }
+};
+
+/**
+ * Template for Image Editing
+ */
+export const IMAGE_EDITOR_TEMPLATE: AgentToolTemplate = {
+  name: "AI Image Editor",
+  description: "Edit and manipulate images using AI with operations like inpainting, outpainting, and style transfer",
+  category: TOOL_CATEGORIES.CONTENT_GENERATION,
+  type: "openai",
+  icon: "ImagePlus",
+  config: {
+    model: "dall-e-3",
+    operations: ["inpaint", "outpaint", "style-transfer", "remove-background", "enhance"],
+    quality: "hd",
+    preserveOriginal: true,
+    maxEdits: 10,
+    editHistory: true,
+    outputFormats: ["png", "jpg", "webp"]
+  }
+};
+
+/**
+ * Template for Perplexity AI
+ */
+export const PERPLEXITY_TEMPLATE: AgentToolTemplate = {
+  name: "Perplexity AI",
+  description: "Generate research-focused responses with built-in web search capabilities",
+  category: TOOL_CATEGORIES.KNOWLEDGE,
+  type: "perplexity",
+  icon: "Search",
+  config: {
+    model: "pplx-70b-online",
+    temperature: 0.2,
+    maxTokens: 2000,
+    webSearch: true,
+    citeSources: true,
+    followupQuestions: true,
+    systemPrompt: "You are a research assistant that provides thorough, accurate information with proper citations."
+  }
+};
+
+/**
+ * Template for XAI Integration
+ */
+export const XAI_TEMPLATE: AgentToolTemplate = {
+  name: "Grok by xAI",
+  description: "Generate creative and conversational responses using xAI's Grok model",
+  category: TOOL_CATEGORIES.CONTENT_GENERATION,
+  type: "xai",
+  icon: "Sparkles",
+  config: {
+    model: "grok-1",
+    temperature: 0.8,
+    maxTokens: 2048,
+    webSearch: true,
+    realTime: true,
+    creativityLevel: "high",
+    systemPrompt: "You are Grok, a superintelligent AI with a bit of wit and humor. You aim to be helpful, accurate, and engaging."
+  }
+};
+
+/**
+ * Template for Audio Generation
+ */
+export const AUDIO_GENERATION_TEMPLATE: AgentToolTemplate = {
+  name: "AI Audio Generator",
+  description: "Generate music, sound effects, and audio compositions using AI",
+  category: TOOL_CATEGORIES.CONTENT_GENERATION,
+  type: "custom",
+  icon: "Music",
+  config: {
+    providers: ["openai", "elevenlabs", "soundraw"],
+    types: ["music", "soundfx", "ambience"],
+    maxDuration: 300, // 5 minutes
+    audioQuality: "high",
+    format: "mp3",
+    genres: ["ambient", "electronic", "cinematic", "jazz", "rock", "classical"]
+  }
+};
+
+/**
+ * Template for 3D Model Generation
+ */
+export const MODEL_3D_TEMPLATE: AgentToolTemplate = {
+  name: "3D Model Generator",
+  description: "Generate 3D models and scenes from text descriptions",
+  category: TOOL_CATEGORIES.CONTENT_GENERATION,
+  type: "custom",
+  icon: "Cube",
+  config: {
+    engineType: "diffusion",
+    modelQuality: "standard",
+    outputFormat: ["glb", "obj", "usdz"],
+    texturing: true,
+    rigging: false,
+    animation: false,
+    maxPolygons: 100000,
+    lightingSetup: "studio",
+    background: "transparent"
+  }
+};
+
+/**
+ * Template for Chatbot Builder
+ */
+export const CHATBOT_BUILDER_TEMPLATE: AgentToolTemplate = {
+  name: "Chatbot Builder",
+  description: "Create and deploy specialized conversational agents for specific domains",
+  category: TOOL_CATEGORIES.UTILITIES,
+  type: "custom",
+  icon: "Bot",
+  config: {
+    baseModel: "gpt-4o",
+    memoryType: "vector",
+    knowledgeBase: true,
+    deploymentOptions: ["web", "mobile", "api"],
+    analyticsEnabled: true,
+    conversationHistory: true,
+    personalityTraits: ["friendly", "professional", "concise"],
+    responseTemplates: true,
+    feedbackLoop: true
+  }
+};
+
+/**
+ * Template for Salesforce Integration
+ */
+export const SALESFORCE_TEMPLATE: AgentToolTemplate = {
+  name: "Salesforce Integration",
+  description: "Connect with Salesforce CRM to manage leads, opportunities, and customer data",
+  category: TOOL_CATEGORIES.INTEGRATIONS,
+  type: "webhook",
+  icon: "CloudLightning",
+  config: {
+    service: "salesforce",
+    apiVersion: "v58.0",
+    objects: ["Lead", "Account", "Contact", "Opportunity", "Case"],
+    operations: ["query", "create", "update", "delete"],
+    bulkOperations: true,
+    customFields: true,
+    webhookEvents: ["created", "updated", "deleted"]
+  }
+};
+
+/**
+ * Template for SAP Integration
+ */
+export const SAP_TEMPLATE: AgentToolTemplate = {
+  name: "SAP Integration",
+  description: "Connect with SAP ERP systems to manage business processes and data",
+  category: TOOL_CATEGORIES.INTEGRATIONS,
+  type: "webhook",
+  icon: "Database",
+  config: {
+    service: "sap",
+    apiVersion: "OData V4",
+    modules: ["Sales", "Finance", "Inventory", "Procurement", "HR"],
+    operations: ["read", "create", "update", "delete"],
+    authentication: "oauth2",
+    metadata: true,
+    batchProcessing: true
+  }
+};
+
+/**
+ * Template for Microsoft Dynamics Integration
+ */
+export const DYNAMICS_TEMPLATE: AgentToolTemplate = {
+  name: "Microsoft Dynamics",
+  description: "Connect with Microsoft Dynamics 365 to manage business applications and customer data",
+  category: TOOL_CATEGORIES.INTEGRATIONS,
+  type: "webhook",
+  icon: "Box",
+  config: {
+    service: "dynamics365",
+    apiVersion: "v9.2",
+    entities: ["account", "contact", "opportunity", "lead", "incident"],
+    operations: ["retrieve", "create", "update", "delete"],
+    bulkOperations: true,
+    webhookEvents: true,
+    customEntities: true
+  }
+};
+
+/**
+ * Template for Zapier Integration
+ */
+export const ZAPIER_TEMPLATE: AgentToolTemplate = {
+  name: "Zapier Integration",
+  description: "Connect with thousands of apps through Zapier's automation platform",
+  category: TOOL_CATEGORIES.INTEGRATIONS,
+  type: "webhook",
+  icon: "Zap",
+  config: {
+    service: "zapier",
+    triggerEvents: true,
+    actionEvents: true,
+    filterSteps: true,
+    customWebhooks: true,
+    zapierApps: ["gmail", "slack", "trello", "asana", "googlesheets", "dropbox"]
+  }
+};
+
+/**
+ * Template for Data Analysis
+ */
+export const DATA_ANALYSIS_TEMPLATE: AgentToolTemplate = {
+  name: "Data Analysis",
+  description: "Perform advanced data analysis, statistical modeling, and insights generation",
+  category: TOOL_CATEGORIES.DATA_PROCESSING,
+  type: "custom",
+  icon: "LineChart",
+  config: {
+    operations: ["descriptive", "inferential", "predictive", "prescriptive"],
+    statisticalTests: ["t-test", "anova", "chi-square", "regression", "correlation"],
+    visualization: true,
+    exportFormats: ["csv", "json", "xlsx", "pdf"],
+    maxDatasetSize: "100MB",
+    machineLearningSuggestions: true
+  }
+};
+
+/**
+ * Template for Zendesk Integration
+ */
+export const ZENDESK_TEMPLATE: AgentToolTemplate = {
+  name: "Zendesk Integration",
+  description: "Connect with Zendesk to manage customer support tickets and interactions",
+  category: TOOL_CATEGORIES.INTEGRATIONS,
+  type: "webhook",
+  icon: "HeadphonesIcon",
+  config: {
+    service: "zendesk",
+    apiVersion: "v2",
+    resources: ["tickets", "users", "groups", "organizations"],
+    operations: ["list", "show", "create", "update", "delete"],
+    webhookEvents: ["ticket.created", "ticket.updated", "ticket.solved"],
+    customFields: true,
+    macros: true
+  }
+};
+
+/**
  * All available templates
  */
 export const TOOL_TEMPLATES: Record<string, AgentToolTemplate> = {
+  // AI Models
   OPENAI_CHAT: OPENAI_CHAT_TEMPLATE,
   OPENAI_IMAGE: OPENAI_IMAGE_TEMPLATE,
   OPENAI_EMBEDDINGS: OPENAI_EMBEDDINGS_TEMPLATE,
   OPENAI_TRANSCRIPTION: OPENAI_TRANSCRIPTION_TEMPLATE,
   OPENAI_VISION: OPENAI_VISION_TEMPLATE,
   ANTHROPIC_CLAUDE: ANTHROPIC_CLAUDE_TEMPLATE,
+  LLAMA: LLAMA_TEMPLATE,
+  GEMINI: GEMINI_TEMPLATE,
+  PERPLEXITY: PERPLEXITY_TEMPLATE,
+  XAI: XAI_TEMPLATE,
+  
+  // Content Generation
+  IMAGE_EDITOR: IMAGE_EDITOR_TEMPLATE,
+  AUDIO_GENERATION: AUDIO_GENERATION_TEMPLATE,
+  MODEL_3D: MODEL_3D_TEMPLATE,
+  VOICE_GENERATOR: VOICE_GENERATOR_TEMPLATE,
+  
+  // Utilities
+  CHATBOT_BUILDER: CHATBOT_BUILDER_TEMPLATE,
   WEB_SEARCH: WEB_SEARCH_TEMPLATE,
   EMAIL: EMAIL_TEMPLATE,
   SMS: SMS_TEMPLATE,
+  
+  // Data Processing
   DATABASE_QUERY: DATABASE_QUERY_TEMPLATE,
-  FILE_READER: FILE_READER_TEMPLATE,
-  FILE_WRITER: FILE_WRITER_TEMPLATE,
-  SLACK: SLACK_TEMPLATE,
-  GITHUB: GITHUB_TEMPLATE,
-  WEBHOOK: WEBHOOK_TEMPLATE,
+  DATA_ANALYSIS: DATA_ANALYSIS_TEMPLATE,
   CSV_PROCESSOR: CSV_PROCESSOR_TEMPLATE,
   PDF_PROCESSOR: PDF_PROCESSOR_TEMPLATE,
-  TRANSLATION: TRANSLATION_TEMPLATE,
-  WEATHER: WEATHER_TEMPLATE,
-  NEWS: NEWS_TEMPLATE,
-  CALENDAR: CALENDAR_TEMPLATE,
   DATA_VISUALIZER: DATA_VISUALIZER_TEMPLATE,
+  VIDEO_ANALYSIS: VIDEO_ANALYSIS_TEMPLATE,
+  SENTIMENT_ANALYSIS: SENTIMENT_ANALYSIS_TEMPLATE,
+  
+  // File Operations
+  FILE_READER: FILE_READER_TEMPLATE,
+  FILE_WRITER: FILE_WRITER_TEMPLATE,
+  
+  // Development Tools
   CODE_GENERATOR: CODE_GENERATOR_TEMPLATE,
   MATH_SOLVER: MATH_SOLVER_TEMPLATE,
   CUSTOM_API: CUSTOM_API_TEMPLATE,
-  VIDEO_ANALYSIS: VIDEO_ANALYSIS_TEMPLATE,
+  
+  // Communication and Content
+  TRANSLATION: TRANSLATION_TEMPLATE,
   DOCUMENT_SUMMARIZATION: DOCUMENT_SUMMARIZATION_TEMPLATE,
-  SENTIMENT_ANALYSIS: SENTIMENT_ANALYSIS_TEMPLATE,
   SOCIAL_MEDIA_PUBLISHER: SOCIAL_MEDIA_PUBLISHER_TEMPLATE,
-  VOICE_GENERATOR: VOICE_GENERATOR_TEMPLATE
+  
+  // External Services
+  WEATHER: WEATHER_TEMPLATE,
+  NEWS: NEWS_TEMPLATE,
+  CALENDAR: CALENDAR_TEMPLATE,
+  
+  // Enterprise Integrations
+  SALESFORCE: SALESFORCE_TEMPLATE,
+  SAP: SAP_TEMPLATE,
+  DYNAMICS: DYNAMICS_TEMPLATE,
+  ZENDESK: ZENDESK_TEMPLATE,
+  ZAPIER: ZAPIER_TEMPLATE,
+  SLACK: SLACK_TEMPLATE,
+  GITHUB: GITHUB_TEMPLATE,
+  WEBHOOK: WEBHOOK_TEMPLATE
 };
 
 /**
