@@ -126,7 +126,7 @@ export function AnimatedLogo({ size = 'md', className = '' }: AnimatedLogoProps)
           />
         </g>
         <defs>
-          <filter id="filter0_d" x="0" y="0" width="512" height="512" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+          <filter id="filter0_d" x="0" y="0" width="512" height="512" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
             <feFlood floodOpacity="0" result="BackgroundImageFix"/>
             <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"/>
             <feOffset dy="4"/>

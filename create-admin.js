@@ -1,75 +1,73 @@
-// Script to create an admin user
-import { pool } from './server/db.js';
-import { hashPassword } from './server/auth.js';
-import crypto from 'crypto';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { scrypt, randomBytes } from 'crypto';
+import { promisify } from 'util';
+import ws from 'ws';
 
-// Generate a secure password
-const generateSecurePassword = () => {
-  const length = 12;
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+';
-  let password = '';
-  for (let i = 0; i < length; i++) {
-    password += chars[crypto.randomInt(0, chars.length)];
-  }
-  return password;
-};
+// Configure neon for WebSockets
+neonConfig.webSocketConstructor = ws;
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = await scryptAsync(password, salt, 64);
+  return `${buf.toString("hex")}.${salt}`;
+}
 
 async function createAdminUser() {
   try {
-    // Admin user details
-    const adminUser = {
-      username: 'admin',
-      email: 'admin@mirxa.io',
-      fullName: 'Admin User',
-      role: 'admin',
-      plan: 'enterprise'
-    };
+    // Database connection
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL not found in environment variables');
+    }
+
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     
-    // Generate a secure password
-    const password = generateSecurePassword();
-    
-    // Hash the password
-    const hashedPassword = await hashPassword(password);
-    
+    // Define admin user details
+    const adminUsername = 'admin';
+    const adminPassword = 'tU5&RhL+hzm(';
+    const adminEmail = 'admin@mirxa.io';
+    const adminFullName = 'Mirxa Administrator';
+
     // Check if admin already exists
-    const checkResult = await pool.query(
-      'SELECT id FROM users WHERE username = $1 OR email = $2',
-      [adminUser.username, adminUser.email]
-    );
+    const checkQuery = 'SELECT * FROM users WHERE username = $1';
+    const existingUser = await pool.query(checkQuery, [adminUsername]);
     
-    if (checkResult.rows.length > 0) {
-      console.log('Admin user already exists');
-      await pool.end();
-      return;
+    if (existingUser.rows.length > 0) {
+      console.log('Admin user already exists!');
+      process.exit(0);
     }
+
+    // Hash password
+    const hashedPassword = await hashPassword(adminPassword);
+
+    // Create admin user
+    const insertQuery = `
+      INSERT INTO users (username, password, email, full_name, role)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
+    `;
     
-    // Insert admin user
-    const result = await pool.query(
-      `INSERT INTO users (username, email, password, full_name, role, plan) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
-       RETURNING id`,
-      [
-        adminUser.username,
-        adminUser.email,
-        hashedPassword,
-        adminUser.fullName,
-        adminUser.role,
-        adminUser.plan
-      ]
-    );
+    const res = await pool.query(insertQuery, [
+      adminUsername,
+      hashedPassword,
+      adminEmail,
+      adminFullName,
+      'admin'
+    ]);
+
+    const user = res.rows[0];
     
-    if (result.rows.length > 0) {
-      console.log('Admin user created successfully');
-      console.log('Username:', adminUser.username);
-      console.log('Password:', password);
-      console.log('Role:', adminUser.role);
-      console.log('Email:', adminUser.email);
-      console.log('Please save these credentials in a secure place.');
-    }
+    console.log('✅ Admin user created successfully');
+    console.log('Username:', adminUsername);
+    console.log('Password:', adminPassword);
+    console.log('Email:', adminEmail);
+    
+    await pool.end();
+    process.exit(0);
   } catch (error) {
     console.error('Error creating admin user:', error);
-  } finally {
-    await pool.end();
+    process.exit(1);
   }
 }
 
