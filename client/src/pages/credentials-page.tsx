@@ -86,12 +86,17 @@ export default function CredentialsPage() {
   const [showSecret, setShowSecret] = useState<Record<number, boolean>>({});
 
   // Fetch credentials
-  const { data: credentials, isLoading } = useQuery({
+  const { data: credentials, isLoading, error: fetchError } = useQuery({
     queryKey: ["/api/credentials"],
     queryFn: async () => {
-      const res = await fetch("/api/credentials");
-      if (!res.ok) throw new Error("Failed to fetch credentials");
-      return res.json() as Promise<Credential[]>;
+      try {
+        const res = await fetch("/api/credentials");
+        if (!res.ok) throw new Error("Failed to fetch credentials");
+        return res.json() as Promise<Credential[]>;
+      } catch (error) {
+        console.error("Error fetching credentials:", error);
+        throw new Error("Failed to fetch credentials. Please try again.");
+      }
     },
   });
 
@@ -220,6 +225,19 @@ export default function CredentialsPage() {
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
+      ) : fetchError ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+            <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+            <h3 className="text-lg font-medium mb-2">Error Loading Credentials</h3>
+            <p className="text-sm text-muted-foreground mb-6 max-w-md">
+              There was a problem loading your credentials. This could be due to a connectivity issue or an error in the credential data structure.
+            </p>
+            <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/credentials"] })}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
@@ -297,19 +315,19 @@ export default function CredentialsPage() {
                         </div>
                       </div>
 
-                      {credential.data && typeof credential.data === 'object' && 
-                       typeof credential.data === 'object' && 
-                       'baseUrl' in credential.data && 
-                       credential.data.baseUrl && (
-                        <div>
-                          <div className="text-sm font-medium mb-1">
-                            Base URL
+                      {credential.data &&
+                        typeof credential.data === "object" &&
+                        "baseUrl" in credential.data &&
+                        credential.data.baseUrl && (
+                          <div>
+                            <div className="text-sm font-medium mb-1">
+                              Base URL
+                            </div>
+                            <div className="text-sm bg-muted p-2 rounded font-mono truncate">
+                              {String(credential.data.baseUrl)}
+                            </div>
                           </div>
-                          <div className="text-sm bg-muted p-2 rounded font-mono truncate">
-                            {String(credential.data.baseUrl)}
-                          </div>
-                        </div>
-                      )}
+                        )}
                     </CardContent>
                   </Card>
                 ))}
