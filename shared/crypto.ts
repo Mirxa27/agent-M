@@ -3,7 +3,7 @@ import CryptoJS from 'crypto-js';
 // Secret key for encryption/decryption
 // In a production environment, this should be stored securely
 // and potentially retrieved from environment variables
-const SECRET_KEY = process.env.ENCRYPTION_SECRET || 'mirxa-encryption-secret-key';
+const SECRET_KEY = 'mirxa-encryption-secret-key';
 
 /**
  * Encrypts a string using AES encryption
