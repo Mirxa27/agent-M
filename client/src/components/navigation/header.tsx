@@ -1,0 +1,305 @@
+import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "@/hooks/use-auth";
+import { AnimatedLogo } from "@/components/ui/animated-logo";
+import LanguageSwitcher from "@/components/ui/language-switcher";
+import { Button } from "@/components/ui/button";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
+import {
+  Home,
+  Bot,
+  Key,
+  FileText,
+  Clock1,
+  Settings,
+  User,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+export function Header() {
+  const { t } = useTranslation();
+  const { user, logoutMutation } = useAuth();
+  const [location] = useLocation();
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Detect scroll to change header styling
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      if (isScrolled !== scrolled) {
+        setScrolled(isScrolled);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [scrolled]);
+
+  const navItems = [
+    { href: "/dashboard", label: "Dashboard", icon: <Home className="w-4 h-4 mr-2" /> },
+    { href: "/agents", label: "Agents", icon: <Bot className="w-4 h-4 mr-2" /> },
+    { href: "/credentials", label: "Credentials", icon: <Key className="w-4 h-4 mr-2" /> },
+    { href: "/files", label: "Files", icon: <FileText className="w-4 h-4 mr-2" /> },
+    { href: "/task-history", label: "Tasks", icon: <Clock1 className="w-4 h-4 mr-2" /> },
+  ];
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!user) return "";
+    if (user.fullName) {
+      return user.fullName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase();
+    }
+    return user.username?.substring(0, 2).toUpperCase() || "";
+  };
+
+  return (
+    <>
+      <header
+        className={cn(
+          "sticky top-0 z-30 w-full bg-white dark:bg-gray-900 transition-all duration-200",
+          scrolled ? "shadow-md" : "border-b border-gray-200 dark:border-gray-800"
+        )}
+      >
+        <div className="container flex h-16 items-center justify-between px-4">
+          {/* Logo */}
+          <div className="flex items-center">
+            <Link href={user ? "/dashboard" : "/"}>
+              <a className="flex items-center space-x-2">
+                <AnimatedLogo size="sm" />
+                <span className="font-heading text-lg font-bold hidden md:block text-primary">
+                  {t("app.name")}
+                </span>
+              </a>
+            </Link>
+          </div>
+
+          {/* Desktop Navigation */}
+          {user && (
+            <div className="hidden md:flex">
+              <NavigationMenu>
+                <NavigationMenuList>
+                  {navItems.map((item) => (
+                    <NavigationMenuItem key={item.href}>
+                      <Link href={item.href}>
+                        <NavigationMenuLink
+                          className={cn(
+                            navigationMenuTriggerStyle(),
+                            location === item.href
+                              ? "bg-primary/10 text-primary"
+                              : ""
+                          )}
+                        >
+                          {item.icon}
+                          {item.label}
+                        </NavigationMenuLink>
+                      </Link>
+                    </NavigationMenuItem>
+                  ))}
+
+                  {user.role === "admin" && (
+                    <NavigationMenuItem>
+                      <NavigationMenuTrigger>Admin</NavigationMenuTrigger>
+                      <NavigationMenuContent>
+                        <ul className="grid w-[200px] p-2 gap-2">
+                          <li>
+                            <Link href="/admin/dashboard">
+                              <NavigationMenuLink 
+                                className={cn(
+                                  "flex items-center select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                                  location === "/admin/dashboard" ? "bg-primary/10 text-primary" : ""
+                                )}
+                              >
+                                <div className="flex items-center">
+                                  <User className="w-4 h-4 mr-2" />
+                                  <span>Dashboard</span>
+                                </div>
+                              </NavigationMenuLink>
+                            </Link>
+                          </li>
+                        </ul>
+                      </NavigationMenuContent>
+                    </NavigationMenuItem>
+                  )}
+                </NavigationMenuList>
+              </NavigationMenu>
+            </div>
+          )}
+
+          {/* Right Section (User Actions, Language) */}
+          <div className="flex items-center space-x-2">
+            <LanguageSwitcher />
+            
+            {!user ? (
+              <Button asChild size="sm" className="hidden md:flex">
+                <Link href="/auth">
+                  <a>{t("auth.login")}</a>
+                </Link>
+              </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Avatar className="h-8 w-8 cursor-pointer">
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {getUserInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium">{user.fullName || user.username}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard">
+                      <a className="w-full flex items-center cursor-pointer">
+                        <Home className="mr-2 h-4 w-4" />
+                        <span>Dashboard</span>
+                      </a>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/agents">
+                      <a className="w-full flex items-center cursor-pointer">
+                        <Bot className="mr-2 h-4 w-4" />
+                        <span>My Agents</span>
+                      </a>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/subscription">
+                      <a className="w-full flex items-center cursor-pointer">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Subscription</span>
+                      </a>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleLogout}
+                    disabled={logoutMutation.isPending}
+                    className="text-red-600 cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>{logoutMutation.isPending ? "Logging out..." : "Logout"}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Mobile Menu Button */}
+            {user && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 md:hidden bg-black bg-opacity-50" onClick={() => setMobileMenuOpen(false)}>
+          <div
+            className="absolute top-0 right-0 w-64 h-full bg-white dark:bg-gray-900 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+              <h2 className="font-semibold">Menu</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Mobile Nav Items */}
+            <div className="p-4">
+              <div className="space-y-1">
+                {navItems.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    <a
+                      className={cn(
+                        "flex items-center px-3 py-2 rounded-md transition-colors",
+                        location === item.href
+                          ? "bg-primary/10 text-primary"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      )}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {React.cloneElement(item.icon, { className: "h-5 w-5 mr-3" })}
+                      {item.label}
+                    </a>
+                  </Link>
+                ))}
+
+                {user.role === "admin" && (
+                  <>
+                    <div className="pt-4 pb-2">
+                      <div className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Admin
+                      </div>
+                    </div>
+                    <Link href="/admin/dashboard">
+                      <a
+                        className={cn(
+                          "flex items-center px-3 py-2 rounded-md transition-colors",
+                          location === "/admin/dashboard"
+                            ? "bg-primary/10 text-primary"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        )}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <User className="h-5 w-5 mr-3" />
+                        Dashboard
+                      </a>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
