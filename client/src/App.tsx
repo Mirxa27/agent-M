@@ -19,13 +19,37 @@ import { ProtectedRoute } from "@/lib/protected-route";
 // Custom route component for admin routes
 function AdminRoute({ path, component: Component }: { path: string, component: () => React.JSX.Element }) {
   return (
-    <ProtectedRoute 
-      path={path} 
-      component={() => {
-        // Additional admin role check could be added here in the component
+    <Route path={path}>
+      {() => {
+        const { user, isLoading } = useAuth();
+        
+        if (isLoading) {
+          return (
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          );
+        }
+        
+        if (!user) {
+          return <Route path={path}><AuthPage /></Route>;
+        }
+        
+        if (user.role !== 'admin') {
+          return (
+            <div className="flex flex-col items-center justify-center min-h-screen p-6">
+              <h1 className="text-2xl font-bold text-red-500 mb-2">Access Denied</h1>
+              <p className="text-gray-600 mb-4">You don't have permission to access this area.</p>
+              <a href="/dashboard" className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90">
+                Return to Dashboard
+              </a>
+            </div>
+          );
+        }
+        
         return <Component />;
-      }} 
-    />
+      }}
+    </Route>
   );
 }
 
