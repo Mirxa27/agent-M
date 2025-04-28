@@ -268,12 +268,9 @@ export default function UsersPanel() {
         updateData.role = values.role;
       }
       
-      if (values.isActive !== selectedUser.isActive) {
-        updateData.isActive = values.isActive;
-      }
-      
-      if (values.planId !== selectedUser.planId) {
-        updateData.planId = values.planId;
+      // Use plan property instead of planId
+      if (values.plan !== selectedUser.plan) {
+        updateData.plan = values.plan;
       }
       
       // Only include password if it's not empty
@@ -313,8 +310,7 @@ export default function UsersPanel() {
       fullName: user.fullName || "",
       role: user.role as "user" | "admin",
       password: "",
-      isActive: user.isActive,
-      planId: user.planId
+      plan: user.plan
     });
     setIsEditDialogOpen(true);
   };
@@ -332,12 +328,7 @@ export default function UsersPanel() {
     (user.fullName && user.fullName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  // Get plan name by ID
-  const getPlanName = (planId: number | null) => {
-    if (!planId) return "No Plan";
-    const plan = plans.find(p => p.id === planId);
-    return plan ? plan.name : "Unknown Plan";
-  };
+  // No need for getPlanName as we directly display plan
 
   if (error) {
     return (
@@ -427,14 +418,14 @@ export default function UsersPanel() {
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell>{getPlanName(user.planId)}</TableCell>
+                        <TableCell>{user.plan || "No Plan"}</TableCell>
                         <TableCell>
-                          <Badge variant={user.isActive ? "success" : "outline"}>
-                            {user.isActive ? "Active" : "Inactive"}
+                          <Badge variant="success">
+                            Active
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(user.createdAt), "MMM d, yyyy")}
+                          {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "N/A"}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
