@@ -101,10 +101,12 @@ const ActivityItem = ({ activity }: { activity: any }) => {
 // Component to display user activity feed
 const ActivityFeed = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const { isLoading, error, data } = useQuery({
     queryKey: ['/api/user/activity'],
     retry: 1,
+    enabled: !!user, // Only run query if user is logged in
   });
 
   if (isLoading) {
@@ -132,7 +134,8 @@ const ActivityFeed = () => {
     );
   }
 
-  const activities = data || [];
+  // Ensure we have a valid array, even if the API returns an empty object
+  const activities = Array.isArray(data) ? data : [];
 
   if (activities.length === 0) {
     return (
@@ -157,10 +160,12 @@ const ActivityFeed = () => {
 // Component to display user statistics
 const UserStats = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const { isLoading, error, data } = useQuery({
     queryKey: ['/api/user/analytics'],
     retry: 1,
+    enabled: !!user, // Only run query if user is logged in
   });
 
   if (isLoading) {
@@ -189,14 +194,22 @@ const UserStats = () => {
     );
   }
 
-  const analytics = data?.thisMonth || {
+  // Default analytics data
+  const defaultAnalytics = {
     taskCount: 0,
     successfulTaskCount: 0,
     failedTaskCount: 0,
-    tokenUsage: 0
+    tokenUsage: 0,
+    mostUsedAgent: null,
+    averageCompletionTime: null
   };
-
-  const previousMonth = data?.previousMonth;
+  
+  // Safely extract analytics data with fallbacks
+  const analytics = data && typeof data === 'object' && data.thisMonth ? 
+    { ...defaultAnalytics, ...data.thisMonth } : defaultAnalytics;
+    
+  const previousMonth = data && typeof data === 'object' && data.previousMonth ? 
+    data.previousMonth : null;
   
   // Helper function to get trend indicator
   const getTrendIndicator = (current: number, previous: number | undefined) => {
@@ -326,6 +339,7 @@ const DashboardWidgets = () => {
   const { isLoading, error, data } = useQuery({
     queryKey: ['/api/user/dashboard/preferences'],
     retry: 1,
+    enabled: !!user, // Only run query if user is logged in
   });
   
   // Update dashboard preferences
@@ -399,7 +413,8 @@ const DashboardWidgets = () => {
     );
   }
   
-  const preferences = data || {
+  // Ensure we have valid data structure if API returns unexpected format
+  const defaultPreferences = {
     layout: { columns: 2, showWelcome: true },
     widgets: [
       { id: "activity", position: 0, enabled: true },
@@ -409,6 +424,19 @@ const DashboardWidgets = () => {
     ],
     theme: "system"
   };
+  
+  // Data validation and fallback
+  const preferences = data && typeof data === 'object' ? {
+    ...defaultPreferences,
+    ...data,
+    // Ensure layout structure
+    layout: {
+      ...defaultPreferences.layout,
+      ...(data.layout || {}),
+    },
+    // Ensure widgets array
+    widgets: Array.isArray(data.widgets) ? data.widgets : defaultPreferences.widgets
+  } : defaultPreferences;
   
   return (
     <>
