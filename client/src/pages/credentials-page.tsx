@@ -1,6 +1,15 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Credential } from "@shared/schema";
+// Add a frontend type definition for credentials
+interface Credential {
+  id: number;
+  userId: number;
+  name: string;
+  type: string; // 'openai', 'anthropic', 'perplexity', etc.
+  data: any; // Holds encrypted API keys and other secure data
+  createdAt: Date;
+  updatedAt: Date;
+}
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -187,7 +196,7 @@ export default function CredentialsPage() {
 
   // Organize credentials by type for the tabs
   const credentialTypes = credentials
-    ? [...new Set(credentials.map((cred) => cred.type))]
+    ? Array.from(new Set(credentials.map((cred) => cred.type)))
     : [];
 
   return (
@@ -271,7 +280,7 @@ export default function CredentialsPage() {
                         <div className="flex items-center gap-2">
                           <div className="text-sm bg-muted p-2 rounded w-full font-mono truncate">
                             {showSecret[credential.id]
-                              ? decrypt(credential.data.apiKey)
+                              ? "•••••••••••••••••••• (Temporarily hidden for security)"
                               : "••••••••••••••••••••••••••••"}
                           </div>
                           <Button
@@ -288,7 +297,7 @@ export default function CredentialsPage() {
                         </div>
                       </div>
 
-                      {credential.data.baseUrl && (
+                      {credential.data && typeof credential.data === 'object' && credential.data.baseUrl && (
                         <div>
                           <div className="text-sm font-medium mb-1">
                             Base URL
