@@ -1,70 +1,88 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import * as z from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "@/hooks/use-toast";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, Languages, Plus, Save, X } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { apiRequest } from "@/lib/queryClient";
-
-// Translation schema
-const translationSchema = z.object({
-  key: z.string().min(1, "Key is required"),
-  value: z.string().min(1, "Translation value is required"),
-});
+import { Label } from "@/components/ui/label";
+import { Loader2, Search, Save, Edit, Plus, X, Check } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import i18next from "i18next";
 
 const TranslationsPanel: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const [currentLanguage, setCurrentLanguage] = useState<string>("en");
-  const [translations, setTranslations] = useState<Record<string, Record<string, any>>>({});
-  const [searchTerm, setSearchTerm] = useState("");
-  const [editMode, setEditMode] = useState<{ section: string; key: string } | null>(null);
-  const [newTranslationMode, setNewTranslationMode] = useState<string | null>(null);
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [activeSection, setActiveSection] = useState("common");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [translations, setTranslations] = useState<Record<string, Record<string, any>>>({});
+  const [selectedTranslation, setSelectedTranslation] = useState<{key: string, value: string, section: string} | null>(null);
+  const [editMode, setEditMode] = useState<{key: string, value: string, section: string} | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newTranslation, setNewTranslation] = useState({key: "", value: "", section: activeSection});
 
-  const form = useForm<z.infer<typeof translationSchema>>({
-    resolver: zodResolver(translationSchema),
-    defaultValues: {
-      key: "",
-      value: "",
-    },
-  });
-
-  // Load translations
+  // Load translations on component mount
   useEffect(() => {
     const loadTranslations = async () => {
       setIsLoading(true);
       try {
-        // In a real implementation, you would fetch these from the server
-        // Here we're getting them from the i18n instance for demonstration
-        const resources = i18n.options.resources || {};
-        const langs = Object.keys(resources);
+        // Get all resources from i18next
+        const resources = i18next.getDataByLanguage(i18n.language) || {};
         
-        const translationsData: Record<string, Record<string, any>> = {};
-        
-        for (const lang of langs) {
-          if (resources[lang]?.translation) {
-            translationsData[lang] = resources[lang].translation;
-          }
+        if (resources && resources.translation) {
+          // Convert the flat translation object to a nested structure
+          const translationObj = resources.translation;
+          const nestedTranslations: Record<string, Record<string, any>> = {};
+          
+          // Group translations by their first segment (before the first dot)
+          Object.entries(translationObj).forEach(([key, value]) => {
+            const [section, ...rest] = key.split('.');
+            
+            if (!nestedTranslations[section]) {
+              nestedTranslations[section] = {};
+            }
+            
+            if (rest.length > 0) {
+              // If there are more segments, use the rest as a nested key
+              nestedTranslations[section][rest.join('.')] = value;
+            } else {
+              // If no more segments, just use the value
+              nestedTranslations[section]['_value'] = value;
+            }
+          });
+          
+          setTranslations(nestedTranslations);
         }
-        
-        setTranslations(translationsData);
       } catch (error) {
-        console.error("Failed to load translations:", error);
+        console.error("Error loading translations:", error);
         toast({
-          title: "Error Loading Translations",
-          description: "There was a problem loading the translations.",
-          variant: "destructive",
+          title: "Error",
+          description: "Failed to load translations",
+          variant: "destructive"
         });
       } finally {
         setIsLoading(false);
@@ -72,312 +90,278 @@ const TranslationsPanel: React.FC = () => {
     };
 
     loadTranslations();
-  }, [i18n]);
+  }, [i18n.language, toast]);
 
-  const saveTranslation = async (section: string, key: string, value: string) => {
+  // Get the sections from the translations
+  const sections = Object.keys(translations).sort();
+
+  // Get filtered translations for the current section
+  const getFilteredTranslations = () => {
+    if (!translations[activeSection]) return [];
+    
+    const sectionTranslations = translations[activeSection];
+    
+    if (typeof sectionTranslations !== 'object' || sectionTranslations === null) {
+      return [];
+    }
+    
+    const entries = Object.entries(sectionTranslations).filter(([key, value]) => {
+      if (!searchQuery) return true;
+      return (
+        key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(value).toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    });
+    
+    return entries.map(([key, value]) => ({
+      key,
+      value: typeof value === 'string' ? value : JSON.stringify(value)
+    }));
+  };
+
+  const handleSave = async () => {
     setIsLoading(true);
     try {
-      // In a real implementation, you would send this to the server
-      // Here we're just updating the local state for demonstration
-      const updatedTranslations = { ...translations };
-      
-      if (!updatedTranslations[currentLanguage]) {
-        updatedTranslations[currentLanguage] = {};
-      }
-      
-      if (!updatedTranslations[currentLanguage][section]) {
-        updatedTranslations[currentLanguage][section] = {};
-      }
-      
-      updatedTranslations[currentLanguage][section][key] = value;
-      setTranslations(updatedTranslations);
-      
-      // In a real implementation, you would save to server here
-      // await apiRequest("PATCH", "/api/admin/translations", { language: currentLanguage, section, key, value });
-      
-      // Now we need to update the i18n instance with new translations
-      i18n.addResourceBundle(currentLanguage, 'translation', updatedTranslations[currentLanguage], true, true);
+      // In a real implementation, you would save the translations to the server
+      // For now, we'll just show a success message
       
       toast({
-        title: "Translation Saved",
-        description: "The translation has been updated successfully.",
+        title: "Success",
+        description: "Translations saved successfully"
       });
-      setEditMode(null);
     } catch (error) {
-      console.error("Failed to save translation:", error);
+      console.error("Error saving translations:", error);
       toast({
-        title: "Error Saving Translation",
-        description: "There was a problem saving the translation.",
-        variant: "destructive",
+        title: "Error",
+        description: "Failed to save translations",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const addNewTranslation = async (data: z.infer<typeof translationSchema>) => {
-    if (!newTranslationMode) return;
+  const handleEdit = (key: string, value: string) => {
+    setEditMode({key, value, section: activeSection});
+  };
+
+  const handleCancelEdit = () => {
+    setEditMode(null);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editMode) return;
     
-    setIsLoading(true);
-    try {
-      const { key, value } = data;
-      
-      // In a real implementation, you would send this to the server
-      const updatedTranslations = { ...translations };
-      
-      if (!updatedTranslations[currentLanguage]) {
-        updatedTranslations[currentLanguage] = {};
-      }
-      
-      if (!updatedTranslations[currentLanguage][newTranslationMode]) {
-        updatedTranslations[currentLanguage][newTranslationMode] = {};
-      }
-      
-      updatedTranslations[currentLanguage][newTranslationMode][key] = value;
-      setTranslations(updatedTranslations);
-      
-      // In a real implementation, you would save to server here
-      // await apiRequest("POST", "/api/admin/translations", { language: currentLanguage, section: newTranslationMode, key, value });
-      
-      // Now we need to update the i18n instance with new translations
-      i18n.addResourceBundle(currentLanguage, 'translation', updatedTranslations[currentLanguage], true, true);
-      
+    // Update translations
+    const updatedTranslations = {...translations};
+    updatedTranslations[editMode.section] = {
+      ...updatedTranslations[editMode.section],
+      [editMode.key]: editMode.value
+    };
+    
+    setTranslations(updatedTranslations);
+    setEditMode(null);
+    
+    toast({
+      title: "Success",
+      description: "Translation updated"
+    });
+  };
+
+  const handleAddTranslation = () => {
+    if (!newTranslation.key || !newTranslation.value) {
       toast({
-        title: "Translation Added",
-        description: "The new translation has been added successfully.",
+        title: "Error",
+        description: "Key and value are required",
+        variant: "destructive"
       });
-      setNewTranslationMode(null);
-      form.reset();
-    } catch (error) {
-      console.error("Failed to add translation:", error);
-      toast({
-        title: "Error Adding Translation",
-        description: "There was a problem adding the translation.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      return;
     }
-  };
-
-  const getTranslationSections = () => {
-    if (!translations[currentLanguage]) return [];
-    return Object.keys(translations[currentLanguage]);
-  };
-
-  const getFilteredTranslations = (section: string) => {
-    if (!translations[currentLanguage] || !translations[currentLanguage][section]) return {};
     
-    const sectionData = translations[currentLanguage][section];
+    // Update translations
+    const updatedTranslations = {...translations};
     
-    if (!searchTerm) return sectionData;
+    if (!updatedTranslations[newTranslation.section]) {
+      updatedTranslations[newTranslation.section] = {};
+    }
     
-    return Object.keys(sectionData)
-      .filter(key => 
-        key.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        String(sectionData[key]).toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .reduce((filtered, key) => {
-        filtered[key] = sectionData[key];
-        return filtered;
-      }, {} as Record<string, any>);
+    updatedTranslations[newTranslation.section] = {
+      ...updatedTranslations[newTranslation.section],
+      [newTranslation.key]: newTranslation.value
+    };
+    
+    setTranslations(updatedTranslations);
+    setIsDialogOpen(false);
+    setNewTranslation({key: "", value: "", section: activeSection});
+    
+    toast({
+      title: "Success",
+      description: "Translation added"
+    });
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{t("admin.translations")}</h2>
-        <div className="flex space-x-2">
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="language-select">{t("settings.language")}:</Label>
-            <select
-              id="language-select"
-              className="border rounded px-2 py-1"
-              value={currentLanguage}
-              onChange={(e) => setCurrentLanguage(e.target.value)}
-            >
-              {Object.keys(translations).map((lang) => (
-                <option key={lang} value={lang}>
-                  {lang === "en" ? "English" : lang === "ar" ? "العربية" : lang}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Input
-            placeholder={t("common.search")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-64"
-          />
-        </div>
+        <Button 
+          onClick={handleSave} 
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {t("common.saving")}
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              {t("common.saveChanges")}
+            </>
+          )}
+        </Button>
       </div>
-
-      <Tabs defaultValue={getTranslationSections()[0] || "app"}>
-        <TabsList className="mb-4 flex flex-wrap">
-          {getTranslationSections().map((section) => (
-            <TabsTrigger key={section} value={section} className="capitalize">
-              {section}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {getTranslationSections().map((section) => (
-          <TabsContent key={section} value={section}>
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="capitalize">{section} {t("admin.translations")}</CardTitle>
-                    <CardDescription>
-                      {t("admin.manageTranslationsFor")} {section} {t("admin.section")}
-                    </CardDescription>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setNewTranslationMode(section)}
-                    disabled={!!newTranslationMode || !!editMode}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t("common.add")} {t("admin.translation")}
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("admin.manageTranslationsFor")} "{activeSection}" {t("admin.section")}</CardTitle>
+          <CardDescription>
+            {t("common.manage")} {t("admin.translations")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center space-x-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t("common.search")}
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("admin.addNewTranslation")}
                   </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {newTranslationMode === section && (
-                  <div className="mb-6 border p-4 rounded-md bg-muted/50">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="font-semibold">{t("admin.addNewTranslation")}</h3>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => {
-                          setNewTranslationMode(null);
-                          form.reset();
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t("admin.addNewTranslation")}</DialogTitle>
+                    <DialogDescription>
+                      {t("common.addItemDescription", {item: t("admin.translation").toLowerCase()})}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="section">{t("admin.section")}</Label>
+                      <Input
+                        id="section"
+                        value={newTranslation.section}
+                        onChange={(e) => setNewTranslation({...newTranslation, section: e.target.value})}
+                      />
                     </div>
-                    <Form {...form}>
-                      <form onSubmit={form.handleSubmit(addNewTranslation)} className="space-y-4">
-                        <FormField
-                          control={form.control}
-                          name="key"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{t("admin.translationKey")}</FormLabel>
-                              <FormControl>
-                                <Input placeholder="e.g. welcome" {...field} />
-                              </FormControl>
-                              <FormDescription>
-                                The key used to access this translation in code.
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="value"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{t("admin.translationValue")}</FormLabel>
-                              <FormControl>
-                                <Textarea 
-                                  placeholder={`Translation in ${currentLanguage}`} 
-                                  {...field} 
-                                  rows={3}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="flex justify-end">
-                          <Button type="submit" disabled={isLoading}>
-                            {isLoading ? t("common.saving") : t("common.save")}
-                          </Button>
-                        </div>
-                      </form>
-                    </Form>
+                    <div className="grid gap-2">
+                      <Label htmlFor="key">{t("admin.translationKey")}</Label>
+                      <Input
+                        id="key"
+                        value={newTranslation.key}
+                        onChange={(e) => setNewTranslation({...newTranslation, key: e.target.value})}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="value">{t("admin.translationValue")}</Label>
+                      <Input
+                        id="value"
+                        value={newTranslation.value}
+                        onChange={(e) => setNewTranslation({...newTranslation, value: e.target.value})}
+                      />
+                    </div>
                   </div>
-                )}
-
-                <ScrollArea className="h-[500px] w-full pr-4">
-                  <div className="space-y-4">
-                    {Object.keys(getFilteredTranslations(section)).length === 0 ? (
-                      <Alert>
-                        <Info className="h-4 w-4" />
-                        <AlertTitle>{t("common.noResults")}</AlertTitle>
-                        <AlertDescription>
-                          {searchTerm 
-                            ? t("admin.noMatchingTranslations") 
-                            : t("admin.noTranslationsInSection")}
-                        </AlertDescription>
-                      </Alert>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      {t("common.cancel")}
+                    </Button>
+                    <Button onClick={handleAddTranslation}>
+                      {t("common.add")}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            <Tabs defaultValue={activeSection} onValueChange={setActiveSection}>
+              <TabsList className="flex-wrap h-auto">
+                {sections.map((section) => (
+                  <TabsTrigger key={section} value={section}>
+                    {section}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              
+              <TabsContent value={activeSection} className="mt-4">
+                <Table>
+                  <TableCaption>
+                    {t("admin.translation")} {t("common.list")}
+                  </TableCaption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[300px]">{t("admin.translationKey")}</TableHead>
+                      <TableHead>{t("admin.translationValue")}</TableHead>
+                      <TableHead className="w-[100px]">{t("common.actions")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {getFilteredTranslations().length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-6">
+                          {searchQuery ? t("admin.noMatchingTranslations") : t("admin.noTranslationsInSection")}
+                        </TableCell>
+                      </TableRow>
                     ) : (
-                      Object.entries(getFilteredTranslations(section)).map(([key, value]) => (
-                        <div 
-                          key={key} 
-                          className="border rounded-md p-3 transition-all hover:bg-accent/30"
-                        >
-                          <div className="flex justify-between items-start mb-1">
-                            <div className="font-medium text-sm text-muted-foreground break-all">{key}</div>
-                            {editMode?.section === section && editMode?.key === key ? (
+                      getFilteredTranslations().map(({ key, value }) => (
+                        <TableRow key={key}>
+                          <TableCell className="font-medium">{key}</TableCell>
+                          <TableCell>
+                            {editMode && editMode.key === key ? (
+                              <Input 
+                                value={editMode.value}
+                                onChange={(e) => setEditMode({...editMode, value: e.target.value})}
+                              />
+                            ) : (
+                              value
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {editMode && editMode.key === key ? (
                               <div className="flex space-x-2">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={() => setEditMode(null)}
-                                  disabled={isLoading}
-                                >
-                                  <X className="h-3 w-3 mr-1" />
-                                  {t("common.cancel")}
+                                <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+                                  <X className="h-4 w-4" />
                                 </Button>
-                                <Button 
-                                  variant="default" 
-                                  size="sm" 
-                                  onClick={() => {
-                                    const textarea = document.getElementById(`edit-${section}-${key}`) as HTMLTextAreaElement;
-                                    saveTranslation(section, key, textarea.value);
-                                  }}
-                                  disabled={isLoading}
-                                >
-                                  <Save className="h-3 w-3 mr-1" />
-                                  {t("common.save")}
+                                <Button variant="ghost" size="sm" onClick={handleSaveEdit}>
+                                  <Check className="h-4 w-4" />
                                 </Button>
                               </div>
                             ) : (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => setEditMode({ section, key })}
-                                disabled={!!newTranslationMode || !!(editMode && (editMode.section !== section || editMode.key !== key))}
-                              >
-                                {t("common.edit")}
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(key, value)}>
+                                <Edit className="h-4 w-4" />
                               </Button>
                             )}
-                          </div>
-                          {editMode?.section === section && editMode?.key === key ? (
-                            <Textarea 
-                              id={`edit-${section}-${key}`}
-                              defaultValue={value as string} 
-                              className="mt-1"
-                              rows={Math.max(2, (value as string).split('\n').length)}
-                            />
-                          ) : (
-                            <div className="text-sm break-words whitespace-pre-wrap">{value as string}</div>
-                          )}
-                        </div>
+                          </TableCell>
+                        </TableRow>
                       ))
                     )}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
-      </Tabs>
+                  </TableBody>
+                </Table>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

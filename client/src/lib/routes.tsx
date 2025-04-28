@@ -14,6 +14,10 @@ import PaymentSuccessPage from "@/pages/payment-success";
 import PaymentFailedPage from "@/pages/payment-failed";
 import AdminDashboard from "@/pages/admin/dashboard";
 
+// Admin Components
+import TranslationsPanel from "@/components/admin/translations-panel";
+import SiteEditorPanel from "@/components/admin/site-editor-panel";
+
 // Demo pages - These can be removed in production
 import LoadersDemoPage from "@/pages/loaders-demo-page";
 import LanguageDemoPage from "@/pages/language-demo-page";
@@ -142,6 +146,22 @@ export const ADMIN_ROUTES: RouteConfig[] = [
     path: "/admin/dashboard",
     component: AdminDashboard,
     title: "Admin Dashboard",
+    isAdmin: true,
+    layout: "admin",
+    exact: true,
+  },
+  {
+    path: "/admin/translations",
+    component: TranslationsPanel,
+    title: "Translations Management",
+    isAdmin: true,
+    layout: "admin",
+    exact: true,
+  },
+  {
+    path: "/admin/site-editor",
+    component: SiteEditorPanel,
+    title: "Site Editor",
     isAdmin: true,
     layout: "admin",
     exact: true,
