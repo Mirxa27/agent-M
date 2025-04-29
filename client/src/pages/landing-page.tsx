@@ -185,20 +185,47 @@ export default function LandingPage() {
     },
   ];
 
+  // Define types for the plans
+  type DbPlan = {
+    id: number;
+    name: string;
+    price: number;
+    interval: string;
+    isActive: boolean;
+    features?: {
+      agentLimit?: number;
+      taskLimit?: number;
+      storageLimit?: number;
+      credentialLimit?: number;
+      advancedModels?: boolean;
+      customPrompts?: boolean;
+      priority?: boolean;
+    };
+  };
+
+  type DisplayablePlan = {
+    name: string;
+    price: string;
+    interval: string;
+    features: string[];
+    buttonText: string;
+    popular: boolean;
+  };
+
   // Transform DB plans into displayable plans
-  const transformDbPlansToDisplayable = (plans) => {
+  const transformDbPlansToDisplayable = (plans: DbPlan[] | undefined): DisplayablePlan[] => {
     if (!plans || plans.length === 0) return fallbackPlans;
     
     return plans
       .filter(plan => plan.isActive)
-      .sort((a, b) => a.price - b.price)
-      .map(plan => {
+      .sort((a: DbPlan, b: DbPlan) => a.price - b.price)
+      .map((plan: DbPlan) => {
         // Set popularity: make the middle plan popular if there are 3+ plans
         const isMiddlePlan = plans.length >= 3 && 
           plans.indexOf(plan) === Math.floor(plans.length / 2) - (plans.length % 2 === 0 ? 1 : 0);
         
         // Extract features from plan.features object
-        const featuresList = [];
+        const featuresList: string[] = [];
         if (plan.features) {
           if (plan.features.agentLimit) featuresList.push(`${plan.features.agentLimit} AI Agents`);
           if (plan.features.taskLimit) featuresList.push(`${plan.features.taskLimit} Tasks/month`);
@@ -292,20 +319,13 @@ export default function LandingPage() {
             {/* Mobile menu button */}
             <div className="md:hidden flex items-center">
               <button
-                onClick={() => {
-                  console.log("Menu button clicked, current state:", mobileMenuOpen);
-                  setMobileMenuOpen(true); // Force it open on every click for testing
-                }}
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 rounded-md btn-glass bg-primary shadow-glow flex items-center justify-center"
                 aria-expanded={mobileMenuOpen}
                 aria-label="Toggle menu"
                 style={{ width: '45px', height: '45px' }}
               >
-                {mobileMenuOpen ? (
-                  <X className="h-6 w-6 text-white" />
-                ) : (
-                  <Menu className="h-6 w-6 text-white font-bold" />
-                )}
+                <Menu className="h-6 w-6 text-white font-bold" />
               </button>
             </div>
           </div>
@@ -462,7 +482,11 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {features.map((feature, index) => (
+              {features.map((feature: {
+                icon: React.ReactNode;
+                title: string;
+                description: string;
+              }, index: number) => (
                 <div
                   key={index}
                   className="card-glass card-hover p-8 rounded-xl shadow-md border-white/10"
@@ -497,7 +521,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {plans.map((plan, index) => (
+              {plans.map((plan: DisplayablePlan, index: number) => (
                 <div
                   key={index}
                   className={`
@@ -524,7 +548,7 @@ export default function LandingPage() {
                       </span>
                     </div>
                     <ul className="space-y-3 mb-8">
-                      {plan.features.map((feature, i) => (
+                      {plan.features.map((feature: string, i: number) => (
                         <li key={i} className="flex items-center">
                           <Check className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
                           <span className="text-white/90 text-shadow-sm">{feature}</span>
