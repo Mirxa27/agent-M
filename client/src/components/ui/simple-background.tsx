@@ -9,6 +9,7 @@ interface SimpleBackgroundProps {
   gradientOverlay?: boolean;
   zIndex?: number;
   animationSpeed?: "slow" | "medium" | "fast";
+  hoverEffect?: "zoom" | "pulse" | "brighten";
 }
 
 export function SimpleBackground({
@@ -18,6 +19,7 @@ export function SimpleBackground({
   gradientOverlay = true,
   zIndex = 0,
   animationSpeed = "medium",
+  hoverEffect = "zoom",
 }: SimpleBackgroundProps) {
   const backgroundRef = useRef<HTMLDivElement>(null);
   const { isAnimating } = useBackground();
@@ -37,7 +39,29 @@ export function SimpleBackground({
     fast: "animate-gradient-fast",
   }[animationSpeed];
   
-  // Handle animation effect
+  // Set up pointer move effect for hover interaction
+  useEffect(() => {
+    const handlePointerMove = (e: MouseEvent) => {
+      const bgElement = backgroundRef.current;
+      if (!bgElement) return;
+      
+      // Calculate relative position in the window
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+      
+      // Apply subtle shift to background position based on cursor
+      bgElement.style.backgroundPosition = `${x * 100}% ${y * 100}%`;
+    };
+    
+    // Add global pointer move listener
+    window.addEventListener('mousemove', handlePointerMove);
+    
+    return () => {
+      window.removeEventListener('mousemove', handlePointerMove);
+    };
+  }, []);
+  
+  // Handle animation effect triggered by interactions
   useEffect(() => {
     const bgElement = backgroundRef.current;
     if (!bgElement) return;
@@ -49,19 +73,31 @@ export function SimpleBackground({
     }
     
     if (isAnimating) {
-      // Add animation class for pulse effect
-      bgElement.classList.add("scale-110");
+      // Apply hover effect based on type
+      switch (hoverEffect) {
+        case 'zoom':
+          bgElement.classList.add("scale-110");
+          break;
+        case 'pulse':
+          bgElement.classList.add("pulse-effect");
+          break;
+        case 'brighten':
+          bgElement.classList.add("brightness-125");
+          break;
+      }
+      
+      // Slightly reduce opacity during effect
       bgElement.style.opacity = (opacity * 0.8).toString();
       
       // Remove effect after animation
       const timer = setTimeout(() => {
-        bgElement.classList.remove("scale-110");
+        bgElement.classList.remove("scale-110", "pulse-effect", "brightness-125");
         bgElement.style.opacity = opacity.toString();
       }, 700);
       
       return () => clearTimeout(timer);
     }
-  }, [isAnimating, opacity, isInitialized]);
+  }, [isAnimating, opacity, isInitialized, hoverEffect]);
 
   return (
     <div
