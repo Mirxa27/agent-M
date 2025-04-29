@@ -49,7 +49,8 @@ export class GmailService {
       );
     } catch (error) {
       console.error("Error saving Gmail credentials:", error);
-      throw new Error(`Failed to save Gmail credentials: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to save Gmail credentials: ${errorMessage}`);
     }
   }
 
@@ -70,7 +71,8 @@ export class GmailService {
       };
     } catch (error) {
       console.error("Error fetching Gmail credentials:", error);
-      throw new Error(`Failed to fetch Gmail credentials: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to fetch Gmail credentials: ${errorMessage}`);
     }
   }
 
@@ -82,7 +84,8 @@ export class GmailService {
       return await credentialService.listCredentials(userId, SERVICE_TYPES.GMAIL);
     } catch (error) {
       console.error("Error listing Gmail credentials:", error);
-      throw new Error(`Failed to list Gmail credentials: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to list Gmail credentials: ${errorMessage}`);
     }
   }
 
@@ -106,7 +109,8 @@ export class GmailService {
       };
     } catch (error) {
       console.error("Error fetching Gmail messages:", error);
-      throw new Error(`Failed to fetch Gmail messages: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to fetch Gmail messages: ${errorMessage}`);
     }
   }
 
