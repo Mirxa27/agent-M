@@ -214,33 +214,32 @@ export default function LandingPage() {
 
             {/* Desktop CTA buttons */}
             <div className="hidden md:flex items-center space-x-3">
-              <Button
-                variant="ghost"
+              <button
                 onClick={() => (location.href = "/auth")}
-                className="text-sm font-medium"
+                className="btn-glass text-sm font-medium px-4 py-2"
               >
                 Sign In
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={() => (location.href = "/auth")}
-                className="text-sm"
+                className="btn-glass btn-glass-primary text-sm font-medium px-4 py-2 shadow-glow"
               >
                 Get Started
-              </Button>
+              </button>
             </div>
 
             {/* Mobile menu button */}
             <div className="md:hidden flex items-center">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="p-2 rounded-md btn-glass"
                 aria-expanded={mobileMenuOpen}
                 aria-label="Toggle menu"
               >
                 {mobileMenuOpen ? (
-                  <X className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+                  <X className="h-6 w-6 text-white" />
                 ) : (
-                  <Menu className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+                  <Menu className="h-6 w-6 text-white" />
                 )}
               </button>
             </div>
@@ -265,9 +264,9 @@ export default function LandingPage() {
               </Link>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="p-2 rounded-md btn-glass"
               >
-                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <X className="h-5 w-5 text-white" />
               </button>
             </div>
 
@@ -309,25 +308,24 @@ export default function LandingPage() {
               </div>
 
               <div className="pt-6 border-t border-gray-200 dark:border-gray-800">
-                <Button
+                <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     location.href = "/auth";
                   }}
-                  className="w-full mb-3"
+                  className="btn-glass btn-glass-primary w-full mb-3 py-3 shadow-glow"
                 >
                   Get Started
-                </Button>
-                <Button
-                  variant="outline"
+                </button>
+                <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     location.href = "/auth";
                   }}
-                  className="w-full"
+                  className="btn-glass w-full py-3"
                 >
                   Sign In
-                </Button>
+                </button>
               </div>
             </nav>
           </div>
@@ -463,13 +461,12 @@ export default function LandingPage() {
                         </li>
                       ))}
                     </ul>
-                    <Button
-                      className={`w-full ${plan.popular ? "shadow-glow" : ""}`}
-                      variant={plan.popular ? "default" : "outline"}
+                    <button
+                      className={`w-full py-3 ${plan.popular ? "btn-glass btn-glass-primary shadow-glow" : "btn-glass"}`}
                       onClick={() => (location.href = "/auth")}
                     >
                       {plan.buttonText}
-                    </Button>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -488,9 +485,11 @@ export default function LandingPage() {
         >
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4 text-high-contrast text-shadow-md">
-                What Our Customers Say
-              </h2>
+              <div className="section-header-glass mx-auto mb-4">
+                <h2 className="text-3xl font-bold text-high-contrast text-shadow-md">
+                  What Our Customers Say
+                </h2>
+              </div>
               <p className="text-lg text-white/90 max-w-2xl mx-auto text-shadow-sm">
                 Hear from the businesses and individuals who've transformed
                 their workflows with Mirxa.io.
@@ -591,9 +590,11 @@ export default function LandingPage() {
         <section id="faq" className="py-20">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4 text-high-contrast text-shadow-md">
-                Frequently Asked Questions
-              </h2>
+              <div className="section-header-glass mx-auto mb-4">
+                <h2 className="text-3xl font-bold text-high-contrast text-shadow-md">
+                  Frequently Asked Questions
+                </h2>
+              </div>
               <p className="text-lg text-white/90 max-w-2xl mx-auto text-shadow-sm">
                 Find answers to common questions about Mirxa.io and our AI agent
                 platform.
@@ -700,21 +701,21 @@ export default function LandingPage() {
         <section className="py-20 bg-primary text-white">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-shadow-md">
-                Ready to Transform Your Workflow?
-              </h2>
+              <div className="section-header-glass mx-auto mb-6">
+                <h2 className="text-3xl md:text-4xl font-bold text-high-contrast text-shadow-md">
+                  Ready to Transform Your Workflow?
+                </h2>
+              </div>
               <p className="text-xl mb-8 text-white text-opacity-95 text-shadow-sm">
                 Join thousands of users who are already automating their tasks
                 with Mirxa.io's AI agents.
               </p>
-              <Button
-                size="lg"
-                variant="secondary"
-                className="px-8 py-6 text-lg"
+              <button 
+                className="btn-glass btn-glass-primary px-10 py-4 text-lg font-medium shadow-glow"
                 onClick={() => (location.href = "/auth")}
               >
                 Get Started Free
-              </Button>
+              </button>
             </div>
           </div>
         </section>
@@ -901,7 +902,7 @@ export default function LandingPage() {
             </p>
             <div className="mt-4 sm:mt-0">
               <select
-                className="bg-gray-800 text-gray-300 text-sm rounded-md px-3 py-1.5 border border-gray-700 focus:outline-none focus:ring-1 focus:ring-primary"
+                className="btn-glass text-white/90 text-sm rounded-md px-4 py-2 border-0 focus:outline-none focus:ring-1 focus:ring-primary"
                 defaultValue="en"
               >
                 <option value="en">English</option>
