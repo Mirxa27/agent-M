@@ -69,6 +69,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Set up authentication routes
   setupAuth(app);
+  
+  // Dashboard preferences routes
+  import("./services/dashboard-service").then((dashboardService) => {
+    // Get user dashboard preferences
+    app.get("/api/user/dashboard/preferences", async (req, res) => {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send({ error: "Not authenticated" });
+      }
+      
+      try {
+        let preferences = await dashboardService.getDashboardPreferences(req.user.id);
+        
+        if (!preferences) {
+          preferences = await dashboardService.createDefaultDashboardPreferences(req.user.id);
+        }
+        
+        res.json(preferences);
+      } catch (error) {
+        console.error("Error fetching dashboard preferences:", error);
+        res.status(500).send({ error: "Failed to fetch dashboard preferences" });
+      }
+    });
+    
+    // Update user dashboard preferences
+    app.patch("/api/user/dashboard/preferences", async (req, res) => {
+      if (!req.isAuthenticated()) {
+        return res.status(401).send({ error: "Not authenticated" });
+      }
+      
+      try {
+        const updates = req.body;
+        const updated = await dashboardService.updateDashboardPreferences(req.user.id, updates);
+        res.json(updated);
+      } catch (error) {
+        console.error("Error updating dashboard preferences:", error);
+        res.status(500).send({ error: "Failed to update dashboard preferences" });
+      }
+    });
+  });
 
   // Authentication middleware
   const requireAuth = (req, res, next) => {

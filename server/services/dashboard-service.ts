@@ -1,195 +1,172 @@
-import { DashboardPreference, InsertDashboardPreference } from "@shared/schema";
-import { storage } from "../storage";
+import { db } from "../db";
+import { eq } from "drizzle-orm";
+import { dashboardPreferences } from "@shared/schema";
 
-/**
- * Get dashboard preferences for a user, creating default settings if none exist
- * @param userId The user ID
- * @returns The user's dashboard preferences
- */
-export async function getUserDashboardPreferences(
-  userId: number,
-): Promise<DashboardPreference> {
+export interface WidgetConfig {
+  id: string;
+  position: number;
+  enabled: boolean;
+  settings?: Record<string, unknown>;
+}
+
+export interface DashboardLayout {
+  columns: number;
+  showWelcome: boolean;
+}
+
+export interface DashboardPreference {
+  id: number;
+  userId: number;
+  widgets: WidgetConfig[];
+  layout: DashboardLayout;
+  theme: string;
+}
+
+export async function getDashboardPreferences(userId: number): Promise<DashboardPreference | null> {
   try {
-    // Check if user already has dashboard preferences
-    let preferences = await storage.getDashboardPreferenceByUserId(userId);
+    const [preferences] = await db
+      .select()
+      .from(dashboardPreferences)
+      .where(eq(dashboardPreferences.userId, userId));
 
-    // If no preferences exist, create default settings
     if (!preferences) {
-      const defaultPreferences: InsertDashboardPreference = {
-        userId,
-        layout: {
-          columns: 2,
-          showWelcome: true,
-          compactView: false,
-        },
-        favoriteAgents: [],
-        recentTasks: [],
-        widgets: [
-          { id: "activity", position: 0, enabled: true },
-          { id: "stats", position: 1, enabled: true },
-          { id: "quickActions", position: 2, enabled: true },
-          { id: "recentFiles", position: 3, enabled: true },
-          { id: "agentStatus", position: 4, enabled: true },
-        ],
-        theme: "system",
-        updatedAt: new Date(),
-      };
-
-      preferences = await storage.createDashboardPreference(defaultPreferences);
+      return null;
     }
 
-    return preferences;
+    // Safe type casting for JSON fields
+    const widgetsData = Array.isArray(preferences.widgets) 
+      ? preferences.widgets 
+      : [];
+      
+    const layoutData = preferences.layout && typeof preferences.layout === 'object'
+      ? preferences.layout as Record<string, unknown>
+      : { columns: 2, showWelcome: true };
+
+    return {
+      ...preferences,
+      widgets: widgetsData as WidgetConfig[],
+      layout: layoutData as DashboardLayout,
+    };
   } catch (error) {
-    console.error("Error getting dashboard preferences:", error);
-    throw new Error("Failed to retrieve dashboard preferences");
+    console.error("Error fetching dashboard preferences:", error);
+    throw error;
   }
 }
 
-/**
- * Update dashboard preferences for a user
- * @param userId The user ID
- * @param updates The preference updates to apply
- * @returns The updated dashboard preferences
- */
+export async function createDefaultDashboardPreferences(
+  userId: number
+): Promise<DashboardPreference> {
+  const defaultWidgets: WidgetConfig[] = [
+    { id: "activity", position: 0, enabled: true },
+    { id: "stats", position: 1, enabled: true },
+    { id: "quickActions", position: 2, enabled: true },
+    { id: "recentFiles", position: 3, enabled: true },
+    { id: "agentStatus", position: 4, enabled: true },
+    { id: "aiProviders", position: 5, enabled: true },
+  ];
+
+  const defaultLayout: DashboardLayout = {
+    columns: 2,
+    showWelcome: true,
+  };
+
+  const defaultPreferences = {
+    userId,
+    widgets: defaultWidgets,
+    layout: defaultLayout,
+    theme: "system",
+  };
+
+  try {
+    const [newPreferences] = await db
+      .insert(dashboardPreferences)
+      .values(defaultPreferences)
+      .returning();
+
+    // Safe type casting for JSON fields
+    const widgetsData = Array.isArray(newPreferences.widgets) 
+      ? newPreferences.widgets 
+      : defaultWidgets;
+      
+    const layoutData = newPreferences.layout && typeof newPreferences.layout === 'object'
+      ? newPreferences.layout as Record<string, unknown>
+      : defaultLayout;
+
+    return {
+      ...newPreferences,
+      widgets: widgetsData as WidgetConfig[],
+      layout: layoutData as DashboardLayout,
+    };
+  } catch (error) {
+    console.error("Error creating dashboard preferences:", error);
+    throw error;
+  }
+}
+
 export async function updateDashboardPreferences(
   userId: number,
-  updates: Partial<Omit<DashboardPreference, "id" | "userId">>,
-): Promise<DashboardPreference | null> {
+  updates: Partial<DashboardPreference>
+): Promise<DashboardPreference> {
   try {
-    // Check if dashboard preferences exist
-    const existingPreferences =
-      await storage.getDashboardPreferenceByUserId(userId);
+    const [existingPrefs] = await db
+      .select()
+      .from(dashboardPreferences)
+      .where(eq(dashboardPreferences.userId, userId));
 
-    if (!existingPreferences) {
-      // Create if doesn't exist
-      const defaultPreferences: InsertDashboardPreference = {
-        userId,
-        layout: updates.layout || {
-          columns: 2,
-          showWelcome: true,
-          compactView: false,
-        },
-        favoriteAgents: updates.favoriteAgents || [],
-        recentTasks: updates.recentTasks || [],
-        widgets: updates.widgets || [
-          { id: "activity", position: 0, enabled: true },
-          { id: "stats", position: 1, enabled: true },
-          { id: "quickActions", position: 2, enabled: true },
-          { id: "recentFiles", position: 3, enabled: true },
-          { id: "agentStatus", position: 4, enabled: true },
-        ],
-        theme: updates.theme || "system",
-        updatedAt: new Date(),
-      };
-
-      return await storage.createDashboardPreference(defaultPreferences);
+    if (!existingPrefs) {
+      const newPrefs = await createDefaultDashboardPreferences(userId);
+      return updateDashboardPreferences(userId, updates);
     }
 
-    // Update existing preferences
-    const updatedPreferences = await storage.updateDashboardPreference(
-      existingPreferences.id,
-      {
-        ...updates,
-        updatedAt: new Date(),
-      },
-    );
+    // Process nested objects safely
+    let updatedWidgets = existingPrefs.widgets;
+    if (updates.widgets && Array.isArray(updates.widgets)) {
+      updatedWidgets = updates.widgets;
+    }
 
-    return updatedPreferences;
+    let updatedLayout = existingPrefs.layout;
+    if (updates.layout && typeof updates.layout === 'object') {
+      const currentLayout = typeof existingPrefs.layout === 'object' 
+        ? existingPrefs.layout as Record<string, unknown>
+        : { columns: 2, showWelcome: true };
+      
+      updatedLayout = {
+        ...currentLayout,
+        ...updates.layout as Record<string, unknown>
+      };
+    }
+
+    // Merge updates with existing preferences
+    const updatedPreferences = {
+      ...existingPrefs,
+      ...updates,
+      // Override with our processed nested objects
+      widgets: updatedWidgets,
+      layout: updatedLayout,
+    };
+
+    const [updated] = await db
+      .update(dashboardPreferences)
+      .set(updatedPreferences)
+      .where(eq(dashboardPreferences.userId, userId))
+      .returning();
+
+    // Safe type casting for JSON fields in response
+    const widgetsData = Array.isArray(updated.widgets) 
+      ? updated.widgets 
+      : [];
+      
+    const layoutData = updated.layout && typeof updated.layout === 'object'
+      ? updated.layout as Record<string, unknown>
+      : { columns: 2, showWelcome: true };
+
+    return {
+      ...updated,
+      widgets: widgetsData as WidgetConfig[],
+      layout: layoutData as DashboardLayout,
+    };
   } catch (error) {
     console.error("Error updating dashboard preferences:", error);
-    return null;
-  }
-}
-
-/**
- * Add an agent to the user's favorites
- * @param userId The user ID
- * @param agentId The agent ID to add to favorites
- * @returns Success status
- */
-export async function addFavoriteAgent(
-  userId: number,
-  agentId: number,
-): Promise<boolean> {
-  try {
-    const preferences = await getUserDashboardPreferences(userId);
-
-    // Check if agent exists in user's favorites
-    const favorites = (preferences.favoriteAgents as any[]) || [];
-    if (!favorites.includes(agentId)) {
-      // Add to favorites (max 5)
-      const updatedFavorites = [...favorites, agentId].slice(-5);
-
-      await storage.updateDashboardPreference(preferences.id, {
-        favoriteAgents: updatedFavorites,
-        updatedAt: new Date(),
-      });
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Error adding favorite agent:", error);
-    return false;
-  }
-}
-
-/**
- * Remove an agent from the user's favorites
- * @param userId The user ID
- * @param agentId The agent ID to remove from favorites
- * @returns Success status
- */
-export async function removeFavoriteAgent(
-  userId: number,
-  agentId: number,
-): Promise<boolean> {
-  try {
-    const preferences = await getUserDashboardPreferences(userId);
-
-    // Remove agent from favorites
-    const favorites = (preferences.favoriteAgents as any[]) || [];
-    const updatedFavorites = favorites.filter((id) => id !== agentId);
-
-    await storage.updateDashboardPreference(preferences.id, {
-      favoriteAgents: updatedFavorites,
-      updatedAt: new Date(),
-    });
-
-    return true;
-  } catch (error) {
-    console.error("Error removing favorite agent:", error);
-    return false;
-  }
-}
-
-/**
- * Update the user's recent tasks in dashboard
- * @param userId The user ID
- * @param taskId The task ID to add to recent tasks
- * @returns Success status
- */
-export async function updateRecentTasks(
-  userId: number,
-  taskId: number,
-): Promise<boolean> {
-  try {
-    const preferences = await getUserDashboardPreferences(userId);
-
-    // Add new task ID to the front, limit to 5 tasks
-    const recentTasks = (preferences.recentTasks as any[]) || [];
-    const updatedTasks = [
-      taskId,
-      ...recentTasks.filter((id) => id !== taskId),
-    ].slice(0, 5);
-
-    await storage.updateDashboardPreference(preferences.id, {
-      recentTasks: updatedTasks,
-      updatedAt: new Date(),
-    });
-
-    return true;
-  } catch (error) {
-    console.error("Error updating recent tasks:", error);
-    return false;
+    throw error;
   }
 }
