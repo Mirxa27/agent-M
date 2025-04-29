@@ -395,14 +395,16 @@ const SiteEditorPanel: React.FC = () => {
         const formData = new FormData();
         formData.append('logo', file);
         
-        // Upload the file to the server
+        // Upload the file to the server - credentials:include sends cookies for auth
         const response = await fetch('/api/admin/upload-logo', {
           method: 'POST',
           body: formData,
+          credentials: 'include', // This ensures cookies are sent with the request
         });
         
         if (!response.ok) {
-          throw new Error('Failed to upload logo');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to upload logo');
         }
         
         const result = await response.json();
