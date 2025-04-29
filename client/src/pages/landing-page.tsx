@@ -231,7 +231,7 @@ export default function LandingPage() {
         className={`sticky top-0 z-40 w-full transition-all duration-200 ${
           isScrolled
             ? "card-glass border-b shadow-md backdrop-blur-md"
-            : "bg-transparent/30 backdrop-blur-sm"
+            : "bg-gray-800/80 backdrop-blur-sm"
         }`}
       >
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -293,9 +293,10 @@ export default function LandingPage() {
             <div className="md:hidden flex items-center">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-md btn-glass bg-primary"
+                className="p-2 rounded-md btn-glass bg-primary shadow-glow flex items-center justify-center"
                 aria-expanded={mobileMenuOpen}
                 aria-label="Toggle menu"
+                style={{ width: '40px', height: '40px' }}
               >
                 {mobileMenuOpen ? (
                   <X className="h-6 w-6 text-white" />
