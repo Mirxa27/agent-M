@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, lazy, Suspense, Component, ErrorInfo, ReactNode } from "react";
 import { motion } from "framer-motion";
+import { backgroundEffectBus } from "@/lib/background-effect-bus";
 // Using React.lazy for dynamic import instead of next/dynamic
 const Spline = lazy(() => import("@splinetool/react-spline"));
 
@@ -28,27 +29,6 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-// Create an event bus for triggering the background effect from any component
-class BackgroundEffectBus {
-  private listeners: (() => void)[] = [];
-
-  // Add a listener to the event bus
-  addListener(listener: () => void) {
-    this.listeners.push(listener);
-    return () => {
-      this.listeners = this.listeners.filter(l => l !== listener);
-    };
-  }
-
-  // Trigger all registered listeners
-  triggerEffect() {
-    this.listeners.forEach(listener => listener());
-  }
-}
-
-// Export a singleton instance of the bus
-export const backgroundEffectBus = new BackgroundEffectBus();
-
 interface SplineBackgroundProps {
   url: string;
   opacity?: number;
@@ -72,16 +52,71 @@ export function SplineBackground({
   const [isAnimating, setIsAnimating] = useState(false);
   const [scale, setScale] = useState(1);
   const [effectOpacity, setEffectOpacity] = useState(opacity);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [rotation, setRotation] = useState({ x: 0, y: 0 });
+  
+  // Throttle function to limit how often we update state
+  const throttle = (callback: Function, delay: number) => {
+    let lastCall = 0;
+    return (...args: any[]) => {
+      const now = new Date().getTime();
+      if (now - lastCall < delay) return;
+      lastCall = now;
+      return callback(...args);
+    };
+  };
 
-  // Handle the background effect animation
-  const handleTriggerEffect = () => {
+  // Handle mouse movement across the screen
+  const handleMouseMove = throttle((e: MouseEvent) => {
+    if (!containerRef.current) return;
+    
+    // Calculate mouse position relative to the window
+    const { clientX, clientY } = e;
+    const { innerWidth, innerHeight } = window;
+    
+    // Convert to normalized coordinates (-1 to 1)
+    const x = (clientX / innerWidth) * 2 - 1;
+    const y = (clientY / innerHeight) * 2 - 1;
+    
+    // Update position for subtle movement effect
+    setPosition({ 
+      x: x * 10, // Limit movement range
+      y: y * 10
+    });
+    
+    // Update rotation for subtle tilt effect
+    setRotation({
+      x: y * 1.5, // Tilt based on vertical mouse position
+      y: -x * 1.5 // Tilt based on horizontal mouse position (inverted)
+    });
+    
+    // Also pass event to background effect bus for other components
+    backgroundEffectBus.triggerEffect({
+      x: clientX / innerWidth,
+      y: clientY / innerHeight,
+      type: 'mousemove'
+    });
+  }, 20); // Throttle to 50fps
+
+  // Handle the background effect animation (for clicks and interactions)
+  const handleTriggerEffect = (event?: { x?: number; y?: number; type?: string }) => {
     if (isAnimating) return; // Prevent multiple animations at once
     
     setIsAnimating(true);
     
-    // Change scale and opacity for the animation effect
-    setScale(1.06); // Scale up slightly
-    setEffectOpacity(opacity * 0.8); // Reduce opacity a bit
+    // Different effects based on event type
+    if (event?.type === 'mousemove') {
+      // Mouse movement already handled by handleMouseMove
+      return;
+    } else if (event?.type === 'click') {
+      // Stronger effect for clicks
+      setScale(1.08);
+      setEffectOpacity(opacity * 0.7);
+    } else {
+      // Default effect
+      setScale(1.05);
+      setEffectOpacity(opacity * 0.8);
+    }
     
     // Reset after animation completes
     setTimeout(() => {
@@ -92,16 +127,27 @@ export function SplineBackground({
       setTimeout(() => {
         setIsAnimating(false);
       }, 200);
-    }, 1000);
+    }, 800);
   };
 
   // Subscribe to the global background effect events
   useEffect(() => {
     const unsubscribe = backgroundEffectBus.addListener(handleTriggerEffect);
     
-    // Clean up the subscription
+    // Add global mouse move listener
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    // Add click listener for click effects
+    const handleClick = () => {
+      backgroundEffectBus.triggerEffect({ type: 'click' });
+    };
+    window.addEventListener('click', handleClick);
+    
+    // Clean up the subscriptions
     return () => {
       unsubscribe();
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('click', handleClick);
     };
   }, [isAnimating]); // Re-subscribe when animation state changes
 
@@ -131,18 +177,43 @@ export function SplineBackground({
         animate={{
           scale,
           opacity: effectOpacity,
-          transition: { duration: 0.8, ease: "easeInOut" }
+          x: position.x, // Move horizontally based on mouse position
+          y: position.y, // Move vertically based on mouse position
+          rotateX: rotation.x, // Tilt based on vertical position  
+          rotateY: rotation.y, // Tilt based on horizontal position
+          transition: { 
+            duration: 0.8, 
+            ease: "easeInOut",
+            x: { 
+              duration: 0.3,
+              ease: "easeOut"
+            },
+            y: { 
+              duration: 0.3,
+              ease: "easeOut"
+            },
+            rotateX: { 
+              duration: 0.3,
+              ease: "easeOut"
+            },
+            rotateY: { 
+              duration: 0.3,
+              ease: "easeOut"
+            }
+          }
         }}
       >
         {!hasError && (
           <Suspense fallback={<div className="w-full h-full bg-gradient-to-b from-background/50 to-background/70" />}>
-            <div className="w-full h-full">
-              <Spline
-                ref={splineRef}
-                scene={url}
-                className="w-full h-full"
-              />
-            </div>
+            <ErrorBoundary>
+              <div className="w-full h-full">
+                <Spline
+                  ref={splineRef}
+                  scene={url}
+                  className="w-full h-full"
+                />
+              </div>
+            </ErrorBoundary>
           </Suspense>
         )}
       </motion.div>
