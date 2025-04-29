@@ -96,18 +96,18 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-slate-50 dark:from-background dark:to-slate-950 p-4 sm:p-8 md:p-12 lg:p-16 xl:p-20">
-      <div className="w-full max-w-xl xl:max-w-3xl backdrop-blur-sm bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 xl:p-10 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-16 xl:p-20">
+      <div className="w-full max-w-xl xl:max-w-3xl card-glass p-6 sm:p-8 xl:p-10 rounded-xl shadow-md backdrop-blur-md bg-opacity-60 border border-white/10">
         <div className="text-center mb-6 sm:mb-8">
           <div className="inline-flex items-center justify-center">
             <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center mr-2">
               <span className="text-white font-bold text-xl">M</span>
             </div>
-            <h1 className="text-2xl font-heading font-bold">
+            <h1 className="text-2xl font-heading font-bold text-high-contrast text-shadow-md">
               {t("app.name")}
             </h1>
           </div>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
+          <p className="text-white/90 text-shadow-sm mt-2 text-sm sm:text-base">
             {t("app.slogan")}
           </p>
         </div>
@@ -117,9 +117,9 @@ export default function AuthPage() {
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="grid grid-cols-2 mb-6 sm:mb-8">
-            <TabsTrigger value="login">{t("auth.login")}</TabsTrigger>
-            <TabsTrigger value="register">{t("auth.register")}</TabsTrigger>
+          <TabsList className="grid grid-cols-2 mb-6 sm:mb-8 btn-glass bg-opacity-40">
+            <TabsTrigger value="login" className="text-white/90 text-shadow-sm">{t("auth.login")}</TabsTrigger>
+            <TabsTrigger value="register" className="text-white/90 text-shadow-sm">{t("auth.register")}</TabsTrigger>
           </TabsList>
 
           {/* Login Form */}
@@ -134,7 +134,7 @@ export default function AuthPage() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm">
+                      <FormLabel className="text-sm text-high-contrast text-shadow-sm">
                         {t("auth.username")}
                       </FormLabel>
                       <FormControl>
@@ -157,7 +157,7 @@ export default function AuthPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm">
+                      <FormLabel className="text-sm text-high-contrast text-shadow-sm">
                         {t("auth.password")}
                       </FormLabel>
                       <FormControl>
@@ -179,7 +179,7 @@ export default function AuthPage() {
                 <div className="flex justify-end">
                   <Button
                     type="submit"
-                    className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                    className="w-full btn-glass btn-glass-primary shadow-glow bg-opacity-50"
                     disabled={loginMutation.isPending}
                   >
                     {loginMutation.isPending ? (
@@ -315,7 +315,7 @@ export default function AuthPage() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                  className="w-full btn-glass btn-glass-primary shadow-glow bg-opacity-50"
                   disabled={registerMutation.isPending}
                 >
                   {registerMutation.isPending ? (
