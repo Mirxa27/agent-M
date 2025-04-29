@@ -296,18 +296,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agent routes
-  app.get("/api/agents", requireAuth, async (req, res) => {
+  app.get("/api/agents", requireAuth, async (req: Request, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
       const agents = await storage.getAgentsByUserId(req.user.id);
       res.json(agents);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) });
     }
   });
 
   // Agent status endpoint for dashboard - must come before the :id route
-  app.get("/api/agents/status", requireAuth, async (req, res) => {
+  app.get("/api/agents/status", requireAuth, async (req: Request, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
       const agents = await storage.getAgentsByUserId(req.user.id);
       
       // Count agents by status
@@ -319,12 +326,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(agentCounts);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) });
     }
   });
 
-  app.get("/api/agents/:id", requireAuth, async (req, res) => {
+  app.get("/api/agents/:id", requireAuth, async (req: Request, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
       const agent = await storage.getAgent(parseInt(req.params.id));
 
       if (!agent) {
@@ -338,12 +349,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(agent);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) });
     }
   });
 
-  app.post("/api/agents", requireAuth, async (req, res) => {
+  app.post("/api/agents", requireAuth, async (req: Request, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
       // Validate request body
       const validatedData = insertAgentSchema.safeParse({
         ...req.body,
@@ -360,12 +375,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agent = await storage.createAgent(validatedData.data);
       res.status(201).json(agent);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) });
     }
   });
 
-  app.patch("/api/agents/:id", requireAuth, async (req, res) => {
+  app.patch("/api/agents/:id", requireAuth, async (req: Request, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
       const agentId = parseInt(req.params.id);
       const agent = await storage.getAgent(agentId);
 
@@ -382,12 +401,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedAgent = await storage.updateAgent(agentId, req.body);
       res.json(updatedAgent);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) });
     }
   });
 
-  app.delete("/api/agents/:id", requireAuth, async (req, res) => {
+  app.delete("/api/agents/:id", requireAuth, async (req: Request, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
       const agentId = parseInt(req.params.id);
       const agent = await storage.getAgent(agentId);
 
@@ -404,13 +427,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteAgent(agentId);
       res.sendStatus(204);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) });
     }
   });
 
   // Credential routes
-  app.get("/api/credentials", requireAuth, async (req, res) => {
+  app.get("/api/credentials", requireAuth, async (req: Request, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
       const credentials = await storage.getCredentialsByUserId(req.user.id);
       // Don't include sensitive data in the response
       const sanitizedCredentials = credentials.map((cred) => {
@@ -420,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(sanitizedCredentials);
     } catch (error) {
       console.error("Error fetching credentials:", error);
-      res.status(500).json({ error: "Failed to fetch credentials" });
+      res.status(500).json({ error: handleError(error) });
     }
   });
   
