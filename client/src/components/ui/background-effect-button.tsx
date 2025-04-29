@@ -1,34 +1,25 @@
-import React from "react";
-import { Button, ButtonProps } from "@/components/ui/button";
-import { useBackground } from "@/contexts/background-context";
+import React, { ButtonHTMLAttributes } from "react";
+import { Button } from "@/components/ui/button";
+import { withBackgroundEffect } from "@/components/ui/with-background-effect";
+import { cn } from "@/lib/utils";
 
-// Component extends the regular button but adds background effect
-export function BackgroundEffectButton({
-  children,
-  className,
-  onClick,
-  ...props
-}: ButtonProps) {
-  const { triggerBackgroundEffect } = useBackground();
-  
-  // Handle the click event
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    // Trigger the background effect
-    triggerBackgroundEffect();
-    
-    // Call the original onClick handler if it exists
-    if (onClick) {
-      onClick(e);
-    }
-  };
-  
-  return (
-    <Button 
-      className={className} 
-      onClick={handleClick} 
+// Create a button component that triggers background effect on click
+export const BackgroundEffectButton = withBackgroundEffect<
+  ButtonHTMLAttributes<HTMLButtonElement>
+>(
+  React.forwardRef<
+    HTMLButtonElement, 
+    ButtonHTMLAttributes<HTMLButtonElement>
+  >(({ className, children, ...props }, ref) => (
+    <Button
+      ref={ref}
+      className={cn("transition-all", className)}
       {...props}
     >
       {children}
     </Button>
-  );
-}
+  ))
+);
+
+// Add a display name for better debuggability
+BackgroundEffectButton.displayName = "BackgroundEffectButton";

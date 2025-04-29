@@ -2,7 +2,7 @@ import React, { ReactNode, useState, useEffect } from "react";
 import { Link } from "wouter";
 import { AnimatedLogo } from "@/components/ui/animated-logo";
 import LanguageSwitcher from "@/components/ui/language-switcher";
-import { SplineBackground } from "@/components/ui/spline-background";
+import { SimpleBackground } from "@/components/ui/simple-background";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useBackground } from "@/contexts/background-context";
@@ -140,10 +140,10 @@ export function AuthLayout({
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
       >
-        {/* Spline 3D Model Background */}
+        {/* Gradient Background */}
         <div className="absolute inset-0 z-0 w-full h-full">
-          <SplineBackground 
-            url="https://my.spline.design/nexbotrobotcharacterconcept-5f03ff963626fbbf4952a35a16e4a4f3/" 
+          <SimpleBackground 
+            gradientColors={["#4f46e5", "#3b82f6", "#0ea5e9"]}
             opacity={0.6}
             overlayColor="#000010"
             gradientOverlay={true}

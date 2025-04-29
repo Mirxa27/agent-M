@@ -1,26 +1,6 @@
-import React, { useRef, useEffect, useState } from "react";
-import { motion } from "framer-motion";
-
-// Create an event bus for triggering the background effect from any component
-class BackgroundEffectBus {
-  private listeners: (() => void)[] = [];
-
-  // Add a listener to the event bus
-  addListener(listener: () => void) {
-    this.listeners.push(listener);
-    return () => {
-      this.listeners = this.listeners.filter(l => l !== listener);
-    };
-  }
-
-  // Trigger all registered listeners
-  triggerEffect() {
-    this.listeners.forEach(listener => listener());
-  }
-}
-
-// Export a singleton instance of the bus
-export const backgroundEffectBus = new BackgroundEffectBus();
+import React, { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+import { useBackground } from "@/contexts/background-context";
 
 interface SimpleBackgroundProps {
   gradientColors?: string[];
@@ -28,89 +8,82 @@ interface SimpleBackgroundProps {
   overlayColor?: string;
   gradientOverlay?: boolean;
   zIndex?: number;
+  animationSpeed?: "slow" | "medium" | "fast";
 }
 
 export function SimpleBackground({
-  gradientColors = ["#4f46e5", "#22c55e", "#3b82f6"],
-  opacity = 0.4,
-  overlayColor = "#000010",
-  gradientOverlay = false,
+  gradientColors = ["#4f46e5", "#3b82f6", "#0ea5e9"],
+  opacity = 0.7,
+  overlayColor = "rgba(0,0,10,0.4)",
+  gradientOverlay = true,
   zIndex = 0,
+  animationSpeed = "medium",
 }: SimpleBackgroundProps) {
-  // Create ref for accessing DOM element
-  const containerRef = useRef<HTMLDivElement>(null);
+  const backgroundRef = useRef<HTMLDivElement>(null);
+  const { isAnimating } = useBackground();
+  const [isInitialized, setIsInitialized] = useState(false);
   
-  // Track the animation state
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [scale, setScale] = useState(1);
-  const [effectOpacity, setEffectOpacity] = useState(opacity);
-
-  // Handle the background effect animation
-  const handleTriggerEffect = () => {
-    if (isAnimating) return; // Prevent multiple animations at once
-    
-    setIsAnimating(true);
-    
-    // Change scale and opacity for the animation effect
-    setScale(1.06); // Scale up slightly
-    setEffectOpacity(opacity * 0.8); // Reduce opacity a bit
-    
-    // Reset after animation completes
-    setTimeout(() => {
-      setScale(1);
-      setEffectOpacity(opacity);
-      
-      // Add a small delay before allowing another animation
-      setTimeout(() => {
-        setIsAnimating(false);
-      }, 200);
-    }, 1000);
+  // Build the gradient background
+  const gradientStyle = {
+    backgroundImage: `linear-gradient(135deg, ${gradientColors.join(", ")})`,
+    backgroundSize: "400% 400%",
+    opacity,
   };
-
-  // Subscribe to the global background effect events
+  
+  // Animation classes based on speed
+  const animationClass = {
+    slow: "animate-gradient-slow",
+    medium: "animate-gradient-medium",
+    fast: "animate-gradient-fast",
+  }[animationSpeed];
+  
+  // Handle animation effect
   useEffect(() => {
-    const unsubscribe = backgroundEffectBus.addListener(handleTriggerEffect);
+    const bgElement = backgroundRef.current;
+    if (!bgElement) return;
     
-    // Clean up the subscription
-    return () => {
-      unsubscribe();
-    };
-  }, [isAnimating]); // Re-subscribe when animation state changes
+    // Mark as initialized after first render
+    if (!isInitialized) {
+      setIsInitialized(true);
+      return;
+    }
+    
+    if (isAnimating) {
+      // Add animation class for pulse effect
+      bgElement.classList.add("scale-110");
+      bgElement.style.opacity = (opacity * 0.8).toString();
+      
+      // Remove effect after animation
+      const timer = setTimeout(() => {
+        bgElement.classList.remove("scale-110");
+        bgElement.style.opacity = opacity.toString();
+      }, 700);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isAnimating, opacity, isInitialized]);
 
   return (
-    <div 
-      ref={containerRef}
-      className="absolute inset-0 w-full h-full overflow-hidden"
+    <div
+      className="fixed inset-0 w-full h-full overflow-hidden"
       style={{ zIndex }}
     >
-      {/* Animated gradient background */}
-      <motion.div
-        className="w-full h-full bg-gradient-to-br animate-gradient-slow"
-        style={{
-          backgroundSize: "400% 400%",
-          backgroundImage: `linear-gradient(135deg, ${gradientColors.join(", ")})`,
-        }}
-        animate={{
-          scale,
-          opacity: effectOpacity,
-          transition: { duration: 0.8, ease: "easeInOut" }
-        }}
+      {/* Gradient Background */}
+      <div
+        ref={backgroundRef}
+        className={cn(
+          "absolute inset-0 w-full h-full transition-all duration-700",
+          animationClass
+        )}
+        style={gradientStyle}
       />
       
-      {/* Color overlay with gradient or flat color */}
-      {gradientOverlay ? (
-        <div 
-          className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/40 to-background/60 mix-blend-multiply"
-          style={{ zIndex: zIndex + 1 }}
-        />
-      ) : (
-        <div 
-          className="absolute inset-0"
-          style={{ 
-            backgroundColor: overlayColor,
-            opacity: 0.5,
-            zIndex: zIndex + 1,
-            mixBlendMode: "multiply"
+      {/* Optional overlay gradient */}
+      {gradientOverlay && (
+        <div
+          className="absolute inset-0 w-full h-full"
+          style={{
+            background: `linear-gradient(to bottom, transparent 0%, ${overlayColor} 100%)`,
           }}
         />
       )}
