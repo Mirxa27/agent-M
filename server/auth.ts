@@ -35,10 +35,11 @@ export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "mirxa-super-secret-session-key",
     resave: false,
-    saveUninitialized: false, // Changed to false to prevent empty session creation
+    saveUninitialized: false,
     store: storage.sessionStore,
+    name: 'mirxa.sid', // Custom name to avoid default connect.sid
     cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000, // Extended to 30 days for better persistence
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: '/',
@@ -173,20 +174,43 @@ export function setupAuth(app: Express) {
       // Destroy the session to fully log out
       req.session.destroy((err) => {
         if (err) return next(err);
-        res.clearCookie('connect.sid');
+        res.clearCookie('mirxa.sid');
         res.sendStatus(200);
       });
     });
   });
 
-  // Current user endpoint
+  // Current user endpoint with detailed logging for debugging
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) {
+    console.log("GET /api/user session ID:", req.sessionID);
+    console.log("Is authenticated:", req.isAuthenticated());
+    
+    if (!req.isAuthenticated() || !req.user) {
+      console.log("User not authenticated or req.user is null");
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    // Remove password from response
-    const { password, ...userWithoutPassword } = req.user;
-    res.json(userWithoutPassword);
+    try {
+      // Remove password from response
+      const { password, ...userWithoutPassword } = req.user;
+      console.log("User authenticated:", userWithoutPassword.username);
+      
+      // Extend the session duration on successful requests
+      if (req.session.cookie) {
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+      }
+      
+      // Save session after updating the expiry
+      req.session.save((err) => {
+        if (err) {
+          console.error("Error saving session:", err);
+        }
+      });
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error in /api/user endpoint:", error);
+      res.status(500).json({ error: "Server error" });
+    }
   });
 }

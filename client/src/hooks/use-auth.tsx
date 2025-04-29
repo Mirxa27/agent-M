@@ -57,27 +57,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
+    refetch
   } = useQuery<Omit<SelectUser, "password"> | null>({
     queryKey: ["/api/user"],
     queryFn: async ({ queryKey }) => {
       try {
         const res = await fetch(queryKey[0] as string, {
           credentials: "include",
+          headers: {
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
+          }
         });
 
         if (res.status === 401) {
+          console.log("User not authenticated");
           return null;
         }
 
         if (!res.ok) {
+          console.error("Error fetching user:", res.status, res.statusText);
           throw new Error(`${res.status}: ${res.statusText}`);
         }
 
-        return await res.json();
+        const userData = await res.json();
+        console.log("User data fetched successfully:", userData.username);
+        return userData;
       } catch (error) {
+        console.error("Error in user fetch:", error);
         return null;
       }
     },
+    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1
   });
 
   const loginMutation = useMutation({

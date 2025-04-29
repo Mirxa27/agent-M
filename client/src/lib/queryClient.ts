@@ -19,27 +19,40 @@ export async function apiRequest<T = any>(
   url: string,
   data?: any,
 ): Promise<T> {
-  const options: RequestInit = {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-  };
+  try {
+    const options: RequestInit = {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache"
+      },
+      credentials: "include",
+    };
 
-  if (data !== undefined && method !== "GET") {
-    options.body = JSON.stringify(data);
+    if (data !== undefined && method !== "GET") {
+      options.body = JSON.stringify(data);
+    }
+
+    console.log(`Making ${method} request to ${url}`);
+    const res = await fetch(url, options);
+    
+    // Log response status
+    console.log(`Response from ${url}: ${res.status} ${res.statusText}`);
+    
+    await throwIfResNotOk(res);
+
+    // For Response type, return the response itself
+    if (method === "DELETE" || res.status === 204) {
+      return {} as T;
+    }
+
+    const responseData = await res.json();
+    return responseData;
+  } catch (error) {
+    console.error(`Error in ${method} request to ${url}:`, error);
+    throw error;
   }
-
-  const res = await fetch(url, options);
-  await throwIfResNotOk(res);
-
-  // For Response type, return the response itself
-  if (method === "DELETE" || res.status === 204) {
-    return {} as T;
-  }
-
-  return await res.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -59,16 +72,30 @@ export const getQueryFn: <T>(options: {
     const url = queryKey[0] as string;
     // Any additional parameters can be in the rest of the array
 
-    const res = await fetch(url, {
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(url, {
+        credentials: "include",
+        headers: {
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache"
+        },
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        console.log(`Authentication required for ${url}, returning null`);
+        return null;
+      }
+
+      await throwIfResNotOk(res);
+      const data = await res.json();
+      return data;
+    } catch (error) {
+      console.error(`Error fetching data from ${url}:`, error);
+      if (unauthorizedBehavior === "returnNull") {
+        return null;
+      }
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({
@@ -76,12 +103,13 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      refetchOnWindowFocus: true, // Enable refetching when window gains focus
+      staleTime: 5 * 60 * 1000, // 5 minutes instead of Infinity
+      retry: 1, // Allow one retry
+      refetchOnMount: true, // Refetch on component mount
     },
     mutations: {
-      retry: false,
+      retry: 1, // Allow one retry for mutations as well
     },
   },
 });
