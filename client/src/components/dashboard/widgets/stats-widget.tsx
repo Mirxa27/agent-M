@@ -70,25 +70,29 @@ export const StatsWidget = ({ onRemove }: StatsWidgetProps) => {
       onRefresh={() => refetch()}
     >
       <div className="grid grid-cols-2 gap-4">
-        <div className="border rounded-md p-3">
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">Tasks</h3>
-          <p className="text-2xl font-bold">{analytics.taskCount || 0}</p>
+        <div className="glass-effect-lighter rounded-lg p-3 border border-white/10 shadow-md relative group overflow-hidden hover:scale-105 transition-transform duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+          <h3 className="text-sm font-medium text-white/80 mb-1 text-shadow-sm">Tasks</h3>
+          <p className="text-2xl font-bold text-high-contrast text-shadow-md">{analytics.taskCount || 0}</p>
         </div>
-        <div className="border rounded-md p-3">
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">Success Rate</h3>
-          <p className="text-2xl font-bold">
+        <div className="glass-effect-lighter rounded-lg p-3 border border-white/10 shadow-md relative group overflow-hidden hover:scale-105 transition-transform duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+          <h3 className="text-sm font-medium text-white/80 mb-1 text-shadow-sm">Success Rate</h3>
+          <p className="text-2xl font-bold text-high-contrast text-shadow-md">
             {analytics.taskCount 
               ? Math.round((analytics.successfulTaskCount / analytics.taskCount) * 100) 
               : 0}%
           </p>
         </div>
-        <div className="border rounded-md p-3">
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">Token Usage</h3>
-          <p className="text-2xl font-bold">{analytics.tokenUsage ? analytics.tokenUsage.toLocaleString() : 0}</p>
+        <div className="glass-effect-lighter rounded-lg p-3 border border-white/10 shadow-md relative group overflow-hidden hover:scale-105 transition-transform duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+          <h3 className="text-sm font-medium text-white/80 mb-1 text-shadow-sm">Token Usage</h3>
+          <p className="text-2xl font-bold text-high-contrast text-shadow-md">{analytics.tokenUsage ? analytics.tokenUsage.toLocaleString() : 0}</p>
         </div>
-        <div className="border rounded-md p-3">
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">Avg. Time</h3>
-          <p className="text-2xl font-bold">
+        <div className="glass-effect-lighter rounded-lg p-3 border border-white/10 shadow-md relative group overflow-hidden hover:scale-105 transition-transform duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+          <h3 className="text-sm font-medium text-white/80 mb-1 text-shadow-sm">Avg. Time</h3>
+          <p className="text-2xl font-bold text-high-contrast text-shadow-md">
             {analytics.averageCompletionTime 
               ? Math.round(analytics.averageCompletionTime / 60) 
               : 0} min
