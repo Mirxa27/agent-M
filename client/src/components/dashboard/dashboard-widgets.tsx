@@ -198,8 +198,9 @@ export const DashboardWidgets = () => {
   return (
     <>
       <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="glass-card-header relative overflow-hidden rounded-lg px-4 py-3 backdrop-blur-sm border border-white/10">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 opacity-30"></div>
+        <div className="glass-card-header relative overflow-hidden rounded-lg px-4 py-3 backdrop-blur-sm border border-white/10 group hover:shadow-lg transition-shadow duration-300">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-accent/15 to-primary/20 opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
+          <div className="absolute inset-0 bg-white/5 backdrop-blur-md"></div>
           <h2 className="text-xl font-semibold text-high-contrast text-shadow-md mb-1 relative z-10">Your Dashboard</h2>
           <p className="text-sm text-white/90 text-shadow-sm relative z-10">
             Customize your dashboard by adding, removing, or rearranging widgets.
