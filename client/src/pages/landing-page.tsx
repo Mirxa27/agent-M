@@ -313,15 +313,15 @@ export default function LandingPage() {
 
         {/* Mobile menu - new implementation */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-end z-50">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex justify-end z-50">
             <div 
-              className="bg-black/60 backdrop-blur-md border-l border-primary/50 shadow-xl w-full sm:w-96 h-full glass-container"
+              className="bg-black/90 backdrop-blur-sm border-l border-primary/40 shadow-xl w-full sm:w-96 h-full glass-container"
               ref={mobileMenuRef}
               style={{
-                backgroundImage: "linear-gradient(to bottom right, rgba(30, 30, 30, 0.7), rgba(0, 0, 0, 0.8))"
+                backgroundImage: "linear-gradient(to bottom right, rgba(15, 15, 20, 0.95), rgba(0, 0, 0, 0.98))"
               }}
             >
-              <div className="p-6 text-white glass-text-container">
+              <div className="p-6 text-white glass-text-container bg-black/30">
                 <div className="flex items-center justify-between mb-8 border-b border-primary/50 pb-4">
                   <Link href="/" className="flex items-center space-x-2">
                     <Bot className="h-7 w-7 text-primary" />
@@ -340,11 +340,11 @@ export default function LandingPage() {
                 <div className="menu-items space-y-4 mb-8">
                   <a 
                     href="#features" 
-                    className="block py-3 px-4 bg-gray-800/60 backdrop-blur-sm rounded-lg text-white hover:bg-gray-700/70 transition-all shadow-md border border-white/5 hover:border-primary/20"
+                    className="block py-3 px-4 bg-black/70 backdrop-blur-sm rounded-lg text-white hover:bg-gray-900/80 transition-all shadow-md border border-primary/10 hover:border-primary/30"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <div className="flex items-center">
-                      <div className="bg-primary/20 p-2 rounded-full mr-3">
+                      <div className="bg-gray-900 p-2 rounded-full mr-3 border border-primary/20">
                         <Zap className="h-5 w-5 text-primary" />
                       </div>
                       <span className="text-shadow-sm font-medium">Features</span>
@@ -353,11 +353,11 @@ export default function LandingPage() {
                   
                   <a 
                     href="#pricing" 
-                    className="block py-3 px-4 bg-gray-800/60 backdrop-blur-sm rounded-lg text-white hover:bg-gray-700/70 transition-all shadow-md border border-white/5 hover:border-primary/20"
+                    className="block py-3 px-4 bg-black/70 backdrop-blur-sm rounded-lg text-white hover:bg-gray-900/80 transition-all shadow-md border border-primary/10 hover:border-primary/30"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <div className="flex items-center">
-                      <div className="bg-primary/20 p-2 rounded-full mr-3">
+                      <div className="bg-gray-900 p-2 rounded-full mr-3 border border-primary/20">
                         <CreditCard className="h-5 w-5 text-primary" />
                       </div>
                       <span className="text-shadow-sm font-medium">Pricing</span>
@@ -366,11 +366,11 @@ export default function LandingPage() {
                   
                   <a 
                     href="#testimonials" 
-                    className="block py-3 px-4 bg-gray-800/60 backdrop-blur-sm rounded-lg text-white hover:bg-gray-700/70 transition-all shadow-md border border-white/5 hover:border-primary/20"
+                    className="block py-3 px-4 bg-black/70 backdrop-blur-sm rounded-lg text-white hover:bg-gray-900/80 transition-all shadow-md border border-primary/10 hover:border-primary/30"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <div className="flex items-center">
-                      <div className="bg-primary/20 p-2 rounded-full mr-3">
+                      <div className="bg-gray-900 p-2 rounded-full mr-3 border border-primary/20">
                         <Star className="h-5 w-5 text-primary" />
                       </div>
                       <span className="text-shadow-sm font-medium">Testimonials</span>
@@ -379,11 +379,11 @@ export default function LandingPage() {
                   
                   <a 
                     href="#faq" 
-                    className="block py-3 px-4 bg-gray-800/60 backdrop-blur-sm rounded-lg text-white hover:bg-gray-700/70 transition-all shadow-md border border-white/5 hover:border-primary/20"
+                    className="block py-3 px-4 bg-black/70 backdrop-blur-sm rounded-lg text-white hover:bg-gray-900/80 transition-all shadow-md border border-primary/10 hover:border-primary/30"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <div className="flex items-center">
-                      <div className="bg-primary/20 p-2 rounded-full mr-3">
+                      <div className="bg-gray-900 p-2 rounded-full mr-3 border border-primary/20">
                         <MessageSquare className="h-5 w-5 text-primary" />
                       </div>
                       <span className="text-shadow-sm font-medium">FAQ</span>
@@ -394,7 +394,7 @@ export default function LandingPage() {
                 <div className="pt-6 border-t border-primary/30">
                   <div className="text-xl font-bold mb-5 text-white text-shadow-sm">Ready to get started?</div>
                   <button 
-                    className="btn-glass btn-glass-primary w-full mb-4 py-4 shadow-glow font-medium rounded-lg"
+                    className="w-full mb-4 py-4 shadow-glow font-medium rounded-lg bg-primary/80 hover:bg-primary text-white border border-primary/50 transition-all"
                     onClick={() => { setMobileMenuOpen(false); location.href = "/auth"; }}
                   >
                     <div className="flex items-center justify-center">
@@ -404,7 +404,7 @@ export default function LandingPage() {
                   </button>
                   
                   <button 
-                    className="btn-glass w-full py-4 font-medium rounded-lg"
+                    className="w-full py-4 font-medium rounded-lg bg-black/70 hover:bg-black/90 text-white border border-primary/20 transition-all backdrop-blur-sm"
                     onClick={() => { setMobileMenuOpen(false); location.href = "/auth"; }}
                   >
                     <div className="flex items-center justify-center">
