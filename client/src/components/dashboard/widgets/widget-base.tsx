@@ -87,7 +87,7 @@ export const Widget = ({
             </DropdownMenu>
           </div>
         </div>
-        {description && <CardDescription className="text-white/80 text-shadow-sm font-medium">{description}</CardDescription>}
+        {description && <CardDescription className="text-white/90 text-shadow-sm font-medium opacity-80 group-hover:opacity-100 transition-opacity duration-300">{description}</CardDescription>}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>

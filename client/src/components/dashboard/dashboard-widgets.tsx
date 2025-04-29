@@ -198,17 +198,18 @@ export const DashboardWidgets = () => {
   return (
     <>
       <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-high-contrast text-shadow-md mb-1">Your Dashboard</h2>
-          <p className="text-sm text-white/80 text-shadow-sm">
+        <div className="glass-card-header relative overflow-hidden rounded-lg px-4 py-3 backdrop-blur-sm border border-white/10">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 opacity-30"></div>
+          <h2 className="text-xl font-semibold text-high-contrast text-shadow-md mb-1 relative z-10">Your Dashboard</h2>
+          <p className="text-sm text-white/90 text-shadow-sm relative z-10">
             Customize your dashboard by adding, removing, or rearranging widgets.
           </p>
         </div>
-        <div className="flex items-center gap-2 self-end">
-          <div className="flex border rounded-md">
+        <div className="flex items-center gap-3 self-end">
+          <div className="flex glass-effect-lighter rounded-md backdrop-blur-sm border border-white/20 overflow-hidden">
             <Button
               variant={layout.columns === 1 ? 'default' : 'ghost'}
-              className="h-9 px-3"
+              className={`h-9 px-3 text-shadow-sm ${layout.columns === 1 ? 'bg-primary/30 hover:bg-primary/40' : 'hover:bg-white/10'}`}
               onClick={() => handleLayoutChange(1)}
               size="sm"
             >
@@ -217,7 +218,7 @@ export const DashboardWidgets = () => {
             </Button>
             <Button
               variant={layout.columns === 2 ? 'default' : 'ghost'}
-              className="h-9 px-3"
+              className={`h-9 px-3 text-shadow-sm ${layout.columns === 2 ? 'bg-primary/30 hover:bg-primary/40' : 'hover:bg-white/10'}`}
               onClick={() => handleLayoutChange(2)}
               size="sm"
             >
@@ -228,7 +229,7 @@ export const DashboardWidgets = () => {
           
           <Dialog open={addWidgetOpen} onOpenChange={setAddWidgetOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-9">
+              <Button size="sm" className="h-9 shadow-glow hover:scale-105 transition-transform duration-300">
                 <Plus className="h-4 w-4 mr-1" />
                 Add Widget
               </Button>
@@ -262,7 +263,7 @@ export const DashboardWidgets = () => {
                   </SelectContent>
                 </Select>
                 {selectedWidgetId && (
-                  <p className="text-sm text-muted-foreground mt-2">
+                  <p className="text-sm text-white/80 mt-2 text-shadow-sm">
                     {AVAILABLE_WIDGETS.find((w) => w.id === selectedWidgetId)?.description}
                   </p>
                 )}
@@ -274,12 +275,14 @@ export const DashboardWidgets = () => {
                     setAddWidgetOpen(false);
                     setSelectedWidgetId(null);
                   }}
+                  className="hover:bg-accent/10 border-white/20"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleAddWidget}
                   disabled={!selectedWidgetId || availableWidgetsToAdd.length === 0}
+                  className="shadow-glow hover:scale-105 transition-transform duration-300"
                 >
                   Add Widget
                 </Button>
