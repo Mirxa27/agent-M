@@ -99,7 +99,8 @@ export const getQueryFn: <T>(options: {
         credentials: "include",
         headers: {
           "Cache-Control": "no-cache",
-          "Pragma": "no-cache"
+          "Pragma": "no-cache",
+          "Accept": "application/json"
         },
       });
 
@@ -109,8 +110,31 @@ export const getQueryFn: <T>(options: {
       }
 
       await throwIfResNotOk(res);
-      const data = await res.json();
-      return data;
+      
+      // Check if the response is JSON before trying to parse it
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await res.json();
+        return data;
+      } else {
+        // Handle non-JSON responses (like HTML)
+        const text = await res.text();
+        console.warn(`Received non-JSON response from ${url}. Content-Type: ${contentType}`);
+        
+        // For browser observer endpoints that return HTML instead of JSON,
+        // return an empty array or object to prevent parsing errors
+        if (url.includes("/api/browser-observer")) {
+          console.log(`Received non-JSON response from browser observer API. Using empty data.`);
+          // Return empty array as a safe default for browser observer endpoints
+          return ([] as unknown) as T;
+        }
+        
+        // For other endpoints, throw an error if not in returnNull mode
+        if (unauthorizedBehavior === "returnNull") {
+          return null;
+        }
+        throw new Error(`Expected JSON but got ${contentType}: ${text.substring(0, 100)}...`);
+      }
     } catch (error) {
       console.error(`Error fetching data from ${url}:`, error);
       if (unauthorizedBehavior === "returnNull") {

@@ -21,6 +21,9 @@ const checkAuth = (req: Request, res: Response, next: Function) => {
 // Record a browser action
 browserObserverRouter.post("/action", async (req: Request, res: Response) => {
   try {
+    // Set the Content-Type header explicitly to ensure JSON responses
+    res.setHeader('Content-Type', 'application/json');
+    
     // Allow anonymous recording with a sessionId for non-authenticated users
     const userId = req.user?.id || 0;
     
@@ -78,6 +81,9 @@ browserObserverRouter.get("/actions/recent", checkAuth, async (req: Request, res
 // Get actions for a specific session
 browserObserverRouter.get("/actions/session/:sessionId", async (req: Request, res: Response) => {
   try {
+    // Set the Content-Type header explicitly to ensure JSON responses
+    res.setHeader('Content-Type', 'application/json');
+    
     const { sessionId } = req.params;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
     
