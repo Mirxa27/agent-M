@@ -26,6 +26,17 @@ import {
   generateContent,
   analyzeContent,
 } from "./services/openai-service";
+import {
+  getOrCreateSessionId,
+  getOrCreateGameProgress,
+  storeChatMessage,
+  getChatHistory,
+  generateResponse,
+  awardPoints,
+  getAvailableChallenges,
+  completeChallenge,
+  updateStreak
+} from "./services/chatbot-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint - no auth required, useful for deployment monitoring
@@ -1741,6 +1752,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+  // Chatbot routes
+  // Chatbot message history
+  app.get("/api/chatbot/history", async (req, res) => {
+    try {
+      const userId = req.isAuthenticated() ? req.user!.id : null;
+      const sessionId = req.query.sessionId as string;
+      
+      if (!sessionId) {
+        return res.status(400).json({ error: "Session ID is required" });
+      }
+      
+      const history = await getChatHistory(userId, sessionId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching chat history:", error);
+      res.status(500).json({ error: "Failed to fetch chat history" });
+    }
+  });
+
+  // Send message to chatbot
+  app.post("/api/chatbot/message", async (req, res) => {
+    try {
+      if (!req.body.content) {
+        return res.status(400).json({ error: "Message content is required" });
+      }
+      
+      const content = req.body.content;
+      const providedSessionId = req.body.sessionId;
+      const userId = req.isAuthenticated() ? req.user!.id : null;
+      
+      // Get or create session ID
+      const sessionId = await getOrCreateSessionId(providedSessionId);
+      
+      // Store user message
+      await storeChatMessage({
+        userId: userId || undefined,
+        sessionId,
+        content,
+        isBot: false
+      });
+      
+      // Get or create game progress
+      const gameInfo = await getOrCreateGameProgress(userId, sessionId);
+      
+      // Update user streak
+      await updateStreak(userId, sessionId);
+      
+      // Award points for activity (1 point per message)
+      await awardPoints(userId, sessionId, 1);
+      
+      // Generate AI response
+      const botResponse = await generateResponse(userId, sessionId, content, gameInfo);
+      
+      // Store bot response
+      await storeChatMessage({
+        userId: userId || undefined,
+        sessionId,
+        content: botResponse.content,
+        isBot: true,
+        metadata: botResponse.metadata
+      });
+      
+      // Get updated game progress
+      const updatedGameInfo = await getOrCreateGameProgress(userId, sessionId);
+      
+      // Return response with game info
+      res.json({
+        content: botResponse.content,
+        sessionId,
+        gameInfo: updatedGameInfo
+      });
+    } catch (error) {
+      console.error("Error processing chatbot message:", error);
+      res.status(500).json({ error: "Failed to process message" });
+    }
+  });
+
+  // Get available challenges
+  app.get("/api/chatbot/challenges", async (req, res) => {
+    try {
+      const difficulty = req.query.difficulty as string | undefined;
+      const challenges = await getAvailableChallenges(difficulty);
+      res.json(challenges);
+    } catch (error) {
+      console.error("Error fetching challenges:", error);
+      res.status(500).json({ error: "Failed to fetch challenges" });
+    }
+  });
+
+  // Complete a challenge
+  app.post("/api/chatbot/complete-challenge", async (req, res) => {
+    try {
+      if (!req.body.challengeId || !req.body.sessionId) {
+        return res.status(400).json({ error: "Challenge ID and Session ID are required" });
+      }
+      
+      const challengeId = parseInt(req.body.challengeId);
+      const userId = req.isAuthenticated() ? req.user!.id : null;
+      const sessionId = req.body.sessionId;
+      
+      await completeChallenge(userId, sessionId, challengeId);
+      
+      // Get updated game progress
+      const updatedGameInfo = await getOrCreateGameProgress(userId, sessionId);
+      
+      res.json({
+        success: true,
+        gameInfo: updatedGameInfo
+      });
+    } catch (error) {
+      console.error("Error completing challenge:", error);
+      res.status(500).json({ error: "Failed to complete challenge" });
+    }
+  });
+
+  // Get user game progress
+  app.get("/api/chatbot/game-progress", async (req, res) => {
+    try {
+      const userId = req.isAuthenticated() ? req.user!.id : null;
+      const sessionId = req.query.sessionId as string;
+      
+      if (!sessionId) {
+        return res.status(400).json({ error: "Session ID is required" });
+      }
+      
+      const gameInfo = await getOrCreateGameProgress(userId, sessionId);
+      res.json(gameInfo);
+    } catch (error) {
+      console.error("Error fetching game progress:", error);
+      res.status(500).json({ error: "Failed to fetch game progress" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
