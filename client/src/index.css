@@ -270,14 +270,41 @@ html.rtl .rtl-flip {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   }
   
-  /* Card hover effects */
+  /* Playful Card hover animations */
   .card-hover {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                border-color 0.3s ease;
+    transform-origin: center bottom;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .card-hover:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 100%);
+    transition: height 0.3s ease;
+    z-index: -1;
   }
   
   .card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .card-hover:hover:before {
+    height: 100%;
+  }
+  
+  .card-hover:active {
+    transform: translateY(0) scale(0.98);
+    transition: transform 0.1s ease;
   }
   
   /* Text shadow utilities for better readability */
@@ -306,6 +333,73 @@ html.rtl .rtl-flip {
     box-shadow: 0 0 8px 1px hsla(var(--highlight), 0.5);
   }
 
+  /* Widget-specific hover animations and effects */
+  @keyframes pulseGlow {
+    0% { box-shadow: 0 0 0 0 rgba(var(--primary), 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(var(--primary), 0); }
+    100% { box-shadow: 0 0 0 0 rgba(var(--primary), 0); }
+  }
+  
+  @keyframes floatAnimation {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0px); }
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Widget specific styles */
+  #agentStatus:hover .progress {
+    background: linear-gradient(90deg, 
+      rgba(var(--primary), 0.2),
+      rgba(var(--primary), 0.4),
+      rgba(var(--primary), 0.2)
+    );
+    background-size: 200% 100%;
+    animation: gradientMove 2s ease infinite;
+  }
+  
+  @keyframes gradientMove {
+    0% { background-position: 100% 0%; }
+    100% { background-position: 0% 0%; }
+  }
+  
+  #recentActivity:hover svg,
+  #aiProviders:hover svg {
+    animation: floatAnimation 3s ease infinite;
+  }
+  
+  #recentFiles:hover svg {
+    animation: spin 10s linear infinite;
+    transform-origin: center;
+  }
+  
+  /* Widget status indicators with pulse effect */
+  .status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  
+  .status-active {
+    background-color: rgb(34, 197, 94);
+    animation: pulseGlow 2s infinite;
+  }
+  
+  .status-inactive {
+    background-color: rgb(148, 163, 184);
+  }
+  
+  .status-error {
+    background-color: rgb(239, 68, 68);
+    animation: pulseGlow 2s infinite;
+  }
+  
   /* Enhanced gradient backgrounds for auth page */
   .bg-auth-gradient {
     background: linear-gradient(
