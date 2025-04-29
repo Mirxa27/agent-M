@@ -123,24 +123,15 @@ export function AuthLayout({
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
       >
-        {/* Spline 3D Model Background - Using iframe with pointer-events: none */}
+        {/* Spline 3D Model Background */}
         <div className="absolute inset-0 z-0 w-full h-full">
-          <iframe
-            src="https://my.spline.design/nexbotrobotcharacterconcept-5f03ff963626fbbf4952a35a16e4a4f3/"
-            frameBorder="0"
-            width="100%"
-            height="100%"
-            style={{
-              pointerEvents: 'none',
-              border: 'none',
-              background: 'transparent'
-            }}
-            title="Mirxa AI Robot"
-          ></iframe>
+          <SplineBackground 
+            url="https://my.spline.design/nexbotrobotcharacterconcept-5f03ff963626fbbf4952a35a16e4a4f3/" 
+            opacity={0.4}
+            overlayColor="black"
+            zIndex={5}
+          />
         </div>
-        
-        {/* Dark overlay to ensure text readability */}
-        <div className="absolute inset-0 bg-black opacity-40 z-5"></div>
 
         <motion.div
           className="max-w-md lg:max-w-xl xl:max-w-2xl relative z-10 p-8 lg:p-12 xl:p-16"
