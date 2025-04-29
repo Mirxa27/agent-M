@@ -97,18 +97,13 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-auth-gradient">
-      <div className="w-full max-w-md card-glass p-6 rounded-xl shadow-md backdrop-blur-md bg-opacity-60 border border-white/10">
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center">
-            <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center mr-2">
-              <span className="text-white font-bold text-xl">M</span>
-            </div>
-            <h1 className="text-2xl font-heading font-bold text-high-contrast text-shadow-md">
-              {t("app.name")}
-            </h1>
-          </div>
-          <p className="text-white/90 text-shadow-sm mt-2 text-sm">
-            {t("app.slogan")}
+      <div className="w-full max-w-sm card-glass p-6 rounded-xl shadow-md backdrop-blur-md bg-opacity-60 border border-white/10">
+        <div className="text-center mb-4">
+          <h1 className="text-2xl font-heading font-bold text-high-contrast text-shadow-md">
+            {t("app.name")}
+          </h1>
+          <p className="text-white/90 text-shadow-sm mt-1 text-sm">
+            Login or Register
           </p>
         </div>
 
@@ -117,7 +112,7 @@ export default function AuthPage() {
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="grid grid-cols-2 mb-6 sm:mb-8 btn-glass bg-opacity-30 backdrop-blur-md border border-white/10 rounded-xl shadow-glow-sm">
+          <TabsList className="grid grid-cols-2 mb-4 btn-glass bg-opacity-30 backdrop-blur-md border border-white/10 rounded-xl shadow-glow-sm">
             <TabsTrigger value="login" className="text-white/90 text-shadow-sm font-medium data-[state=active]:bg-primary/30 data-[state=active]:backdrop-blur-md data-[state=active]:shadow-glow-sm rounded-lg">{t("auth.login")}</TabsTrigger>
             <TabsTrigger value="register" className="text-white/90 text-shadow-sm font-medium data-[state=active]:bg-primary/30 data-[state=active]:backdrop-blur-md data-[state=active]:shadow-glow-sm rounded-lg">{t("auth.register")}</TabsTrigger>
           </TabsList>
