@@ -169,8 +169,8 @@ export default function LandingPage() {
       <header
         className={`sticky top-0 z-40 w-full transition-all duration-200 ${
           isScrolled
-            ? "bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b shadow-sm"
-            : "bg-transparent"
+            ? "card-glass border-b shadow-md backdrop-blur-md"
+            : "bg-transparent/30 backdrop-blur-sm"
         }`}
       >
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -188,25 +188,25 @@ export default function LandingPage() {
             <nav className="hidden md:flex items-center space-x-8">
               <Link
                 href="#features"
-                className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+                className="text-sm font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
               >
                 Features
               </Link>
               <Link
                 href="#pricing"
-                className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+                className="text-sm font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
               >
                 Pricing
               </Link>
               <Link
                 href="#testimonials"
-                className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+                className="text-sm font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
               >
                 Testimonials
               </Link>
               <Link
                 href="#faq"
-                className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+                className="text-sm font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
               >
                 FAQ
               </Link>
@@ -250,12 +250,12 @@ export default function LandingPage() {
         <div
           ref={mobileMenuRef}
           className={cn(
-            "md:hidden fixed inset-y-0 right-0 z-50 w-full sm:max-w-sm bg-white dark:bg-gray-900 shadow-xl transform transition-transform duration-300 ease-in-out overflow-auto",
+            "md:hidden fixed inset-y-0 right-0 z-50 w-full sm:max-w-sm card-glass shadow-xl transform transition-transform duration-300 ease-in-out overflow-auto",
             mobileMenuOpen ? "translate-x-0" : "translate-x-full",
           )}
         >
           <div className="p-6">
-            <div className="flex items-center justify-between mb-8 border-b pb-4">
+            <div className="flex items-center justify-between mb-8 border-b border-white/20 pb-4">
               <Link href="/" className="flex items-center space-x-2">
                 <Bot className="h-7 w-7 text-primary" />
                 <span className="font-bold text-xl bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
@@ -272,34 +272,34 @@ export default function LandingPage() {
 
             <nav className="space-y-6">
               <div className="space-y-3">
-                <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold">
+                <h3 className="text-xs uppercase tracking-wider text-primary text-shadow-sm font-semibold">
                   Menu
                 </h3>
                 <div className="space-y-2 pl-2">
                   <Link
                     href="#features"
-                    className="flex items-center py-2 text-base font-medium text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+                    className="flex items-center py-2 text-base font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Features
                   </Link>
                   <Link
                     href="#pricing"
-                    className="flex items-center py-2 text-base font-medium text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+                    className="flex items-center py-2 text-base font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Pricing
                   </Link>
                   <Link
                     href="#testimonials"
-                    className="flex items-center py-2 text-base font-medium text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+                    className="flex items-center py-2 text-base font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Testimonials
                   </Link>
                   <Link
                     href="#faq"
-                    className="flex items-center py-2 text-base font-medium text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+                    className="flex items-center py-2 text-base font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     FAQ
@@ -307,7 +307,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-gray-200 dark:border-gray-800">
+              <div className="pt-6 border-t border-white/20">
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
