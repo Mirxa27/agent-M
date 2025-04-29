@@ -771,3 +771,10 @@ export type InsertBrowserAiSuggestion = z.infer<typeof insertBrowserAiSuggestion
 
 export type BrowserSetting = typeof browserSettings.$inferSelect;
 export type InsertBrowserSetting = z.infer<typeof insertBrowserSettingSchema>;
+
+// Workflow execution type exports
+export type WorkflowExecution = typeof workflowExecutions.$inferSelect;
+export type InsertWorkflowExecution = z.infer<typeof insertWorkflowExecutionSchema>;
+
+export type WorkflowStepExecution = typeof workflowStepExecutions.$inferSelect;
+export type InsertWorkflowStepExecution = z.infer<typeof insertWorkflowStepExecutionSchema>;

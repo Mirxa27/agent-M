@@ -2375,6 +2375,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   import("./routes/browser-automation-routes").then(({ browserAutomationRouter }) => {
     app.use("/api/browser-automation", browserAutomationRouter);
   });
+  
+  // Import workflow progress routes
+  import("./routes/workflow-progress-routes").then(({ workflowProgressRouter }) => {
+    app.use("/api/workflow-progress", workflowProgressRouter);
+  });
 
   const httpServer = createServer(app);
   return httpServer;
