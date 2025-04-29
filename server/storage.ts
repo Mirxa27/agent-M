@@ -1875,12 +1875,17 @@ export class DatabaseStorage implements IStorage {
     id: number,
     updates: Partial<Omit<Plan, "id">>,
   ): Promise<Plan | undefined> {
-    const [updatedPlan] = await db
-      .update(plans)
-      .set(updates)
-      .where(eq(plans.id, id))
-      .returning();
-    return updatedPlan;
+    try {
+      const [updatedPlan] = await db
+        .update(plans)
+        .set(updates)
+        .where(eq(plans.id, id))
+        .returning();
+      return updatedPlan;
+    } catch (error) {
+      console.error("Error updating plan:", error);
+      throw new Error(`Failed to update plan: ${error.message}`);
+    }
   }
 
   async deletePlan(id: number): Promise<boolean> {
