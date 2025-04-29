@@ -1,0 +1,65 @@
+i18next: languageChanged en
+i18next: initialized 
+Object {debug: true, initAsync: true, ns: Array(1), defaultNS: Array(1), fallbackLng: Array(1), …}
+i18next: languageChanged en
+i18next: init: i18next is already initialized. You should call init just once!
+i18next: initialized 
+Object {debug: true, initAsync: true, ns: Array(1), defaultNS: Array(1), fallbackLng: Array(1), …}
+User data fetched successfully: admin
+Making GET request to /api/chatbot/game-progress?sessionId=uq2tusbm2y
+Making GET request to /api/browser-observer/actions/session/08277276-fce0-45f4-8b11-2cf0c65fefb1
+Making GET request to /api/chatbot/game-progress?sessionId=q01y4i5h80i
+Response from /api/browser-observer/actions/session/08277276-fce0-45f4-8b11-2cf0c65fefb1: 200 OK
+Response from /api/chatbot/game-progress?sessionId=q01y4i5h80i: 200 OK
+Response from /api/chatbot/game-progress?sessionId=uq2tusbm2y: 200 OK
+Error in GET request to /api/browser-observer/actions/session/08277276-fce0-45f4-8b11-2cf0c65fefb1: 
+SyntaxError {}
+
+Making GET request to /api/browser-observer/actions/session/08277276-fce0-45f4-8b11-2cf0c65fefb1
+Response from /api/browser-observer/actions/session/08277276-fce0-45f4-8b11-2cf0c65fefb1: 200 OK
+Error in GET request to /api/browser-observer/actions/session/08277276-fce0-45f4-8b11-2cf0c65fefb1: 
+SyntaxError {}
+
+Making POST request to /api/browser-observer/action
+Response from /api/browser-observer/action: 200 OK
+Error in POST request to /api/browser-observer/action: 
+SyntaxError {}
+
+Making POST request to /api/browser-observer/action
+Response from /api/browser-observer/action: 200 OK
+Error in POST request to /api/browser-observer/action: 
+SyntaxError {}
+
+Error recording action: 
+SyntaxError {}
+
+Response from /api/browser-observer/action: 200 OK
+Error in POST request to /api/browser-observer/action: 
+SyntaxError {}
+
+Making GET request to /api/browser-observer/actions/session/61ea9dbe-c0f4-4f68-807e-205d1fb48908
+Making POST request to /api/browser-observer/action
+Response from /api/browser-observer/actions/session/61ea9dbe-c0f4-4f68-807e-205d1fb48908: 200 OK
+Error in GET request to /api/browser-observer/actions/session/61ea9dbe-c0f4-4f68-807e-205d1fb48908: 
+SyntaxError {}
+message: "Unexpected token '<', "<!doctype "... is not valid JSON"
+stack: "SyntaxError: Unexpected token '<', "<!doctype "... is not valid JSON"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
+
+at t.value (https://8b7f11e0-cb57-44b8-adad-5910728b5b21-00-zog0ln88i1pf.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://8b7f11e0-cb57-44b8-adad-5910728b5b21-00-zog0ln88i1pf.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://8b7f11e0-cb57-44b8-adad-5910728b5b21-00-zog0ln88i1pf.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://8b7f11e0-cb57-44b8-adad-5910728b5b21-00-zog0ln88i1pf.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Making GET request to /api/browser-observer/actions/session/61ea9dbe-c0f4-4f68-807e-205d1fb48908
+Response from /api/browser-observer/action: 200 OK
+Error in POST request to /api/browser-observer/action: 
+SyntaxError {}
+
+Error recording action: 
+SyntaxError {}
+
+Response from /api/browser-observer/actions/session/61ea9dbe-c0f4-4f68-807e-205d1fb48908: 200 OK
+Error in GET request to /api/browser-observer/actions/session/61ea9dbe-c0f4-4f68-807e-205d1fb48908: 
+SyntaxError {}

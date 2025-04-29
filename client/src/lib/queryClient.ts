@@ -25,7 +25,8 @@ export async function apiRequest<T = any>(
       headers: {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
-        "Pragma": "no-cache"
+        "Pragma": "no-cache",
+        "Accept": "application/json"
       },
       credentials: "include",
     };
@@ -47,8 +48,29 @@ export async function apiRequest<T = any>(
       return {} as T;
     }
 
-    const responseData = await res.json();
-    return responseData;
+    // Check if the response is JSON before trying to parse it
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      const responseData = await res.json();
+      return responseData;
+    } else {
+      // Handle non-JSON responses (like HTML)
+      const text = await res.text();
+      console.warn(`Received non-JSON response from ${url}. Content-Type: ${contentType}`);
+      
+      // For browser observer endpoints that return HTML instead of JSON,
+      // return an empty array or object to prevent parsing errors
+      if (url.includes("/api/browser-observer")) {
+        if (Array.isArray(null as unknown as T)) {
+          return [] as unknown as T;
+        } else {
+          return {} as T;
+        }
+      }
+      
+      // For other endpoints, throw an error
+      throw new Error(`Expected JSON but got ${contentType}: ${text.substring(0, 100)}...`);
+    }
   } catch (error) {
     console.error(`Error in ${method} request to ${url}:`, error);
     throw error;
