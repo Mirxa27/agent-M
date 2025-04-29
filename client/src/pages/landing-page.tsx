@@ -791,7 +791,7 @@ export default function LandingPage() {
                     onClick={() =>
                       document.getElementById("faq")?.scrollIntoView()
                     }
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     FAQ
                   </a>
@@ -799,7 +799,7 @@ export default function LandingPage() {
                 <li>
                   <a
                     href="#"
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     API Access
                   </a>
@@ -807,7 +807,7 @@ export default function LandingPage() {
                 <li>
                   <a
                     href="#"
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     Enterprise
                   </a>
@@ -816,14 +816,14 @@ export default function LandingPage() {
             </div>
 
             <div className="mt-4 sm:mt-0">
-              <h3 className="text-white text-base sm:text-lg font-semibold mb-4">
+              <h3 className="text-high-contrast text-base sm:text-lg font-semibold mb-4 text-shadow-sm">
                 Company
               </h3>
               <ul className="space-y-2 text-sm sm:text-base">
                 <li>
                   <a
                     href="#"
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     About Us
                   </a>
@@ -831,7 +831,7 @@ export default function LandingPage() {
                 <li>
                   <a
                     href="#"
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     Careers
                   </a>
@@ -839,7 +839,7 @@ export default function LandingPage() {
                 <li>
                   <a
                     href="#"
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     Blog
                   </a>
@@ -847,7 +847,7 @@ export default function LandingPage() {
                 <li>
                   <a
                     href="#"
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     Contact
                   </a>
@@ -856,14 +856,14 @@ export default function LandingPage() {
             </div>
 
             <div className="mt-4 sm:mt-0">
-              <h3 className="text-white text-base sm:text-lg font-semibold mb-4">
+              <h3 className="text-high-contrast text-base sm:text-lg font-semibold mb-4 text-shadow-sm">
                 Resources
               </h3>
               <ul className="space-y-2 text-sm sm:text-base">
                 <li>
                   <a
                     href="#"
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     Documentation
                   </a>
