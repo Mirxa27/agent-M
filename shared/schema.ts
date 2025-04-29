@@ -416,6 +416,63 @@ export const insertAnalyticsSchema = createInsertSchema(analytics).pick({
   metadata: true,
 });
 
+// Site Settings schema
+export const siteSettings = pgTable("site_settings", {
+  id: serial("id").primaryKey(),
+  logo: jsonb("logo").default({
+    url: "/assets/images/mirxa-logo.svg",
+    showText: true,
+    text: "Mirxa.io",
+    animated: true,
+  }).notNull(),
+  colors: jsonb("colors").default({
+    primary: "#6366f1",
+    secondary: "#0ea5e9",
+    accent: "#f97316",
+    background: "#ffffff",
+    text: "#1e293b",
+  }).notNull(),
+  header: jsonb("header").default({
+    sticky: true,
+    transparent: false,
+    showLogo: true,
+    showNavigation: true,
+  }).notNull(),
+  footer: jsonb("footer").default({
+    showCopyright: true,
+    copyrightText: "© 2025 Mirxa.io. All rights reserved.",
+    showSocial: true,
+  }).notNull(),
+  chatbot: jsonb("chatbot").default({
+    enabled: true,
+    position: "bottom-right",
+    welcomeMessage: "Hi! How can I assist you today?",
+    color: "#6366f1",
+  }).notNull(),
+  widgets: jsonb("widgets").default([
+    { id: 'header-widget', label: 'Header' },
+    { id: 'hero-widget', label: 'Hero Section' },
+    { id: 'features-widget', label: 'Features' },
+    { id: 'testimonials-widget', label: 'Testimonials' },
+    { id: 'cta-widget', label: 'Call to Action' },
+    { id: 'footer-widget', label: 'Footer' },
+  ]).notNull(),
+  version: integer("version").default(1).notNull(),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  updatedBy: integer("updated_by"), // User ID who last updated settings
+});
+
+export const insertSiteSettingsSchema = createInsertSchema(siteSettings).pick({
+  logo: true,
+  colors: true,
+  header: true,
+  footer: true,
+  chatbot: true,
+  widgets: true,
+  version: true,
+  updatedBy: true,
+});
+
 export type Plan = typeof plans.$inferSelect;
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
 
@@ -633,6 +690,10 @@ export type InsertChatbotGameProgress = z.infer<typeof insertChatbotGameProgress
 
 export type ChatbotChallenge = typeof chatbotChallenges.$inferSelect;
 export type InsertChatbotChallenge = z.infer<typeof insertChatbotChallengeSchema>;
+
+// Site Settings export
+export type SiteSettings = typeof siteSettings.$inferSelect;
+export type InsertSiteSettings = z.infer<typeof insertSiteSettingsSchema>;
 
 // Browser observer type exports
 export type BrowserAction = typeof browserActions.$inferSelect;

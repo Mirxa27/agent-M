@@ -44,6 +44,9 @@ import {
   analytics,
   Analytics,
   InsertAnalytics,
+  siteSettings,
+  SiteSettings,
+  InsertSiteSettings,
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
