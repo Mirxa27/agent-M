@@ -122,12 +122,23 @@ export const GamifiedChatbot = () => {
 
   const fetchGameProgress = async (sid: string) => {
     try {
-      const response = await apiRequest("GET", `/api/chatbot/game-progress?sessionId=${sid}`);
-      const data = await response.json();
+      const data = await apiRequest<GameInfo>("GET", `/api/chatbot/game-progress?sessionId=${sid}`);
       setGameInfo(data);
     } catch (error) {
-      console.error("Failed to fetch game progress:", error);
+      console.error("Failed to fetch game progress:", error instanceof Error ? error.message : String(error));
+      // Use default game info if there's an error
+      toast({
+        title: "Game Progress Error",
+        description: "There was an issue loading your game progress. Starting with default values.",
+        variant: "destructive",
+      });
     }
+  };
+
+  // Define the expected response type from the chatbot message API
+  type ChatbotMessageResponse = {
+    content: string;
+    gameInfo: GameInfo;
   };
 
   const sendMessage = async () => {
@@ -145,12 +156,10 @@ export const GamifiedChatbot = () => {
     setIsLoading(true);
     
     try {
-      const response = await apiRequest("POST", "/api/chatbot/message", {
+      const data = await apiRequest<ChatbotMessageResponse>("POST", "/api/chatbot/message", {
         content: input,
         sessionId: sessionId
       });
-      
-      const data = await response.json();
       
       // Add bot response
       setMessages(prev => [
@@ -177,13 +186,13 @@ export const GamifiedChatbot = () => {
       
       // Show toast if user earned new badges
       const newBadges = data.gameInfo.badges.filter(
-        (badge) => !gameInfo.badges.includes(badge)
+        (badge: string) => !gameInfo.badges.includes(badge)
       );
       
       if (newBadges.length > 0) {
         toast({
           title: "New badge earned!",
-          description: `You've earned the ${newBadges.map(badge => {
+          description: `You've earned the ${newBadges.map((badge: string) => {
             const badgeInfo = getBadgeInfo(badge);
             return badgeInfo.label;
           }).join(", ")} badge!`,
@@ -191,7 +200,7 @@ export const GamifiedChatbot = () => {
         });
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Error sending message:", error instanceof Error ? error.message : String(error));
       setMessages(prev => [
         ...prev,
         {
