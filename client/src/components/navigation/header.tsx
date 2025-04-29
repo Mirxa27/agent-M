@@ -113,7 +113,6 @@ export function Header() {
   
   return (
     <>
-      {/* Only render the header if not on AI Browser page */}
       <header
         className={cn(
           "sticky top-0 z-30 w-full transition-all duration-200 glass-container bg-opacity-60 backdrop-blur-md",
@@ -122,25 +121,24 @@ export function Header() {
             : "border-b border-white/10",
         )}
       >
-        <div className={cn(
-          "container flex h-16 items-center justify-between px-4",
-          isAiBrowserPage ? "hidden" : "" // Hide header content on AI Browser page
-        )}>
+        <div className="container flex h-16 items-center justify-between px-4">
           {/* Logo */}
-          <div className="flex items-center">
-            <div
-              onClick={() => (window.location.href = user ? "/dashboard" : "/")}
-              className="flex items-center space-x-2 cursor-pointer"
-            >
-              <AnimatedLogo size="sm" />
-              <span className="font-heading text-lg font-bold hidden md:block text-primary">
-                {t("app.name")}
-              </span>
+          {!isAiBrowserPage && (
+            <div className="flex items-center">
+              <div
+                onClick={() => (window.location.href = user ? "/dashboard" : "/")}
+                className="flex items-center space-x-2 cursor-pointer"
+              >
+                <AnimatedLogo size="sm" />
+                <span className="font-heading text-lg font-bold hidden md:block text-primary">
+                  {t("app.name")}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Desktop Navigation */}
-          {user && (
+          {user && !isAiBrowserPage && (
             <div className="hidden md:flex">
               <NavigationMenu>
                 <NavigationMenuList>
@@ -195,97 +193,99 @@ export function Header() {
           )}
 
           {/* Right Section (User Actions, Language) */}
-          <div className="flex items-center space-x-2">
-            <LanguageSwitcher />
+          {!isAiBrowserPage && (
+            <div className="flex items-center space-x-2">
+              <LanguageSwitcher />
 
-            {!user ? (
-              <Button
-                size="sm"
-                className="hidden md:flex btn-glass btn-glass-primary shadow-glow bg-opacity-50 text-white/90 text-shadow-sm"
-                onClick={() => (window.location.href = "/auth")}
-              >
-                {t("auth.login")}
-              </Button>
-            ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Avatar className="h-8 w-8 cursor-pointer">
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {user ? getUserInitials() : ""}
-                    </AvatarFallback>
-                  </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">
-                        {user?.fullName || user?.username}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {user?.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => (window.location.href = "/dashboard")}
-                  >
-                    <div className="flex items-center cursor-pointer">
-                      <Home className="mr-2 h-4 w-4" />
-                      <span>{t("nav.dashboard")}</span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => (window.location.href = "/agents")}
-                  >
-                    <div className="flex items-center cursor-pointer">
-                      <Bot className="mr-2 h-4 w-4" />
-                      <span>{t("nav.agents")}</span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => (window.location.href = "/ai-browser")}
-                  >
-                    <div className="flex items-center cursor-pointer">
-                      <Globe className="mr-2 h-4 w-4" />
-                      <span>AI Browser</span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => (window.location.href = "/subscription")}
-                  >
-                    <div className="flex items-center cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>{t("nav.subscription")}</span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    disabled={logoutMutation.isPending}
-                    className="text-red-600 cursor-pointer"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>
-                      {logoutMutation.isPending ? "Logging out..." : "Logout"}
-                    </span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+              {!user ? (
+                <Button
+                  size="sm"
+                  className="hidden md:flex btn-glass btn-glass-primary shadow-glow bg-opacity-50 text-white/90 text-shadow-sm"
+                  onClick={() => (window.location.href = "/auth")}
+                >
+                  {t("auth.login")}
+                </Button>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Avatar className="h-8 w-8 cursor-pointer">
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {user ? getUserInitials() : ""}
+                      </AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">
+                          {user?.fullName || user?.username}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {user?.email}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => (window.location.href = "/dashboard")}
+                    >
+                      <div className="flex items-center cursor-pointer">
+                        <Home className="mr-2 h-4 w-4" />
+                        <span>{t("nav.dashboard")}</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => (window.location.href = "/agents")}
+                    >
+                      <div className="flex items-center cursor-pointer">
+                        <Bot className="mr-2 h-4 w-4" />
+                        <span>{t("nav.agents")}</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => (window.location.href = "/ai-browser")}
+                    >
+                      <div className="flex items-center cursor-pointer">
+                        <Globe className="mr-2 h-4 w-4" />
+                        <span>AI Browser</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => (window.location.href = "/subscription")}
+                    >
+                      <div className="flex items-center cursor-pointer">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>{t("nav.subscription")}</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      disabled={logoutMutation.isPending}
+                      className="text-red-600 cursor-pointer"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>
+                        {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                      </span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
-            {/* Mobile Menu Button */}
-            {user && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            )}
-          </div>
+              {/* Mobile Menu Button */}
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
