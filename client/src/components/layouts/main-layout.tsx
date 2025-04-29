@@ -26,7 +26,8 @@ export function MainLayout({
       {/* 3D Model Background */}
       <SplineBackground 
         url="https://my.spline.design/nexbotrobotcharacterconcept-5f03ff963626fbbf4952a35a16e4a4f3/" 
-        opacity={0.35}
+        opacity={0.6}
+        gradientOverlay={true}
       />
       
       {!hideNav && <Header />}

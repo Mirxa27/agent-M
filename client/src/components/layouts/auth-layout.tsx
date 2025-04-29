@@ -127,14 +127,15 @@ export function AuthLayout({
         <div className="absolute inset-0 z-0 w-full h-full">
           <SplineBackground 
             url="https://my.spline.design/nexbotrobotcharacterconcept-5f03ff963626fbbf4952a35a16e4a4f3/" 
-            opacity={0.4}
-            overlayColor="black"
+            opacity={0.6}
+            overlayColor="#000010"
+            gradientOverlay={true}
             zIndex={5}
           />
         </div>
 
         <motion.div
-          className="max-w-md lg:max-w-xl xl:max-w-2xl relative z-10 p-8 lg:p-12 xl:p-16"
+          className="max-w-md lg:max-w-xl xl:max-w-2xl relative z-10 p-8 lg:p-12 xl:p-16 text-shadow-sm"
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
