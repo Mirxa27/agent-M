@@ -1,12 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
-import { Gauge, Play, Pause, Settings, ExternalLink } from 'lucide-react';
+import { Gauge, Play, Pause, Settings, ExternalLink, CircleCheck, CircleX } from 'lucide-react';
 import { Widget } from './widget-base';
 import { LoadingWidget } from './loading-widget';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
+import { Progress } from '@/components/ui/progress';
+
+// Interface for the agent status counts returned from API
+interface AgentStatusCounts {
+  total: number;
+  active: number;
+  inactive: number;
+}
 
 export interface AgentStatusWidgetProps {
   limit?: number;
@@ -16,13 +24,14 @@ export interface AgentStatusWidgetProps {
 export const AgentStatusWidget = ({ limit = 5, onRemove }: AgentStatusWidgetProps) => {
   const { user } = useAuth();
   
+  // Updated to use the new status endpoint that returns count totals
   const { 
     isLoading, 
     error, 
-    data: agents,
+    data: statusCounts,
     refetch 
-  } = useQuery({
-    queryKey: ['/api/agents/status', { limit }],
+  } = useQuery<AgentStatusCounts>({
+    queryKey: ['/api/agents/status'],
     enabled: !!user,
   });
 
@@ -50,7 +59,7 @@ export const AgentStatusWidget = ({ limit = 5, onRemove }: AgentStatusWidgetProp
     );
   }
 
-  if (!agents || agents.length === 0) {
+  if (!statusCounts || statusCounts.total === 0) {
     return (
       <Widget 
         id="agentStatus"
@@ -70,19 +79,10 @@ export const AgentStatusWidget = ({ limit = 5, onRemove }: AgentStatusWidgetProp
     );
   }
 
-  const getStatusBadge = (status: string) => {
-    switch(status.toLowerCase()) {
-      case 'active':
-      case 'running':
-        return <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>;
-      case 'paused':
-        return <Badge variant="outline">Paused</Badge>;
-      case 'error':
-        return <Badge variant="destructive">Error</Badge>;
-      default:
-        return <Badge variant="secondary">Inactive</Badge>;
-    }
-  };
+  // Calculate the percentage of active agents
+  const activePercentage = statusCounts.total > 0 
+    ? Math.round((statusCounts.active / statusCounts.total) * 100) 
+    : 0;
 
   return (
     <Widget 
@@ -93,41 +93,36 @@ export const AgentStatusWidget = ({ limit = 5, onRemove }: AgentStatusWidgetProp
       onRemove={onRemove}
       onRefresh={() => refetch()}
     >
-      <div className="space-y-2">
-        {agents.map((agent: any) => (
-          <div key={agent.id} className="flex items-center justify-between border rounded-md p-2">
-            <div className="flex items-center">
-              <div className="mr-3 text-muted-foreground">
-                {agent.icon || <Gauge className="h-4 w-4" />}
-              </div>
-              <div>
-                <p className="text-sm font-medium truncate max-w-[150px]">{agent.name}</p>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(agent.status || 'inactive')}
-                  {agent.lastActive && (
-                    <span className="text-xs text-muted-foreground">
-                      Last active: {new Date(agent.lastActive).toLocaleString()}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex gap-1">
-              <Button variant="ghost" size="icon" title={agent.status === 'active' ? 'Pause agent' : 'Start agent'}>
-                {agent.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </Button>
-              <Button variant="ghost" size="icon" title="Agent settings">
-                <Settings className="h-4 w-4" />
-              </Button>
-              <Link href={`/agents/${agent.id}`}>
-                <Button variant="ghost" size="icon" title="View agent details">
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
+      <div className="space-y-4">
+        <div className="flex flex-col space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium">Agent Status</span>
+            <span className="text-sm font-medium">{activePercentage}% Active</span>
           </div>
-        ))}
+          <Progress value={activePercentage} className="h-2" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+            <CircleCheck className="h-8 w-8 text-green-500 mb-1" />
+            <span className="text-xl font-bold">{statusCounts.active}</span>
+            <span className="text-xs text-muted-foreground">Active Agents</span>
+          </div>
+          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-500/10 border border-gray-500/20">
+            <CircleX className="h-8 w-8 text-gray-500 mb-1" />
+            <span className="text-xl font-bold">{statusCounts.inactive}</span>
+            <span className="text-xs text-muted-foreground">Inactive Agents</span>
+          </div>
+        </div>
+
+        <div className="flex justify-center mt-2">
+          <Link href="/agents">
+            <Button variant="outline" size="sm" className="w-full">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              View All Agents
+            </Button>
+          </Link>
+        </div>
       </div>
     </Widget>
   );
