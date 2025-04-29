@@ -1,18 +1,12 @@
-import { ReactNode, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ReactNode } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  MoreHorizontal,
-  Maximize2,
-  Minimize2,
-  X,
-  RefreshCw,
-  Move,
-} from "lucide-react";
+import { MoreHorizontal, RefreshCw, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -20,13 +14,11 @@ export interface WidgetProps {
   id: string;
   title: string;
   description?: string;
-  icon: ReactNode;
+  icon?: ReactNode;
+  children: ReactNode;
   onRemove?: () => void;
   onRefresh?: () => void;
-  movable?: boolean;
-  children: ReactNode;
   className?: string;
-  defaultExpanded?: boolean;
 }
 
 export const Widget = ({
@@ -34,71 +26,70 @@ export const Widget = ({
   title,
   description,
   icon,
+  children,
   onRemove,
   onRefresh,
-  movable = true,
-  children,
   className = "",
-  defaultExpanded = true,
 }: WidgetProps) => {
-  const [expanded, setExpanded] = useState(defaultExpanded);
-
   return (
-    <Card id={`widget-${id}`} className={`${className} shadow-sm`}>
-      <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          {icon}
-          <div>
-            <CardTitle className="text-lg">{title}</CardTitle>
-            {description && (
-              <CardDescription className="text-sm">{description}</CardDescription>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center">
-          {movable && (
-            <Button variant="ghost" size="icon" className="cursor-move handle">
-              <Move className="h-4 w-4" />
-            </Button>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Widget menu</span>
+    <Card className={`overflow-hidden ${className}`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle>
+            <div className="flex items-center">
+              {icon && <span className="mr-2">{icon}</span>}
+              <span>{title}</span>
+            </div>
+          </CardTitle>
+          <div className="flex items-center">
+            {onRefresh && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onRefresh}
+                className="h-8 w-8"
+                title="Refresh"
+              >
+                <RefreshCw className="h-4 w-4" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setExpanded(!expanded)}>
-                {expanded ? (
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {onRefresh && (
+                  <DropdownMenuItem onClick={onRefresh}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </DropdownMenuItem>
+                )}
+                {onRemove && (
                   <>
-                    <Minimize2 className="h-4 w-4 mr-2" />
-                    Minimize
-                  </>
-                ) : (
-                  <>
-                    <Maximize2 className="h-4 w-4 mr-2" />
-                    Expand
+                    {onRefresh && <DropdownMenuSeparator />}
+                    <DropdownMenuItem
+                      onClick={onRemove}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Remove Widget
+                    </DropdownMenuItem>
                   </>
                 )}
-              </DropdownMenuItem>
-              {onRefresh && (
-                <DropdownMenuItem onClick={onRefresh}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
-                </DropdownMenuItem>
-              )}
-              {onRemove && (
-                <DropdownMenuItem onClick={onRemove} className="text-red-500">
-                  <X className="h-4 w-4 mr-2" />
-                  Remove
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+        {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
-      {expanded && <CardContent>{children}</CardContent>}
+      <CardContent>{children}</CardContent>
     </Card>
   );
 };

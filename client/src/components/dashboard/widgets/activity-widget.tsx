@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { Activity } from 'lucide-react';
+import { Activity, Clock } from 'lucide-react';
+import { format } from 'date-fns';
 import { Widget } from './widget-base';
 import { LoadingWidget } from './loading-widget';
 import { EmptyState } from '@/components/ui/empty-state';
-import { TimelineList, TimelineItem } from '@/components/ui/timeline';
+import { TimelineItem, TimelineList } from '@/components/ui/timeline';
+import { useAuth } from '@/hooks/use-auth';
 
 export interface ActivityWidgetProps {
   limit?: number;
@@ -11,6 +13,8 @@ export interface ActivityWidgetProps {
 }
 
 export const ActivityWidget = ({ limit = 5, onRemove }: ActivityWidgetProps) => {
+  const { user } = useAuth();
+  
   const { 
     isLoading, 
     error, 
@@ -18,6 +22,7 @@ export const ActivityWidget = ({ limit = 5, onRemove }: ActivityWidgetProps) => 
     refetch 
   } = useQuery({
     queryKey: ['/api/user/activity', { limit }],
+    enabled: !!user,
   });
 
   if (isLoading) {
@@ -55,7 +60,7 @@ export const ActivityWidget = ({ limit = 5, onRemove }: ActivityWidgetProps) => 
       >
         <EmptyState
           icon={<Activity className="h-10 w-10" />}
-          title="No recent activity"
+          title="No recent activities"
           description="Your recent actions will appear here."
         />
       </Widget>
@@ -75,10 +80,10 @@ export const ActivityWidget = ({ limit = 5, onRemove }: ActivityWidgetProps) => 
         {activities.map((activity: any) => (
           <TimelineItem
             key={activity.id}
-            title={activity.activityType}
-            description={activity.metadata?.description || ''}
-            timestamp={new Date(activity.timestamp)}
-            icon={activity.metadata?.icon || undefined}
+            title={activity.description || activity.type}
+            description={activity.details || ""}
+            timestamp={new Date(activity.createdAt)}
+            icon={<Clock className="h-5 w-5" />}
           />
         ))}
       </TimelineList>

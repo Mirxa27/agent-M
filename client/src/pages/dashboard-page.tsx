@@ -736,7 +736,7 @@ const DashboardPage = () => {
         </div>
 
         <TabsContent value="dashboard" className="mt-0">
-          <DashboardWidgets />
+          <EnhancedDashboardWidgets />
         </TabsContent>
 
         <TabsContent value="activity" className="mt-0">
