@@ -168,6 +168,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // Agent status endpoint for dashboard
+  app.get("/api/agents/status", requireAuth, async (req, res) => {
+    try {
+      const agents = await storage.getAgentsByUserId(req.user.id);
+      
+      // Count agents by status
+      const agentCounts = {
+        total: agents.length,
+        active: agents.filter(agent => agent.isActive).length,
+        inactive: agents.filter(agent => !agent.isActive).length
+      };
+      
+      res.json(agentCounts);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   app.get("/api/agents/:id", requireAuth, async (req, res) => {
     try {
