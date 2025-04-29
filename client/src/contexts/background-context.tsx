@@ -1,44 +1,46 @@
-import React, { createContext, useContext, ReactNode, useState } from "react";
-import { backgroundEffectBus } from "@/components/ui/simple-background";
+import React, { createContext, useContext, useState, ReactNode } from "react";
 
-// Define the shape of our context
 interface BackgroundContextType {
   isAnimating: boolean;
   triggerBackgroundEffect: () => void;
 }
 
-// Create the context with a default value
-const BackgroundContext = createContext<BackgroundContextType | undefined>(undefined);
+// Create context with default values
+const BackgroundContext = createContext<BackgroundContextType>({
+  isAnimating: false,
+  triggerBackgroundEffect: () => {},
+});
 
-// Provider component to wrap around components that need access to the background context
+// Props for the provider component
 interface BackgroundProviderProps {
   children: ReactNode;
 }
 
+// Provider component that will wrap the app
 export function BackgroundProvider({ children }: BackgroundProviderProps) {
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // Function to trigger the background effect
+  // Function to trigger the background animation effect
   const triggerBackgroundEffect = () => {
+    // If already animating, don't restart the animation
     if (isAnimating) return;
     
+    // Set animation flag to true
     setIsAnimating(true);
-    backgroundEffectBus.triggerEffect();
     
-    // Reset animating state after the animation completes
+    // Reset after animation is complete
     setTimeout(() => {
       setIsAnimating(false);
-    }, 1200); // Slightly longer than the animation duration to prevent rapid triggering
-  };
-
-  // Context value
-  const value = {
-    isAnimating,
-    triggerBackgroundEffect,
+    }, 700); // Match timing with CSS transition
   };
 
   return (
-    <BackgroundContext.Provider value={value}>
+    <BackgroundContext.Provider
+      value={{
+        isAnimating,
+        triggerBackgroundEffect,
+      }}
+    >
       {children}
     </BackgroundContext.Provider>
   );
@@ -47,8 +49,10 @@ export function BackgroundProvider({ children }: BackgroundProviderProps) {
 // Custom hook to use the background context
 export function useBackground(): BackgroundContextType {
   const context = useContext(BackgroundContext);
-  if (context === undefined) {
+  
+  if (!context) {
     throw new Error("useBackground must be used within a BackgroundProvider");
   }
+  
   return context;
 }
