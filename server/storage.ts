@@ -411,36 +411,123 @@ export class MemStorage implements IStorage {
   
   // Site Settings operations
   async getSiteSettings(): Promise<SiteSettings | undefined> {
-    return this.siteSettingsObj;
+    try {
+      // Always fetch site settings with ID 1 (singleton)
+      const [settings] = await db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.id, 1));
+      
+      return settings;
+    } catch (error) {
+      console.error("Error fetching site settings:", error);
+      // If settings don't exist, create default settings
+      const existingSettings = await this.getSiteSettings();
+      if (!existingSettings) {
+        return this.createDefaultSiteSettings();
+      }
+      return undefined;
+    }
+  }
+
+  async createDefaultSiteSettings(): Promise<SiteSettings> {
+    const now = new Date();
+    const defaultSettings = {
+      logo: {
+        url: "/assets/images/mirxa-logo.svg",
+        showText: true,
+        text: "Mirxa.io",
+        animated: true,
+      },
+      colors: {
+        primary: "#6366f1",
+        secondary: "#0ea5e9",
+        accent: "#f97316",
+        background: "#ffffff",
+        text: "#1e293b",
+      },
+      header: {
+        sticky: true,
+        transparent: false,
+        showLogo: true,
+        showNavigation: true,
+      },
+      footer: {
+        showCopyright: true,
+        copyrightText: "© 2025 Mirxa.io. All rights reserved.",
+        showSocial: true,
+      },
+      chatbot: {
+        enabled: true,
+        position: "bottom-right",
+        welcomeMessage: "Hi! How can I assist you today?",
+        color: "#6366f1",
+      },
+      widgets: [
+        { id: 'header-widget', label: 'Header' },
+        { id: 'hero-widget', label: 'Hero Section' },
+        { id: 'features-widget', label: 'Features' },
+        { id: 'testimonials-widget', label: 'Testimonials' },
+        { id: 'cta-widget', label: 'Call to Action' },
+        { id: 'footer-widget', label: 'Footer' },
+      ],
+      version: 1,
+      lastUpdated: now,
+      updatedBy: null,
+    };
+    
+    return this.createSiteSettings(defaultSettings);
   }
 
   async createSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings> {
-    const now = new Date();
-    const newSettings: SiteSettings = {
-      id: 1, // Always use ID 1 for site settings (singleton)
-      ...settings,
-      version: 1,
-      lastUpdated: now,
-    };
-    this.siteSettingsObj = newSettings;
-    return newSettings;
+    try {
+      const [newSettings] = await db
+        .insert(siteSettings)
+        .values({
+          ...settings,
+          version: 1,
+          lastUpdated: new Date(),
+        })
+        .returning();
+      
+      return newSettings;
+    } catch (error) {
+      console.error("Error creating site settings:", error);
+      throw new Error("Failed to create site settings");
+    }
   }
 
   async updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined> {
-    if (!this.siteSettingsObj) {
-      return undefined;
+    try {
+      // First check if settings exist
+      const existingSettings = await this.getSiteSettings();
+      
+      if (!existingSettings) {
+        // If no settings exist, create default settings with updates applied
+        const defaultSettings = await this.createDefaultSiteSettings();
+        // Apply the updates on top of default settings
+        return this.updateSiteSettings(updates);
+      }
+      
+      // Prepare updates with version increment and updated timestamp
+      const updatesWithMeta = {
+        ...updates,
+        version: existingSettings.version + 1,
+        lastUpdated: new Date(),
+      };
+      
+      // Update the settings in the database
+      const [updatedSettings] = await db
+        .update(siteSettings)
+        .set(updatesWithMeta)
+        .where(eq(siteSettings.id, 1))
+        .returning();
+      
+      return updatedSettings;
+    } catch (error) {
+      console.error("Error updating site settings:", error);
+      throw new Error("Failed to update site settings");
     }
-
-    const now = new Date();
-    const updatedSettings = {
-      ...this.siteSettingsObj,
-      ...updates,
-      version: (this.siteSettingsObj.version || 0) + 1,
-      lastUpdated: now,
-    };
-    
-    this.siteSettingsObj = updatedSettings;
-    return updatedSettings;
   }
 
   // User operations

@@ -68,6 +68,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Get site settings (public access)
+  app.get("/api/site-settings", async (req, res) => {
+    try {
+      const settings = await storage.getSiteSettings();
+      if (!settings) {
+        return res.status(404).json({ error: "Site settings not found" });
+      }
+      // Remove any sensitive information before sending to the client
+      const sanitizedSettings = { ...settings };
+      
+      // Remove updatedBy if it exists (contains user ID)
+      if (sanitizedSettings.updatedBy) {
+        delete sanitizedSettings.updatedBy;
+      }
+      
+      res.json(sanitizedSettings);
+    } catch (error) {
+      console.error("Error fetching site settings:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
 
   // Set up authentication routes
   setupAuth(app);
@@ -1070,6 +1092,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Admin routes
+  
+  // Site Settings Admin Route
+  app.patch("/api/admin/site-settings", requireAdmin, async (req, res) => {
+    try {
+      const updates = req.body;
+      
+      // Add the user ID who made the update if available
+      if (req.user && req.user.id) {
+        updates.updatedBy = req.user.id;
+      }
+      
+      const updatedSettings = await storage.updateSiteSettings(updates);
+      
+      if (!updatedSettings) {
+        return res.status(404).json({ error: "Site settings not found" });
+      }
+      
+      res.json(updatedSettings);
+    } catch (error) {
+      console.error("Error updating site settings:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
 
   // Agent Tools Routes
   app.get("/api/admin/agent-tools", requireAdmin, async (req, res) => {
