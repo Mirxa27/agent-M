@@ -1,32 +1,5 @@
-import React, { useRef, useEffect, useState, lazy, Suspense, Component, ErrorInfo, ReactNode } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-// Using React.lazy for dynamic import instead of next/dynamic
-const Spline = lazy(() => import("@splinetool/react-spline"));
-
-// Simple ErrorBoundary component to catch and handle errors in the Spline component
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  constructor(props: { children: ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(_: Error) {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.warn("Spline error:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      // Fallback UI when error occurs
-      return <div className="w-full h-full bg-gradient-to-b from-background/30 to-background/50" />;
-    }
-
-    return this.props.children;
-  }
-}
 
 // Create an event bus for triggering the background effect from any component
 class BackgroundEffectBus {
@@ -49,23 +22,22 @@ class BackgroundEffectBus {
 // Export a singleton instance of the bus
 export const backgroundEffectBus = new BackgroundEffectBus();
 
-interface SplineBackgroundProps {
-  url: string;
+interface SimpleBackgroundProps {
+  gradientColors?: string[];
   opacity?: number;
   overlayColor?: string;
   gradientOverlay?: boolean;
   zIndex?: number;
 }
 
-export function SplineBackground({
-  url,
+export function SimpleBackground({
+  gradientColors = ["#4f46e5", "#22c55e", "#3b82f6"],
   opacity = 0.4,
   overlayColor = "#000010",
   gradientOverlay = false,
   zIndex = 0,
-}: SplineBackgroundProps) {
-  // Create refs for accessing DOM elements or spline object
-  const splineRef = useRef(null);
+}: SimpleBackgroundProps) {
+  // Create ref for accessing DOM element
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Track the animation state
@@ -105,52 +77,25 @@ export function SplineBackground({
     };
   }, [isAnimating]); // Re-subscribe when animation state changes
 
-  // Handle loading errors for the Spline component
-  const [hasError, setHasError] = useState(false);
-
-  // Effect to add error boundary for Spline loading
-  useEffect(() => {
-    const handleError = () => {
-      console.warn("Spline background loading failed, falling back to gradient");
-      setHasError(true);
-    };
-    
-    window.addEventListener("error", handleError);
-    return () => window.removeEventListener("error", handleError);
-  }, []);
-
   return (
     <div 
       ref={containerRef}
       className="absolute inset-0 w-full h-full overflow-hidden"
       style={{ zIndex }}
     >
-      {/* The Spline 3D model with animation effects */}
+      {/* Animated gradient background */}
       <motion.div
-        className="w-full h-full"
+        className="w-full h-full bg-gradient-to-br animate-gradient-slow"
+        style={{
+          backgroundSize: "400% 400%",
+          backgroundImage: `linear-gradient(135deg, ${gradientColors.join(", ")})`,
+        }}
         animate={{
           scale,
           opacity: effectOpacity,
           transition: { duration: 0.8, ease: "easeInOut" }
         }}
-      >
-        {!hasError && (
-          <Suspense fallback={<div className="w-full h-full bg-gradient-to-b from-background/50 to-background/70" />}>
-            <div className="w-full h-full">
-              <Spline
-                ref={splineRef}
-                scene={url}
-                className="w-full h-full"
-              />
-            </div>
-          </Suspense>
-        )}
-      </motion.div>
-      
-      {/* Fallback gradient if Spline fails */}
-      {hasError && (
-        <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-background/40 to-background/60" />
-      )}
+      />
       
       {/* Color overlay with gradient or flat color */}
       {gradientOverlay ? (
