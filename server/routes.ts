@@ -134,7 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
-
+  
   // Set up authentication routes
   setupAuth(app);
   
@@ -153,6 +153,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     next();
   };
+  
+  // Simple endpoint to check if user has admin access - for testing
+  app.get("/api/admin/check", requireAdmin, (req, res) => {
+    res.json({ 
+      success: true, 
+      message: "You have admin access", 
+      user: { 
+        id: req.user.id, 
+        username: req.user.username,
+        role: req.user.role 
+      } 
+    });
+  });
   
   // Upload logo endpoint - requires admin permissions
   app.post("/api/admin/upload-logo", requireAdmin, upload.single('logo'), async (req, res) => {
