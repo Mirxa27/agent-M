@@ -5,13 +5,15 @@ interface SplineBackgroundProps {
   opacity?: number;
   overlayColor?: string;
   zIndex?: number;
+  gradientOverlay?: boolean;
 }
 
 export function SplineBackground({
   url,
-  opacity = 0.3,
+  opacity = 0.5, // Increased default opacity for better text contrast
   overlayColor = 'black',
-  zIndex = -1
+  zIndex = -1,
+  gradientOverlay = false
 }: SplineBackgroundProps) {
   return (
     <div 
@@ -33,13 +35,23 @@ export function SplineBackground({
       ></iframe>
       
       {/* Overlay to ensure content readability */}
-      <div 
-        className="absolute inset-0"
-        style={{ 
-          backgroundColor: overlayColor,
-          opacity: opacity
-        }}
-      ></div>
+      {gradientOverlay ? (
+        <div 
+          className="absolute inset-0"
+          style={{ 
+            background: `linear-gradient(to bottom, ${overlayColor}CC, ${overlayColor}99)`,
+            opacity: opacity
+          }}
+        ></div>
+      ) : (
+        <div 
+          className="absolute inset-0"
+          style={{ 
+            backgroundColor: overlayColor,
+            opacity: opacity
+          }}
+        ></div>
+      )}
     </div>
   );
 }
