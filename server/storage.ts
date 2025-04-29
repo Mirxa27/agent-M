@@ -571,10 +571,29 @@ export class MemStorage implements IStorage {
     return this.files.get(id);
   }
 
-  async getFilesByUserId(userId: number): Promise<File[]> {
-    return Array.from(this.files.values()).filter(
+  async getFilesByUserId(
+    userId: number, 
+    options?: { limit?: number; orderBy?: string; order?: 'asc' | 'desc' }
+  ): Promise<File[]> {
+    let files = Array.from(this.files.values()).filter(
       (file) => file.userId === userId,
     );
+
+    if (options?.orderBy) {
+      const sortField = options.orderBy as keyof File;
+      files = files.sort((a, b) => {
+        if (options.order === 'desc') {
+          return a[sortField] > b[sortField] ? -1 : 1;
+        }
+        return a[sortField] < b[sortField] ? -1 : 1;
+      });
+    }
+
+    if (options?.limit && options.limit > 0) {
+      files = files.slice(0, options.limit);
+    }
+
+    return files;
   }
 
   async getTemplatesByUserId(userId: number): Promise<File[]> {
