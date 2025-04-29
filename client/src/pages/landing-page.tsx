@@ -313,75 +313,104 @@ export default function LandingPage() {
 
         {/* Mobile menu - new implementation */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 bg-black/70 flex justify-end z-50">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-end z-50">
             <div 
-              className="bg-black border-l border-primary shadow-lg w-full sm:w-96 h-full"
+              className="bg-black/60 backdrop-blur-md border-l border-primary/50 shadow-xl w-full sm:w-96 h-full glass-container"
               ref={mobileMenuRef}
+              style={{
+                backgroundImage: "linear-gradient(to bottom right, rgba(30, 30, 30, 0.7), rgba(0, 0, 0, 0.8))"
+              }}
             >
-              <div className="p-6 text-white">
+              <div className="p-6 text-white glass-text-container">
                 <div className="flex items-center justify-between mb-8 border-b border-primary/50 pb-4">
                   <Link href="/" className="flex items-center space-x-2">
                     <Bot className="h-7 w-7 text-primary" />
-                    <span className="font-bold text-xl text-white">
+                    <span className="font-bold text-xl bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
                       Mirxa.io
                     </span>
                   </Link>
                   <button
                     onClick={() => setMobileMenuOpen(false)}
-                    className="p-2 rounded bg-red-600 text-white"
+                    className="p-2 rounded-md btn-glass shadow-glow bg-red-600/70 hover:bg-red-600 backdrop-blur-sm"
                   >
-                    <X className="h-6 w-6" />
+                    <X className="h-6 w-6 text-white" />
                   </button>
                 </div>
                 
                 <div className="menu-items space-y-4 mb-8">
-                  <a href="#features" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
-                    onClick={() => setMobileMenuOpen(false)}>
+                  <a 
+                    href="#features" 
+                    className="block py-3 px-4 bg-gray-800/60 backdrop-blur-sm rounded-lg text-white hover:bg-gray-700/70 transition-all shadow-md border border-white/5 hover:border-primary/20"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     <div className="flex items-center">
-                      <Zap className="h-5 w-5 mr-3 text-primary" />
-                      Features
+                      <div className="bg-primary/20 p-2 rounded-full mr-3">
+                        <Zap className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="text-shadow-sm font-medium">Features</span>
                     </div>
                   </a>
                   
-                  <a href="#pricing" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
-                    onClick={() => setMobileMenuOpen(false)}>
+                  <a 
+                    href="#pricing" 
+                    className="block py-3 px-4 bg-gray-800/60 backdrop-blur-sm rounded-lg text-white hover:bg-gray-700/70 transition-all shadow-md border border-white/5 hover:border-primary/20"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     <div className="flex items-center">
-                      <CreditCard className="h-5 w-5 mr-3 text-primary" />
-                      Pricing
+                      <div className="bg-primary/20 p-2 rounded-full mr-3">
+                        <CreditCard className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="text-shadow-sm font-medium">Pricing</span>
                     </div>
                   </a>
                   
-                  <a href="#testimonials" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
-                    onClick={() => setMobileMenuOpen(false)}>
+                  <a 
+                    href="#testimonials" 
+                    className="block py-3 px-4 bg-gray-800/60 backdrop-blur-sm rounded-lg text-white hover:bg-gray-700/70 transition-all shadow-md border border-white/5 hover:border-primary/20"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     <div className="flex items-center">
-                      <Star className="h-5 w-5 mr-3 text-primary" />
-                      Testimonials
+                      <div className="bg-primary/20 p-2 rounded-full mr-3">
+                        <Star className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="text-shadow-sm font-medium">Testimonials</span>
                     </div>
                   </a>
                   
-                  <a href="#faq" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
-                    onClick={() => setMobileMenuOpen(false)}>
+                  <a 
+                    href="#faq" 
+                    className="block py-3 px-4 bg-gray-800/60 backdrop-blur-sm rounded-lg text-white hover:bg-gray-700/70 transition-all shadow-md border border-white/5 hover:border-primary/20"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     <div className="flex items-center">
-                      <MessageSquare className="h-5 w-5 mr-3 text-primary" />
-                      FAQ
+                      <div className="bg-primary/20 p-2 rounded-full mr-3">
+                        <MessageSquare className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="text-shadow-sm font-medium">FAQ</span>
                     </div>
                   </a>
                 </div>
                 
-                <div className="pt-4 border-t border-gray-700">
-                  <div className="text-lg font-bold mb-4">Account</div>
+                <div className="pt-6 border-t border-primary/30">
+                  <div className="text-xl font-bold mb-5 text-white text-shadow-sm">Ready to get started?</div>
                   <button 
-                    className="w-full mb-3 py-3 bg-primary text-white rounded font-bold"
+                    className="btn-glass btn-glass-primary w-full mb-4 py-4 shadow-glow font-medium rounded-lg"
                     onClick={() => { setMobileMenuOpen(false); location.href = "/auth"; }}
                   >
-                    Get Started
+                    <div className="flex items-center justify-center">
+                      <RocketIcon className="h-5 w-5 mr-2" />
+                      Get Started Free
+                    </div>
                   </button>
                   
                   <button 
-                    className="w-full py-3 border border-gray-600 text-white rounded"
+                    className="btn-glass w-full py-4 font-medium rounded-lg"
                     onClick={() => { setMobileMenuOpen(false); location.href = "/auth"; }}
                   >
-                    Sign In
+                    <div className="flex items-center justify-center">
+                      <User className="h-5 w-5 mr-2" />
+                      Sign In
+                    </div>
                   </button>
                 </div>
               </div>
