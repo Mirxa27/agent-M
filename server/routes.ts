@@ -2266,43 +2266,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get or create session ID
       const sessionId = await getOrCreateSessionId(providedSessionId);
       
-      // Store user message
+      // Get current timestamp for consistent usage throughout the transaction
+      const timestamp = new Date();
+      
+      // Store user message with timestamp
       await storeChatMessage({
         userId: userId || undefined,
         sessionId,
         content,
-        isBot: false
+        isBot: false,
+        timestamp
       });
       
       // Get or create game progress
       const gameInfo = await getOrCreateGameProgress(userId, sessionId);
       
-      // Update user streak
-      await updateStreak(userId, sessionId);
-      
       // Award points for activity (1 point per message)
       await awardPoints(userId, sessionId, 1);
       
-      // Generate AI response
+      // Update user streak and check if it was incremented
+      const streakIncremented = await updateStreak(userId, sessionId);
+      
+      // Generate dynamic response based on user message and game progress
       const botResponse = await generateResponse(userId, sessionId, content, gameInfo);
       
-      // Store bot response
+      // Enhance the response if streak was just incremented
+      let responseContent = botResponse.content;
+      if (streakIncremented) {
+        // Only add streak message if the AI didn't already mention it
+        if (!responseContent.toLowerCase().includes('streak')) {
+          responseContent += ` 🔥 Great job on your ${gameInfo.streak + 1}-day streak! Keep coming back daily for more points and rewards.`;
+        }
+      }
+      
+      // Store bot response with the enhanced content
       await storeChatMessage({
         userId: userId || undefined,
         sessionId,
-        content: botResponse.content,
+        content: responseContent,
         isBot: true,
-        metadata: botResponse.metadata
+        metadata: botResponse.metadata,
+        timestamp
       });
       
-      // Get updated game progress
+      // Check for challenge completion based on message content
+      // For example, if the user asks about a specific feature, we might complete a discovery challenge
+      const userMessageLower = content.toLowerCase();
+      
+      // Feature discovery logic through natural conversation
+      if (gameInfo.completedChallenges.length < 3) {
+        if (
+          (userMessageLower.includes('agent') || userMessageLower.includes('automation')) && 
+          !gameInfo.completedChallenges.includes('1')
+        ) {
+          await completeChallenge(userId, sessionId, 1); // Complete "Discover Agents" challenge
+        } else if (
+          (userMessageLower.includes('credential') || userMessageLower.includes('api key')) && 
+          !gameInfo.completedChallenges.includes('2')
+        ) {
+          await completeChallenge(userId, sessionId, 2); // Complete "Learn about Credentials" challenge
+        } else if (
+          (userMessageLower.includes('browser') || userMessageLower.includes('automate')) && 
+          !gameInfo.completedChallenges.includes('3')
+        ) {
+          await completeChallenge(userId, sessionId, 3); // Complete "Explore Browser Automation" challenge
+        }
+      }
+      
+      // Get updated game progress after all operations
       const updatedGameInfo = await getOrCreateGameProgress(userId, sessionId);
       
-      // Return response with game info
+      // Return enhanced response with game info and session
       res.json({
-        content: botResponse.content,
+        content: responseContent,
         sessionId,
-        gameInfo: updatedGameInfo
+        gameInfo: updatedGameInfo,
+        metadata: {
+          ...botResponse.metadata,
+          pointsEarned: 1, // Basic points earned from sending a message
+          streakIncremented,
+          newStreak: streakIncremented ? gameInfo.streak + 1 : gameInfo.streak,
+          timestamp: timestamp.toISOString()
+        }
       });
     } catch (error) {
       console.error("Error processing chatbot message:", error);
