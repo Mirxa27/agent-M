@@ -37,8 +37,8 @@ export const Widget = ({
         <div className="flex items-center justify-between">
           <CardTitle className="text-shadow-sm">
             <div className="flex items-center">
-              {icon && <span className="mr-2 text-primary">{icon}</span>}
-              <span>{title}</span>
+              {icon && <span className="mr-2 text-primary text-shadow-sm">{icon}</span>}
+              <span className="font-medium text-high-contrast">{title}</span>
             </div>
           </CardTitle>
           <div className="flex items-center">
@@ -47,7 +47,7 @@ export const Widget = ({
                 variant="ghost"
                 size="icon"
                 onClick={onRefresh}
-                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-white/5"
+                className="h-8 w-8 text-white/70 hover:text-primary hover:bg-white/10 hover:scale-110 transition-all duration-200"
                 title="Refresh"
               >
                 <RefreshCw className="h-4 w-4" />
@@ -58,7 +58,7 @@ export const Widget = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-white/5"
+                  className="h-8 w-8 text-white/70 hover:text-primary hover:bg-white/10 hover:scale-110 transition-all duration-200"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                   <span className="sr-only">Open menu</span>
@@ -87,7 +87,7 @@ export const Widget = ({
             </DropdownMenu>
           </div>
         </div>
-        {description && <CardDescription className="text-muted-foreground/80 text-shadow-sm">{description}</CardDescription>}
+        {description && <CardDescription className="text-white/80 text-shadow-sm font-medium">{description}</CardDescription>}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>

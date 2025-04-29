@@ -120,12 +120,13 @@ html.rtl .rtl-flip {
   --card-foreground: 20 14.3% 4.1%;
   --border: 20 5.9% 90%;
   --input: 20 5.9% 90%;
-  --primary: 207 90% 54%;
+  --primary: 207 95% 65%;
   --primary-foreground: 211 100% 99%;
   --secondary: 60 4.8% 95.9%;
   --secondary-foreground: 24 9.8% 10%;
   --accent: 60 4.8% 95.9%;
   --accent-foreground: 24 9.8% 10%;
+  --highlight: 280 100% 65%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 60 9.1% 97.8%;
   --ring: 20 14.3% 4.1%;
@@ -142,11 +143,11 @@ html.rtl .rtl-flip {
   --card-foreground: 0 0% 100%;  /* Pure white text in cards */
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
-  --primary: 207 90% 60%;  /* Brighter primary color */
+  --primary: 207 95% 70%;  /* Brighter primary color */
   --primary-foreground: 211 100% 99%;
   --secondary: 240 3.7% 15.9%;
   --secondary-foreground: 0 0% 100%;  /* Pure white secondary text */
-  --accent: 207 90% 20%;  /* Darker accent background */
+  --accent: 280 95% 65%;  /* Vibrant accent for better visibility */
   --accent-foreground: 0 0% 100%;  /* Pure white accent text */
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
