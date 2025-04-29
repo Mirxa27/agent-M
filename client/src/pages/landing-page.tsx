@@ -340,14 +340,14 @@ export default function LandingPage() {
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row items-center">
               <div className="md:w-1/2 md:pr-12 mb-10 md:mb-0">
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6 text-shadow-lg">
                   <span className="bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
                     Next-Generation
                   </span>
                   <br />
-                  AI Agent Platform
+                  <span className="text-high-contrast">AI Agent Platform</span>
                 </h1>
-                <p className="text-xl text-gray-600 mb-8 max-w-lg">
+                <p className="text-xl text-white/90 mb-8 max-w-lg text-shadow-sm">
                   Create, manage, and automate intelligent AI agents that
                   perform complex tasks securely with your credentials and
                   templates.
@@ -355,12 +355,12 @@ export default function LandingPage() {
                 <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                   <Button
                     size="lg"
-                    className="px-8"
+                    className="px-8 shadow-glow"
                     onClick={() => (location.href = "/auth")}
                   >
                     Get Started Free
                   </Button>
-                  <Button size="lg" variant="outline" className="px-8">
+                  <Button size="lg" variant="outline" className="px-8 text-white/90 border-white/40 backdrop-blur-sm hover:bg-white/10">
                     Watch Demo
                   </Button>
                 </div>
@@ -381,10 +381,10 @@ export default function LandingPage() {
         <section id="features" className="py-20 bg-gray-50">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">
+              <h2 className="text-3xl font-bold mb-4 text-high-contrast text-shadow-md">
                 Powerful AI Agent Capabilities
               </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              <p className="text-lg text-gray-700 max-w-2xl mx-auto">
                 Mirxa.io combines advanced AI with secure credential management
                 and template systems to automate your workflows.
               </p>
@@ -412,10 +412,10 @@ export default function LandingPage() {
         <section id="pricing" className="py-20">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">
+              <h2 className="text-3xl font-bold mb-4 text-high-contrast text-shadow-md">
                 Simple, Transparent Pricing
               </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              <p className="text-lg text-white/90 max-w-2xl mx-auto text-shadow-sm">
                 Choose the plan that's right for you, with prices in Saudi Riyal
                 (SAR).
               </p>
@@ -480,10 +480,10 @@ export default function LandingPage() {
         >
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">
+              <h2 className="text-3xl font-bold mb-4 text-high-contrast text-shadow-md">
                 What Our Customers Say
               </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              <p className="text-lg text-white/90 max-w-2xl mx-auto text-shadow-sm">
                 Hear from the businesses and individuals who've transformed
                 their workflows with Mirxa.io.
               </p>
@@ -583,10 +583,10 @@ export default function LandingPage() {
         <section id="faq" className="py-20">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">
+              <h2 className="text-3xl font-bold mb-4 text-high-contrast text-shadow-md">
                 Frequently Asked Questions
               </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              <p className="text-lg text-white/90 max-w-2xl mx-auto text-shadow-sm">
                 Find answers to common questions about Mirxa.io and our AI agent
                 platform.
               </p>
@@ -692,10 +692,10 @@ export default function LandingPage() {
         <section className="py-20 bg-primary text-white">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-shadow-md">
                 Ready to Transform Your Workflow?
               </h2>
-              <p className="text-xl mb-8 opacity-90">
+              <p className="text-xl mb-8 text-white text-opacity-95 text-shadow-sm">
                 Join thousands of users who are already automating their tasks
                 with Mirxa.io's AI agents.
               </p>
