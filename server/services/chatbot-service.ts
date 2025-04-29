@@ -35,10 +35,8 @@ interface GameInfo {
 
 // Helper to get or create a session ID
 export async function getOrCreateSessionId(sessionId?: string | null): Promise<string> {
-  if (sessionId) {
-    return sessionId;
-  }
-  return randomUUID();
+  // If sessionId exists and is not null, return it; otherwise generate a new UUID
+  return sessionId || randomUUID();
 }
 
 // Helper to get or create user game progress
@@ -60,7 +58,7 @@ export async function getOrCreateGameProgress(
       points: progress.points,
       badges: progress.badges as string[],
       streak: progress.streak,
-      avatarChoice: progress.avatarChoice,
+      avatarChoice: progress.avatarChoice || 'default',
       completedChallenges: progress.completedChallenges as string[],
     };
   }
@@ -91,7 +89,13 @@ export async function getOrCreateGameProgress(
 
 // Store chat message
 export async function storeChatMessage(message: InsertChatbotMessage): Promise<void> {
-  await db.insert(chatbotMessages).values(message);
+  // Ensure message.userId is undefined instead of null for DB compatibility
+  const formattedMessage = {
+    ...message,
+    userId: message.userId || undefined
+  };
+  
+  await db.insert(chatbotMessages).values(formattedMessage);
 }
 
 // Get chat history
@@ -247,11 +251,11 @@ export async function updateStreak(
 
 // Get available challenges
 export async function getAvailableChallenges(difficulty?: string): Promise<any[]> {
-  let query: SQL<unknown> = eq(chatbotChallenges.isActive, true);
+  let baseQuery = eq(chatbotChallenges.isActive, true);
   
-  if (difficulty) {
-    query = and(query, eq(chatbotChallenges.difficulty, difficulty));
-  }
+  const query = difficulty 
+    ? and(baseQuery, eq(chatbotChallenges.difficulty, difficulty))
+    : baseQuery;
   
   return db.select().from(chatbotChallenges).where(query);
 }
