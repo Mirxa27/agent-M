@@ -2370,6 +2370,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   import("./routes/browser-observer-routes").then(({ browserObserverRouter }) => {
     app.use("/api/browser-observer", browserObserverRouter);
   });
+  
+  // Import browser automation routes
+  import("./routes/browser-automation-routes").then(({ browserAutomationRouter }) => {
+    app.use("/api/browser-automation", browserAutomationRouter);
+  });
 
   const httpServer = createServer(app);
   return httpServer;
