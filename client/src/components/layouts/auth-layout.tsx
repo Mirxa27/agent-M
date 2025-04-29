@@ -2,6 +2,7 @@ import React, { ReactNode, useState, useEffect } from "react";
 import { Link } from "wouter";
 import { AnimatedLogo } from "@/components/ui/animated-logo";
 import LanguageSwitcher from "@/components/ui/language-switcher";
+import { SplineBackground } from "@/components/ui/spline-background";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 
