@@ -1,0 +1,29 @@
+# .htaccess for Hostinger deployment
+
+# Enable URL rewriting
+RewriteEngine On
+
+# Redirect all traffic to HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Handle front controller
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
+
+# Custom error pages
+ErrorDocument 404 /404.html
+ErrorDocument 500 /500.html
+
+# Set environment variables
+SetEnv DB_HOST srv1505.hstgr.io
+SetEnv DB_PORT 3306
+SetEnv DB_USER u221943340_agent
+SetEnv DB_PASSWORD Mirxa420$
+SetEnv DB_NAME u221943340_agent
+SetEnv SMTP_HOST smtp.hostinger.com
+SetEnv SMTP_PORT 465
+SetEnv SMTP_USER join@Mirxa.io
+SetEnv SMTP_PASS Mirxa420$
+SetEnv EMAIL_FROM Mirxa
