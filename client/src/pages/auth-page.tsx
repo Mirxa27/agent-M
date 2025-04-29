@@ -96,7 +96,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-auth-gradient">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm card-glass p-6 rounded-xl shadow-md backdrop-blur-md bg-opacity-60 border border-white/10">
         <div className="text-center mb-4">
           <h1 className="text-2xl font-heading font-bold text-high-contrast text-shadow-md">
