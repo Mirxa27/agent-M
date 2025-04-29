@@ -513,6 +513,206 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete credential" });
     }
   });
+  
+  // Gmail service-specific routes
+  app.post("/api/services/gmail/credentials", requireAuth, async (req, res) => {
+    try {
+      const { name, email, app_password, access_token, refresh_token, expiresInDays } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Credential name is required" });
+      }
+      
+      // Validate that we have at least one auth method
+      if (!app_password && !(access_token && refresh_token)) {
+        return res.status(400).json({ 
+          error: "Either app_password or both access_token and refresh_token are required" 
+        });
+      }
+      
+      const data = {
+        email: email || "",
+        app_password: app_password || undefined,
+        access_token: access_token || undefined,
+        refresh_token: refresh_token || undefined,
+        expires_at: access_token ? Date.now() + 3600 * 1000 : undefined // Default to 1 hour for OAuth tokens
+      };
+      
+      const credential = await gmailService.saveGmailCredentials(
+        req.user.id, 
+        name, 
+        data, 
+        expiresInDays || 90
+      );
+      
+      // Log the creation
+      await storage.createUserActivity({
+        userId: req.user.id,
+        activityType: "gmail_credential_created",
+        resourceId: credential.id,
+        resourceType: "credential",
+        metadata: { 
+          name: credential.name,
+          email: email
+        },
+      });
+      
+      // Don't return sensitive data
+      const { data: _, ...credentialWithoutData } = credential;
+      res.status(201).json(credentialWithoutData);
+    } catch (error) {
+      console.error("Error creating Gmail credentials:", error);
+      res.status(500).json({ error: "Failed to create Gmail credentials" });
+    }
+  });
+  
+  app.get("/api/services/gmail/credentials", requireAuth, async (req, res) => {
+    try {
+      const credentials = await gmailService.listGmailCredentials(req.user.id);
+      res.json(credentials);
+    } catch (error) {
+      console.error("Error listing Gmail credentials:", error);
+      res.status(500).json({ error: "Failed to list Gmail credentials" });
+    }
+  });
+  
+  app.post("/api/services/gmail/send-email", requireAuth, async (req, res) => {
+    try {
+      const { credentialId, to, subject, body, attachments } = req.body;
+      
+      if (!credentialId || !to || !subject || !body) {
+        return res.status(400).json({ 
+          error: "Missing required fields: credentialId, to, subject, body" 
+        });
+      }
+      
+      // Convert credentialId to number if it's a string
+      const credentialIdNum = typeof credentialId === 'string' 
+        ? parseInt(credentialId) 
+        : credentialId;
+      
+      // Validate ownership of credential
+      const cred = await storage.getCredential(credentialIdNum);
+      if (!cred || cred.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized to use this credential" });
+      }
+      
+      // Send email
+      const result = await gmailService.sendEmail(
+        req.user.id,
+        credentialIdNum,
+        {
+          to,
+          subject,
+          body,
+          attachments: attachments || []
+        }
+      );
+      
+      // Log the email sending
+      await storage.createUserActivity({
+        userId: req.user.id,
+        activityType: "email_sent",
+        resourceId: credentialIdNum,
+        resourceType: "credential",
+        metadata: { 
+          subject,
+          to: typeof to === 'string' ? to : to.join(',')
+        },
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error sending email:", error);
+      res.status(500).json({ error: "Failed to send email" });
+    }
+  });
+  
+  app.get("/api/services/gmail/messages", requireAuth, async (req, res) => {
+    try {
+      const { credentialId, maxResults, includeAttachments, labelIds, query } = req.query;
+      
+      if (!credentialId) {
+        return res.status(400).json({ error: "credentialId is required" });
+      }
+      
+      // Convert credentialId to number
+      const credentialIdNum = parseInt(credentialId as string);
+      
+      // Validate ownership of credential
+      const cred = await storage.getCredential(credentialIdNum);
+      if (!cred || cred.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized to use this credential" });
+      }
+      
+      // Parse options
+      const options: any = {};
+      
+      if (maxResults) {
+        options.maxResults = parseInt(maxResults as string);
+      }
+      
+      if (includeAttachments) {
+        options.includeAttachments = includeAttachments === 'true';
+      }
+      
+      if (labelIds) {
+        options.labelIds = typeof labelIds === 'string' 
+          ? [labelIds] 
+          : Array.isArray(labelIds) ? labelIds : undefined;
+      }
+      
+      if (query) {
+        options.query = query as string;
+      }
+      
+      // Get messages
+      const messages = await gmailService.getMessages(
+        req.user.id,
+        credentialIdNum,
+        options
+      );
+      
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching Gmail messages:", error);
+      res.status(500).json({ error: "Failed to fetch Gmail messages" });
+    }
+  });
+  
+  // Endpoint to refresh OAuth tokens
+  app.post("/api/services/gmail/refresh-token", requireAuth, async (req, res) => {
+    try {
+      const { credentialId } = req.body;
+      
+      if (!credentialId) {
+        return res.status(400).json({ error: "credentialId is required" });
+      }
+      
+      // Convert credentialId to number if it's a string
+      const credentialIdNum = typeof credentialId === 'string' 
+        ? parseInt(credentialId) 
+        : credentialId;
+      
+      // Validate ownership of credential
+      const cred = await storage.getCredential(credentialIdNum);
+      if (!cred || cred.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized to use this credential" });
+      }
+      
+      // Refresh token
+      const success = await gmailService.refreshOAuthToken(req.user.id, credentialIdNum);
+      
+      if (success) {
+        res.json({ success: true, message: "Token refreshed successfully" });
+      } else {
+        res.status(400).json({ success: false, error: "Failed to refresh token" });
+      }
+    } catch (error) {
+      console.error("Error refreshing Gmail OAuth token:", error);
+      res.status(500).json({ error: "Failed to refresh OAuth token" });
+    }
+  });
 
   // File/Template routes
   app.get("/api/files", requireAuth, async (req, res) => {

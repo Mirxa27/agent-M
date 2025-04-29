@@ -70,7 +70,8 @@ export class CredentialService {
       return credential;
     } catch (error) {
       console.error("Error creating credential:", error);
-      throw new Error(`Failed to create credential: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to create credential: ${errorMessage}`);
     }
   }
 
@@ -107,7 +108,8 @@ export class CredentialService {
       };
     } catch (error) {
       console.error("Error getting credential:", error);
-      throw new Error(`Failed to get credential: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get credential: ${errorMessage}`);
     }
   }
 
