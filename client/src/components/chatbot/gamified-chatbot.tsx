@@ -462,7 +462,7 @@ export const GamifiedChatbot = () => {
                               </div>
                             ) : (
                               <div className="flex items-start gap-2 max-w-[90%]">
-                                <div className="rounded-2xl rounded-tr-none px-4 py-2 shadow-md bg-gradient-to-br from-primary/80 to-primary-dark/90 text-white border border-primary/30">
+                                <div className="rounded-2xl rounded-tr-none px-4 py-2 shadow-md bg-gradient-to-br from-primary/80 to-indigo-700/90 text-white border border-primary/30">
                                   <p className="text-sm break-words leading-relaxed">{message.content}</p>
                                 </div>
                                 <div className="flex-shrink-0 mt-1 bg-primary/20 rounded-full p-1">
