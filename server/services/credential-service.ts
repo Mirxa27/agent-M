@@ -165,10 +165,11 @@ export class CredentialService {
         credentialUpdates
       );
 
-      return updatedCredential;
+      return updatedCredential || null;
     } catch (error) {
       console.error("Error updating credential:", error);
-      throw new Error(`Failed to update credential: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to update credential: ${errorMessage}`);
     }
   }
 
@@ -198,10 +199,11 @@ export class CredentialService {
         lastRefreshedAt: new Date(),
       });
 
-      return updatedCredential;
+      return updatedCredential || null;
     } catch (error) {
       console.error("Error refreshing credential:", error);
-      throw new Error(`Failed to refresh credential: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to refresh credential: ${errorMessage}`);
     }
   }
 
@@ -224,7 +226,8 @@ export class CredentialService {
       return credentials.map(({ data, ...rest }) => rest);
     } catch (error) {
       console.error("Error listing credentials:", error);
-      throw new Error(`Failed to list credentials: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to list credentials: ${errorMessage}`);
     }
   }
 
@@ -252,7 +255,8 @@ export class CredentialService {
       return expiringCredentials.map(({ data, ...rest }) => rest);
     } catch (error) {
       console.error("Error getting expiring credentials:", error);
-      throw new Error(`Failed to get expiring credentials: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get expiring credentials: ${errorMessage}`);
     }
   }
 
@@ -270,7 +274,8 @@ export class CredentialService {
       return await storage.deleteCredential(id);
     } catch (error) {
       console.error("Error deleting credential:", error);
-      throw new Error(`Failed to delete credential: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to delete credential: ${errorMessage}`);
     }
   }
 }
