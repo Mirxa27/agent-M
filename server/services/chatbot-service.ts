@@ -282,7 +282,7 @@ export async function generateResponse(
     
     // Format message history for OpenAI
     const formattedHistory = history.map(msg => ({
-      role: msg.isBot ? "assistant" : "user",
+      role: msg.isBot ? "assistant" as const : "user" as const,
       content: msg.content
     })).reverse();
     
@@ -308,9 +308,9 @@ export async function generateResponse(
     const completion = await openai.chat.completions.create({
       model: DEFAULT_MODEL,
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system" as const, content: systemPrompt },
         ...formattedHistory,
-        { role: "user", content: userMessage }
+        { role: "user" as const, content: userMessage }
       ],
       temperature: 0.7,
       max_tokens: 150
