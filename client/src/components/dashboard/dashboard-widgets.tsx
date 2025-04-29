@@ -199,8 +199,8 @@ export const DashboardWidgets = () => {
     <>
       <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-lg font-medium text-high-contrast text-shadow-sm">Your Dashboard</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-xl font-semibold text-high-contrast text-shadow-md mb-1">Your Dashboard</h2>
+          <p className="text-sm text-white/80 text-shadow-sm">
             Customize your dashboard by adding, removing, or rearranging widgets.
           </p>
         </div>
@@ -290,14 +290,15 @@ export const DashboardWidgets = () => {
       </div>
 
       {sortedWidgets.length === 0 ? (
-        <div className="p-12 card-glass rounded-lg text-center">
-          <p className="text-high-contrast text-shadow-sm mb-4">
+        <div className="glass-effect-lighter p-12 rounded-lg text-center border border-white/20 shadow-xl card-hover relative group">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/10 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-lg pointer-events-none"></div>
+          <p className="text-high-contrast text-shadow-md mb-6 text-lg">
             Your dashboard is empty. Add some widgets to get started.
           </p>
           <Button
             onClick={() => setAddWidgetOpen(true)}
             variant="default"
-            className="shadow-glow"
+            className="shadow-glow hover:scale-105 transition-transform duration-300"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Widget
@@ -337,8 +338,8 @@ export const DashboardWidgets = () => {
                             <GripVertical className="h-4 w-4 text-white text-shadow-sm" />
                           </div>
                           <div className="pl-7">
-                            <div className="glass-effect-lighter rounded-lg p-4 hover:shadow-xl transition-all duration-300 card-hover text-shadow-sm border border-white/10 relative group">
-                              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-lg pointer-events-none"></div>
+                            <div className="glass-effect-lighter rounded-lg p-4 hover:shadow-xl transition-all duration-300 card-hover text-shadow-sm border border-white/20 relative group overflow-hidden">
+                              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/10 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-lg pointer-events-none"></div>
                               <WidgetComponent onRemove={() => handleRemoveWidget(widget.id)} />
                             </div>
                           </div>
