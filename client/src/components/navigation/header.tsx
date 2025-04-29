@@ -27,6 +27,14 @@ import {
   Menu,
   X,
   Globe,
+  PanelLeft,
+  Users,
+  Database,
+  Tag,
+  Wrench,
+  Sparkles,
+  Languages,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -184,23 +192,65 @@ export function Header({ customLayout = false }: HeaderProps) {
                     <NavigationMenuItem>
                       <NavigationMenuTrigger>Admin</NavigationMenuTrigger>
                       <NavigationMenuContent>
-                        <ul className="grid w-[200px] p-2 gap-2">
+                        <ul className="grid w-[220px] gap-2 p-2">
                           <li>
                             <div
-                              onClick={() =>
-                                (window.location.href = "/admin/dashboard")
-                              }
+                              onClick={() => (window.location.href = "/admin/dashboard")}
                               className={cn(
-                                "flex items-center select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
-                                location === "/admin/dashboard"
-                                  ? "bg-primary/10 text-primary"
-                                  : "",
+                                "flex items-center select-none rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
+                                location === "/admin/dashboard" ? "bg-primary/10 text-primary" : "",
                               )}
                             >
-                              <div className="flex items-center">
-                                <User className="w-4 h-4 mr-2" />
-                                <span>Dashboard</span>
-                              </div>
+                              <PanelLeft className="w-4 h-4 mr-2" />
+                              <span>Dashboard</span>
+                            </div>
+                          </li>
+                          <li>
+                            <div
+                              onClick={() => (window.location.href = "/admin/users")}
+                              className={cn(
+                                "flex items-center select-none rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
+                                location === "/admin/users" ? "bg-primary/10 text-primary" : "",
+                              )}
+                            >
+                              <Users className="w-4 h-4 mr-2" />
+                              <span>Users</span>
+                            </div>
+                          </li>
+                          <li>
+                            <div
+                              onClick={() => (window.location.href = "/admin/providers")}
+                              className={cn(
+                                "flex items-center select-none rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
+                                location === "/admin/providers" ? "bg-primary/10 text-primary" : "",
+                              )}
+                            >
+                              <Database className="w-4 h-4 mr-2" />
+                              <span>AI Providers</span>
+                            </div>
+                          </li>
+                          <li>
+                            <div
+                              onClick={() => (window.location.href = "/admin/models")}
+                              className={cn(
+                                "flex items-center select-none rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
+                                location === "/admin/models" ? "bg-primary/10 text-primary" : "",
+                              )}
+                            >
+                              <Bot className="w-4 h-4 mr-2" />
+                              <span>AI Models</span>
+                            </div>
+                          </li>
+                          <li>
+                            <div
+                              onClick={() => (window.location.href = "/admin/plans")}
+                              className={cn(
+                                "flex items-center select-none rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
+                                location === "/admin/plans" ? "bg-primary/10 text-primary" : "",
+                              )}
+                            >
+                              <Settings className="w-4 h-4 mr-2" />
+                              <span>Plans</span>
                             </div>
                           </li>
                         </ul>
@@ -423,8 +473,68 @@ export function Header({ customLayout = false }: HeaderProps) {
                           : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
                       )}
                     >
-                      <User className="h-5 w-5 mr-3" />
+                      <PanelLeft className="h-5 w-5 mr-3" />
                       Dashboard
+                    </div>
+                    <div
+                      onClick={() => {
+                        window.location.href = "/admin/users";
+                        setMobileMenuOpen(false);
+                      }}
+                      className={cn(
+                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
+                        location === "/admin/users"
+                          ? "bg-primary/10 text-primary"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
+                      )}
+                    >
+                      <Users className="h-5 w-5 mr-3" />
+                      Users
+                    </div>
+                    <div
+                      onClick={() => {
+                        window.location.href = "/admin/providers";
+                        setMobileMenuOpen(false);
+                      }}
+                      className={cn(
+                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
+                        location === "/admin/providers"
+                          ? "bg-primary/10 text-primary"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
+                      )}
+                    >
+                      <Database className="h-5 w-5 mr-3" />
+                      AI Providers
+                    </div>
+                    <div
+                      onClick={() => {
+                        window.location.href = "/admin/models";
+                        setMobileMenuOpen(false);
+                      }}
+                      className={cn(
+                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
+                        location === "/admin/models"
+                          ? "bg-primary/10 text-primary"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
+                      )}
+                    >
+                      <Bot className="h-5 w-5 mr-3" />
+                      AI Models
+                    </div>
+                    <div
+                      onClick={() => {
+                        window.location.href = "/admin/plans";
+                        setMobileMenuOpen(false);
+                      }}
+                      className={cn(
+                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
+                        location === "/admin/plans"
+                          ? "bg-primary/10 text-primary"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
+                      )}
+                    >
+                      <Settings className="h-5 w-5 mr-3" />
+                      Plans
                     </div>
                   </>
                 )}
