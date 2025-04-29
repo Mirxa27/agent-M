@@ -289,14 +289,22 @@ export const GamifiedChatbot = () => {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            className="fixed bottom-6 right-6 z-50"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 300, 
+              damping: 15 
+            }}
+            className="fixed bottom-6 right-6 z-50 touch-manipulation"
           >
             <Button
               onClick={toggleChatbot}
               size="icon"
-              className="h-12 w-12 rounded-full bg-primary shadow-lg hover:bg-primary/90"
+              className="h-14 w-14 sm:h-12 sm:w-12 rounded-full bg-primary shadow-glow hover:bg-primary/90 transition-all border border-primary-foreground/20 active:translate-y-1"
+              aria-label="Open chat assistant"
             >
-              <Bot className="h-6 w-6" />
+              <Bot className="h-7 w-7 sm:h-6 sm:w-6" />
             </Button>
           </motion.div>
         )}
@@ -306,31 +314,34 @@ export const GamifiedChatbot = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 right-6 z-50"
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
+            className="fixed bottom-0 sm:bottom-6 right-0 sm:right-6 z-50 w-full sm:w-auto"
           >
-            <Card className="w-80 sm:w-96 shadow-lg border-primary/20">
-              <CardHeader className="p-3 border-b flex flex-row items-center justify-between space-y-0">
+            <Card className="w-full sm:w-96 shadow-xl border-primary/20 max-h-[90vh] sm:max-h-[600px] flex flex-col">
+              <CardHeader className="p-3 border-b flex flex-row items-center justify-between space-y-0 bg-black/30 backdrop-blur-sm">
                 <div className="flex items-center space-x-2">
                   <Bot className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-base">Mirxa Assistant</CardTitle>
+                  <CardTitle className="text-base text-white text-shadow-sm">Mirxa Assistant</CardTitle>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-7 w-7" 
+                    className="h-8 w-8 opacity-80 hover:opacity-100 hover:bg-black/20 transition-all" 
                     onClick={toggleMinimize}
+                    aria-label={isMinimized ? "Maximize chat" : "Minimize chat"}
                   >
                     {isMinimized ? <MaximizeIcon className="h-4 w-4" /> : <MinimizeIcon className="h-4 w-4" />}
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-7 w-7" 
+                    className="h-8 w-8 opacity-80 hover:opacity-100 hover:bg-black/20 transition-all" 
                     onClick={toggleChatbot}
+                    aria-label="Close chat"
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -371,44 +382,56 @@ export const GamifiedChatbot = () => {
                     </div>
 
                     {/* Chat messages */}
-                    <CardContent className="p-3 max-h-96 overflow-y-auto card-glass bg-opacity-60">
+                    <CardContent className="p-3 overflow-y-auto card-glass bg-opacity-60 flex-grow" style={{ height: "calc(50vh - 120px)", minHeight: "180px" }}>
                       <div className="space-y-4">
-                        {messages.map((message) => (
-                          <div
+                        {messages.map((message, index) => (
+                          <motion.div
                             key={message.id}
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ 
+                              delay: index * 0.05, 
+                              duration: 0.3,
+                              type: "spring",
+                              damping: 15 
+                            }}
                             className={`flex ${
                               message.isBot ? "justify-start" : "justify-end"
                             }`}
                           >
                             <div
-                              className={`rounded-lg px-3 py-2 max-w-[80%] ${
+                              className={`rounded-lg px-3 py-2 max-w-[85%] shadow-md ${
                                 message.isBot
-                                  ? "bg-muted/70 text-foreground text-shadow-sm"
-                                  : "bg-primary/80 text-primary-foreground text-shadow-sm"
+                                  ? "bg-black/40 backdrop-blur-sm text-white text-shadow-sm border border-gray-800/50"
+                                  : "bg-primary/80 text-primary-foreground text-shadow-sm border border-primary/30"
                               }`}
                             >
                               <div className="flex items-start gap-2">
                                 {message.isBot && (
                                   <Bot className="h-4 w-4 mt-1 flex-shrink-0" />
                                 )}
-                                <p className="text-sm">{message.content}</p>
+                                <p className="text-sm break-words">{message.content}</p>
                                 {!message.isBot && (
                                   <User className="h-4 w-4 mt-1 flex-shrink-0" />
                                 )}
                               </div>
                             </div>
-                          </div>
+                          </motion.div>
                         ))}
                         {isLoading && (
-                          <div className="flex justify-start">
-                            <div className="bg-muted/70 rounded-lg px-4 py-2 max-w-[80%]">
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex justify-start"
+                          >
+                            <div className="bg-black/40 backdrop-blur-sm rounded-lg px-4 py-2 max-w-[85%] shadow-md border border-gray-800/50">
                               <div className="flex space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
                                 <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0.2s" }}></div>
                                 <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0.4s" }}></div>
                               </div>
                             </div>
-                          </div>
+                          </motion.div>
                         )}
                         <div ref={messagesEndRef} />
                       </div>
@@ -416,14 +439,14 @@ export const GamifiedChatbot = () => {
 
                     {/* Badges */}
                     {gameInfo.badges.length > 0 && (
-                      <div className="px-3 py-2 border-t">
-                        <p className="text-xs font-medium mb-1">Your badges:</p>
+                      <div className="px-3 py-2 border-t border-gray-800/50 bg-black/30 backdrop-blur-sm">
+                        <p className="text-xs font-medium mb-1 text-white text-shadow-sm">Your badges:</p>
                         {renderBadges()}
                       </div>
                     )}
 
                     {/* Input */}
-                    <CardFooter className="p-3 border-t">
+                    <CardFooter className="p-3 border-t border-gray-800/50 bg-black/30 backdrop-blur-sm mt-auto">
                       <form 
                         className="flex w-full space-x-2"
                         onSubmit={(e) => {
@@ -437,12 +460,13 @@ export const GamifiedChatbot = () => {
                           onKeyDown={handleKeyPress}
                           disabled={isLoading}
                           placeholder="Type your message..."
-                          className="flex-1"
+                          className="flex-1 bg-black/50 border-gray-700 placeholder:text-gray-400 text-white focus-visible:ring-primary"
                         />
                         <Button 
                           size="icon"
                           type="submit"
                           disabled={isLoading || !input.trim()}
+                          className="bg-primary hover:bg-primary/90 shadow-md transition-all active:translate-y-0.5"
                         >
                           <Send className="h-4 w-4" />
                         </Button>
