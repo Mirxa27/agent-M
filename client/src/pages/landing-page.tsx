@@ -321,14 +321,19 @@ export default function LandingPage() {
         {/* Mobile menu */}
         <div
           ref={mobileMenuRef}
-          className={cn(
-            "md:hidden fixed inset-y-0 right-0 z-50 w-full sm:max-w-sm bg-black/95 backdrop-blur-lg border-l border-primary shadow-2xl transform transition-all duration-300 ease-in-out overflow-auto",
-            mobileMenuOpen ? "translate-x-0 opacity-100 pointer-events-auto" : "translate-x-full opacity-0 pointer-events-none",
-          )}
-          style={{ top: "0px" }}
+          className="md:hidden fixed inset-0 z-50 bg-black/95 w-full sm:max-w-sm"
+          style={{
+            right: mobileMenuOpen ? "0" : "-100%",
+            top: "0",
+            bottom: "0",
+            transition: "right 0.3s ease",
+            borderLeft: "1px solid rgba(255, 255, 255, 0.1)",
+            boxShadow: "0 0 20px rgba(0, 0, 0, 0.5)",
+            overflow: "auto"
+          }}
         >
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-8 border-b border-white/20 pb-4">
+          <div className="p-6 bg-gradient-to-br from-gray-900 to-black/90 min-h-screen">
+            <div className="flex items-center justify-between mb-8 border-b border-primary/50 pb-4">
               <Link href="/" className="flex items-center space-x-2">
                 <Bot className="h-7 w-7 text-primary" />
                 <span className="font-bold text-xl bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
@@ -340,66 +345,73 @@ export default function LandingPage() {
                   console.log("Close button clicked");
                   setMobileMenuOpen(false);
                 }}
-                className="p-2 rounded-md btn-glass bg-red-500"
+                className="p-3 rounded-md btn-glass bg-red-500 hover:bg-red-600 shadow-glow"
               >
                 <X className="h-5 w-5 text-white" />
               </button>
             </div>
 
             <nav className="space-y-6">
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <h3 className="text-xs uppercase tracking-wider text-primary text-shadow-sm font-semibold">
                   Menu
                 </h3>
-                <div className="space-y-2 pl-2">
+                <div className="space-y-3 pl-2">
                   <Link
                     href="#features"
-                    className="flex items-center py-2 text-base font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
+                    className="flex items-center py-3 px-4 text-base font-medium text-white hover:text-primary text-shadow-sm transition-colors bg-gray-800/60 rounded-lg hover:bg-gray-800/90"
                     onClick={() => setMobileMenuOpen(false)}
                   >
+                    <Zap className="h-5 w-5 mr-3 text-primary" />
                     Features
                   </Link>
                   <Link
                     href="#pricing"
-                    className="flex items-center py-2 text-base font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
+                    className="flex items-center py-3 px-4 text-base font-medium text-white hover:text-primary text-shadow-sm transition-colors bg-gray-800/60 rounded-lg hover:bg-gray-800/90"
                     onClick={() => setMobileMenuOpen(false)}
                   >
+                    <CreditCard className="h-5 w-5 mr-3 text-primary" />
                     Pricing
                   </Link>
                   <Link
                     href="#testimonials"
-                    className="flex items-center py-2 text-base font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
+                    className="flex items-center py-3 px-4 text-base font-medium text-white hover:text-primary text-shadow-sm transition-colors bg-gray-800/60 rounded-lg hover:bg-gray-800/90"
                     onClick={() => setMobileMenuOpen(false)}
                   >
+                    <Star className="h-5 w-5 mr-3 text-primary" />
                     Testimonials
                   </Link>
                   <Link
                     href="#faq"
-                    className="flex items-center py-2 text-base font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
+                    className="flex items-center py-3 px-4 text-base font-medium text-white hover:text-primary text-shadow-sm transition-colors bg-gray-800/60 rounded-lg hover:bg-gray-800/90"
                     onClick={() => setMobileMenuOpen(false)}
                   >
+                    <MessageSquare className="h-5 w-5 mr-3 text-primary" />
                     FAQ
                   </Link>
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-white/20">
+              <div className="pt-6 border-t border-primary/30">
+                <div className="mt-4 text-lg font-semibold text-white mb-4">Ready to get started?</div>
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     location.href = "/auth";
                   }}
-                  className="btn-glass btn-glass-primary w-full mb-3 py-3 shadow-glow"
+                  className="btn-glass btn-glass-primary w-full mb-4 py-4 text-lg font-medium shadow-glow flex items-center justify-center"
                 >
-                  Get Started
+                  <RocketIcon className="h-5 w-5 mr-2" />
+                  Get Started Free
                 </button>
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     location.href = "/auth";
                   }}
-                  className="btn-glass w-full py-3"
+                  className="btn-glass w-full py-4 text-lg font-medium flex items-center justify-center"
                 >
+                  <User className="h-5 w-5 mr-2" />
                   Sign In
                 </button>
               </div>
