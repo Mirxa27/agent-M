@@ -185,47 +185,20 @@ export default function LandingPage() {
     },
   ];
 
-  // Define types for the plans
-  type DbPlan = {
-    id: number;
-    name: string;
-    price: number;
-    interval: string;
-    isActive: boolean;
-    features?: {
-      agentLimit?: number;
-      taskLimit?: number;
-      storageLimit?: number;
-      credentialLimit?: number;
-      advancedModels?: boolean;
-      customPrompts?: boolean;
-      priority?: boolean;
-    };
-  };
-
-  type DisplayablePlan = {
-    name: string;
-    price: string;
-    interval: string;
-    features: string[];
-    buttonText: string;
-    popular: boolean;
-  };
-
   // Transform DB plans into displayable plans
-  const transformDbPlansToDisplayable = (plans: DbPlan[] | undefined): DisplayablePlan[] => {
+  const transformDbPlansToDisplayable = (plans) => {
     if (!plans || plans.length === 0) return fallbackPlans;
     
     return plans
       .filter(plan => plan.isActive)
-      .sort((a: DbPlan, b: DbPlan) => a.price - b.price)
-      .map((plan: DbPlan) => {
+      .sort((a, b) => a.price - b.price)
+      .map(plan => {
         // Set popularity: make the middle plan popular if there are 3+ plans
         const isMiddlePlan = plans.length >= 3 && 
           plans.indexOf(plan) === Math.floor(plans.length / 2) - (plans.length % 2 === 0 ? 1 : 0);
         
         // Extract features from plan.features object
-        const featuresList: string[] = [];
+        const featuresList = [];
         if (plan.features) {
           if (plan.features.agentLimit) featuresList.push(`${plan.features.agentLimit} AI Agents`);
           if (plan.features.taskLimit) featuresList.push(`${plan.features.taskLimit} Tasks/month`);
@@ -319,13 +292,20 @@ export default function LandingPage() {
             {/* Mobile menu button */}
             <div className="md:hidden flex items-center">
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                onClick={() => {
+                  console.log("Menu button clicked, current state:", mobileMenuOpen);
+                  setMobileMenuOpen(true); // Force it open on every click for testing
+                }}
                 className="p-2 rounded-md btn-glass bg-primary shadow-glow flex items-center justify-center"
                 aria-expanded={mobileMenuOpen}
                 aria-label="Toggle menu"
                 style={{ width: '45px', height: '45px' }}
               >
-                <Menu className="h-6 w-6 text-white font-bold" />
+                {mobileMenuOpen ? (
+                  <X className="h-6 w-6 text-white" />
+                ) : (
+                  <Menu className="h-6 w-6 text-white font-bold" />
+                )}
               </button>
             </div>
           </div>
@@ -335,81 +315,73 @@ export default function LandingPage() {
         {mobileMenuOpen && (
           <div className="fixed inset-0 bg-black/70 flex justify-end z-50">
             <div 
-              className="bg-[#111827] border-l border-primary shadow-lg w-full sm:w-96 h-full overflow-y-auto"
+              className="bg-black border-l border-primary shadow-lg w-full sm:w-96 h-full"
               ref={mobileMenuRef}
             >
-              <div className="p-4 text-white">
-                <div className="flex items-center justify-between border-b border-primary/30 pb-3">
-                  <div className="flex items-center space-x-2 bg-[#111827] py-2">
-                    <Bot className="h-5 w-5 text-white" />
-                    <span className="font-medium text-white">
+              <div className="p-6 text-white">
+                <div className="flex items-center justify-between mb-8 border-b border-primary/50 pb-4">
+                  <Link href="/" className="flex items-center space-x-2">
+                    <Bot className="h-7 w-7 text-primary" />
+                    <span className="font-bold text-xl text-white">
                       Mirxa.io
                     </span>
-                  </div>
+                  </Link>
                   <button
                     onClick={() => setMobileMenuOpen(false)}
-                    className="p-1.5 rounded-sm bg-red-600/90 hover:bg-red-700 text-white"
+                    className="p-2 rounded bg-red-600 text-white"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-6 w-6" />
                   </button>
                 </div>
                 
-                <div className="menu-items space-y-2 mb-8">
-                  <a href="#features" 
-                    className="flex items-center py-3 px-4 bg-[#1E293B] hover:bg-gray-800 rounded-md text-white"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <div className="flex items-center justify-center w-7 h-7 mr-3 text-blue-400">
-                      <Zap className="h-5 w-5" />
+                <div className="menu-items space-y-4 mb-8">
+                  <a href="#features" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}>
+                    <div className="flex items-center">
+                      <Zap className="h-5 w-5 mr-3 text-primary" />
+                      Features
                     </div>
-                    Features
                   </a>
                   
-                  <a href="#pricing" 
-                    className="flex items-center py-3 px-4 bg-[#1E293B] hover:bg-gray-800 rounded-md text-white"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <div className="flex items-center justify-center w-7 h-7 mr-3 text-blue-400">
-                      <CreditCard className="h-5 w-5" />
+                  <a href="#pricing" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}>
+                    <div className="flex items-center">
+                      <CreditCard className="h-5 w-5 mr-3 text-primary" />
+                      Pricing
                     </div>
-                    Pricing
                   </a>
                   
-                  <a href="#testimonials" 
-                    className="flex items-center py-3 px-4 bg-[#1E293B] hover:bg-gray-800 rounded-md text-white"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <div className="flex items-center justify-center w-7 h-7 mr-3 text-blue-400">
-                      <Star className="h-5 w-5" />
+                  <a href="#testimonials" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}>
+                    <div className="flex items-center">
+                      <Star className="h-5 w-5 mr-3 text-primary" />
+                      Testimonials
                     </div>
-                    Testimonials
                   </a>
                   
-                  <a href="#faq" 
-                    className="flex items-center py-3 px-4 bg-[#1E293B] hover:bg-gray-800 rounded-md text-white"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <div className="flex items-center justify-center w-7 h-7 mr-3 text-blue-400">
-                      <MessageSquare className="h-5 w-5" />
+                  <a href="#faq" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}>
+                    <div className="flex items-center">
+                      <MessageSquare className="h-5 w-5 mr-3 text-primary" />
+                      FAQ
                     </div>
-                    FAQ
                   </a>
                 </div>
                 
-                <div className="pt-4 mb-4">
-                  <div className="text-lg font-medium text-blue-400 mb-4">Account</div>
+                <div className="pt-4 border-t border-gray-700">
+                  <div className="text-lg font-bold mb-4">Account</div>
                   <button 
-                    className="w-full mb-3 py-3 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-600 transition-colors shadow-sm"
+                    className="w-full mb-3 py-3 bg-primary text-white rounded font-bold"
                     onClick={() => { setMobileMenuOpen(false); location.href = "/auth"; }}
                   >
                     Get Started
                   </button>
                   
                   <button 
-                    className="w-full py-3 bg-gray-600/30 hover:bg-gray-600/50 text-white rounded-md transition-colors"
+                    className="w-full py-3 border border-gray-600 text-white rounded"
                     onClick={() => { setMobileMenuOpen(false); location.href = "/auth"; }}
                   >
-                    Watch Demo
+                    Sign In
                   </button>
                 </div>
               </div>
@@ -482,11 +454,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {features.map((feature: {
-                icon: React.ReactNode;
-                title: string;
-                description: string;
-              }, index: number) => (
+              {features.map((feature, index) => (
                 <div
                   key={index}
                   className="card-glass card-hover p-8 rounded-xl shadow-md border-white/10"
@@ -521,7 +489,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {plans.map((plan: DisplayablePlan, index: number) => (
+              {plans.map((plan, index) => (
                 <div
                   key={index}
                   className={`
@@ -548,7 +516,7 @@ export default function LandingPage() {
                       </span>
                     </div>
                     <ul className="space-y-3 mb-8">
-                      {plan.features.map((feature: string, i: number) => (
+                      {plan.features.map((feature, i) => (
                         <li key={i} className="flex items-center">
                           <Check className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
                           <span className="text-white/90 text-shadow-sm">{feature}</span>
