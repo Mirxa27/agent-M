@@ -4,6 +4,21 @@ import { Widget } from './widget-base';
 import { LoadingWidget } from './loading-widget';
 import { EmptyState } from '@/components/ui/empty-state';
 
+export interface UserAnalytics {
+  message?: string;
+  taskCount?: number;
+  successfulTaskCount?: number;
+  failedTaskCount?: number;
+  tokenUsage?: number;
+  averageCompletionTime?: number;
+  mostUsedAgentId?: number | null;
+  mostUsedToolType?: string | null;
+  period?: string;
+  periodStart?: string;
+  periodEnd?: string;
+  metadata?: Record<string, any>;
+}
+
 export interface StatsWidgetProps {
   onRemove?: () => void;
 }
@@ -14,7 +29,7 @@ export const StatsWidget = ({ onRemove }: StatsWidgetProps) => {
     error, 
     data: analytics,
     refetch 
-  } = useQuery({
+  } = useQuery<UserAnalytics>({
     queryKey: ['/api/user/analytics'],
   });
 

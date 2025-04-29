@@ -37,6 +37,22 @@ import {
   WidgetConfig
 } from './widgets';
 
+// Interface for dashboard preferences
+interface DashboardLayout {
+  columns: number;
+}
+
+interface DashboardPreferences {
+  id?: number;
+  userId?: number;
+  widgets: WidgetConfig[];
+  layout: DashboardLayout;
+  favoriteAgents?: any[];
+  recentTasks?: any[];
+  theme?: string;
+  updatedAt?: string;
+}
+
 // Widget Component Map to render the correct widget based on ID
 const WIDGET_COMPONENTS: Record<string, React.FC<{ onRemove: () => void }>> = {
   activity: ({ onRemove }) => <ActivityWidget onRemove={onRemove} />,
@@ -54,7 +70,7 @@ export const DashboardWidgets = () => {
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
 
   // Fetch dashboard preferences
-  const { isLoading, error, data } = useQuery({
+  const { isLoading, error, data } = useQuery<DashboardPreferences>({
     queryKey: ['/api/user/dashboard/preferences'],
     retry: 1,
     enabled: !!user, // Only run query if user is logged in
@@ -62,7 +78,7 @@ export const DashboardWidgets = () => {
 
   // Update dashboard preferences
   const { mutate: updatePreferences } = useMutation({
-    mutationFn: (updates: any) =>
+    mutationFn: (updates: Partial<DashboardPreferences>) =>
       apiRequest('PATCH', '/api/user/dashboard/preferences', updates),
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -148,7 +164,7 @@ export const DashboardWidgets = () => {
   };
 
   // Handle drag and drop reordering
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: { destination?: { index: number }, source: { index: number } }) => {
     if (!result.destination || !data) return;
 
     const items = Array.from(data.widgets.filter((w: WidgetConfig) => w.enabled));
