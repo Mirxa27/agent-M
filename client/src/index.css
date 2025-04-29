@@ -135,23 +135,28 @@ html.rtl .rtl-flip {
   --background: 240 10% 3.9%;
   --foreground: 0 0% 98%;
   --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
+  --muted-foreground: 240 5% 85%;  /* Brighter muted text */
   --popover: 240 10% 3.9%;
   --popover-foreground: 0 0% 98%;
   --card: 240 10% 3.9%;
-  --card-foreground: 0 0% 98%;
+  --card-foreground: 0 0% 100%;  /* Pure white text in cards */
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
-  --primary: 207 90% 54%;
+  --primary: 207 90% 60%;  /* Brighter primary color */
   --primary-foreground: 211 100% 99%;
   --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --accent: 240 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
+  --secondary-foreground: 0 0% 100%;  /* Pure white secondary text */
+  --accent: 207 90% 20%;  /* Darker accent background */
+  --accent-foreground: 0 0% 100%;  /* Pure white accent text */
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
   --ring: 240 4.9% 83.9%;
   --radius: 0.5rem;
+  
+  /* Custom dark mode colors */
+  --highlight: 207 90% 65%;  /* Highlight color for important elements */
+  --card-hover: 240 10% 8%;  /* Slightly lighter background for card hover */
+  --card-active: 240 10% 12%;  /* Active state for cards */
 }
 
 @layer base {
@@ -175,6 +180,31 @@ html.rtl .rtl-flip {
     box-shadow: 0 0 15px 4px rgba(255, 255, 255, 0.35);
   }
   
+  /* Enhanced card styles for better readability */
+  .card-enhanced {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(30, 30, 40, 0.8);
+  }
+  
+  .card-glass {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Card hover effects */
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+  }
+  
   /* Text shadow utilities for better readability */
   .text-shadow-sm {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -186,6 +216,19 @@ html.rtl .rtl-flip {
   
   .text-shadow-lg {
     text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  }
+  
+  /* High contrast text */
+  .text-high-contrast {
+    color: rgb(255, 255, 255);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+    letter-spacing: 0.01em;
+  }
+  
+  /* Highlight effect for important UI elements */
+  .highlight-border {
+    border: 2px solid hsl(var(--highlight));
+    box-shadow: 0 0 8px 1px hsla(var(--highlight), 0.5);
   }
 
   /* Enhanced gradient backgrounds for auth page */
