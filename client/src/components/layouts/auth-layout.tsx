@@ -117,19 +117,32 @@ export function AuthLayout({
 
       {/* Right Side - Hero */}
       <motion.div
-        className="hidden md:flex w-full lg:w-1/2 bg-auth-gradient text-white items-center justify-center p-8 lg:p-12 xl:p-16 relative overflow-hidden"
+        className="hidden md:flex w-full lg:w-1/2 bg-auth-gradient text-white items-center justify-center relative overflow-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
       >
-        {/* Background shapes */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-white rounded-full blur-3xl opacity-10 translate-y-1/3 -translate-x-1/3"></div>
+        {/* Spline 3D Model Background - Using iframe with pointer-events: none */}
+        <div className="absolute inset-0 z-0 w-full h-full">
+          <iframe
+            src="https://my.spline.design/nexbotrobotcharacterconcept-5f03ff963626fbbf4952a35a16e4a4f3/"
+            frameBorder="0"
+            width="100%"
+            height="100%"
+            style={{
+              pointerEvents: 'none',
+              border: 'none',
+              background: 'transparent'
+            }}
+            title="Mirxa AI Robot"
+          ></iframe>
         </div>
+        
+        {/* Dark overlay to ensure text readability */}
+        <div className="absolute inset-0 bg-black opacity-40 z-5"></div>
 
         <motion.div
-          className="max-w-md lg:max-w-xl xl:max-w-2xl relative z-10"
+          className="max-w-md lg:max-w-xl xl:max-w-2xl relative z-10 p-8 lg:p-12 xl:p-16"
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
@@ -156,7 +169,30 @@ export function AuthLayout({
             initial="hidden"
             animate="visible"
           >
-            {/* ... (keep existing feature list items the same) */}
+            <motion.li variants={featureItem} className="flex items-start">
+              <div className="rounded-full bg-primary/20 p-1.5 mr-3 mt-0.5">
+                <div className="rounded-full bg-white p-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                </div>
+              </div>
+              <span>{t("auth.hero.feature1")}</span>
+            </motion.li>
+            <motion.li variants={featureItem} className="flex items-start">
+              <div className="rounded-full bg-primary/20 p-1.5 mr-3 mt-0.5">
+                <div className="rounded-full bg-white p-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                </div>
+              </div>
+              <span>{t("auth.hero.feature2")}</span>
+            </motion.li>
+            <motion.li variants={featureItem} className="flex items-start">
+              <div className="rounded-full bg-primary/20 p-1.5 mr-3 mt-0.5">
+                <div className="rounded-full bg-white p-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                </div>
+              </div>
+              <span>{t("auth.hero.feature3")}</span>
+            </motion.li>
           </motion.ul>
         </motion.div>
       </motion.div>
