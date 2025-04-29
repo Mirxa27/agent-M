@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { UserAnalytics } from "@/components/dashboard/widgets/stats-widget";
 import { DashboardWidgets as EnhancedDashboardWidgets } from "@/components/dashboard/dashboard-widgets";
 import { Button } from "@/components/ui/button";
 import {
@@ -207,24 +208,29 @@ const UserStats = () => {
   }
 
   // Default analytics data
-  const defaultAnalytics = {
+  interface MonthlyAnalytics {
+    thisMonth?: UserAnalytics;
+    previousMonth?: UserAnalytics;
+  }
+
+  const defaultAnalytics: UserAnalytics = {
     taskCount: 0,
     successfulTaskCount: 0,
     failedTaskCount: 0,
     tokenUsage: 0,
-    mostUsedAgent: null,
+    mostUsedAgentId: null,
     averageCompletionTime: null,
   };
 
   // Safely extract analytics data with fallbacks
-  const analytics =
-    data && typeof data === "object" && data.thisMonth
-      ? { ...defaultAnalytics, ...data.thisMonth }
+  const analytics: UserAnalytics =
+    data && typeof data === "object" && (data as MonthlyAnalytics).thisMonth
+      ? { ...defaultAnalytics, ...(data as MonthlyAnalytics).thisMonth }
       : defaultAnalytics;
 
-  const previousMonth =
-    data && typeof data === "object" && data.previousMonth
-      ? data.previousMonth
+  const previousMonth: UserAnalytics | null =
+    data && typeof data === "object" && (data as MonthlyAnalytics).previousMonth
+      ? (data as MonthlyAnalytics).previousMonth
       : null;
 
   // Helper function to get trend indicator
@@ -329,13 +335,13 @@ const UserStats = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              {analytics.mostUsedAgent ? "Most Used Agent" : "Agent Status"}
+              {analytics.mostUsedAgentId ? "Most Used Agent" : "Agent Status"}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {analytics.mostUsedAgent ? (
+            {analytics.mostUsedAgentId ? (
               <span className="text-lg font-medium">
-                {analytics.mostUsedAgent}
+                Agent ID: {analytics.mostUsedAgentId}
               </span>
             ) : (
               <span className="text-lg font-medium text-gray-500">
