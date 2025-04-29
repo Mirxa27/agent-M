@@ -37,7 +37,7 @@ export function MainLayout({
         gradientOverlay={true}
       />
       
-      {!hideNav && <Header />}
+      {!hideNav && <Header customLayout={customLayout} />}
 
       <main
         className={cn("flex-1 w-full max-w-full overflow-x-hidden", className)}

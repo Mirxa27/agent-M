@@ -39,7 +39,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-export function Header() {
+interface HeaderProps {
+  customLayout?: boolean;
+}
+
+export function Header({ customLayout = false }: HeaderProps) {
   const { t } = useTranslation();
   const { user, logoutMutation } = useAuth();
   const [location] = useLocation();
@@ -111,6 +115,9 @@ export function Header() {
 
   // Check if current page is the AI Browser page
   const isAiBrowserPage = location === "/ai-browser";
+  
+  // Determine if we should show a simplified header for custom layouts
+  const showSimplifiedHeader = customLayout && isAiBrowserPage;
   
   return (
     <>
