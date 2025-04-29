@@ -2226,6 +2226,127 @@ export class DatabaseStorage implements IStorage {
 
     return result[0];
   }
+
+  // Site Settings operations
+  async getSiteSettings(): Promise<SiteSettings | undefined> {
+    try {
+      console.log("Getting site settings from database");
+      const [settings] = await db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.id, 1));
+      
+      console.log("Site settings found:", settings ? "yes" : "no");
+      return settings;
+    } catch (error) {
+      console.error("Error getting site settings:", error);
+      return undefined;
+    }
+  }
+
+  async createDefaultSiteSettings(): Promise<SiteSettings> {
+    const now = new Date();
+    const defaultSettings = {
+      logo: {
+        url: "/assets/images/mirxa-logo.svg",
+        showText: true,
+        text: "Mirxa.io",
+        animated: true,
+      },
+      colors: {
+        primary: "#6366f1",
+        secondary: "#0ea5e9",
+        accent: "#f97316",
+        background: "#ffffff",
+        text: "#1e293b",
+      },
+      header: {
+        sticky: true,
+        transparent: false,
+        showLogo: true,
+        showNavigation: true,
+      },
+      footer: {
+        showCopyright: true,
+        copyrightText: "© 2025 Mirxa.io. All rights reserved.",
+        showSocial: true,
+      },
+      chatbot: {
+        enabled: true,
+        position: "bottom-right",
+        welcomeMessage: "Hi! How can I assist you today?",
+        autoOpen: false,
+      },
+      version: 1,
+      createdAt: now,
+      lastUpdated: now,
+    };
+
+    console.log("Creating default site settings");
+    return this.createSiteSettings(defaultSettings);
+  }
+
+  async createSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings> {
+    try {
+      // Always use ID 1 for site settings
+      const settingsWithId = {
+        ...settings,
+        id: 1
+      };
+      
+      console.log("Inserting site settings into database");
+      const [newSettings] = await db
+        .insert(siteSettings)
+        .values(settingsWithId)
+        .onConflictDoUpdate({
+          target: siteSettings.id,
+          set: settingsWithId
+        })
+        .returning();
+      
+      console.log("Site settings created successfully");
+      return newSettings;
+    } catch (error) {
+      console.error("Error creating site settings:", error);
+      throw new Error("Failed to create site settings");
+    }
+  }
+
+  async updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined> {
+    try {
+      // Check if settings exist
+      const existingSettings = await this.getSiteSettings();
+      
+      // If no settings, create default then apply updates
+      if (!existingSettings) {
+        console.log("No existing settings found, creating defaults first");
+        const defaultSettings = await this.createDefaultSiteSettings();
+        // Apply the updates on top of default settings
+        return this.updateSiteSettings(updates);
+      }
+      
+      // Prepare updates with version increment and updated timestamp
+      const updatesWithMeta = {
+        ...updates,
+        version: existingSettings.version + 1,
+        lastUpdated: new Date(),
+      };
+      
+      console.log("Updating site settings in database");
+      // Update the settings in the database
+      const [updatedSettings] = await db
+        .update(siteSettings)
+        .set(updatesWithMeta)
+        .where(eq(siteSettings.id, 1))
+        .returning();
+      
+      console.log("Site settings updated successfully");
+      return updatedSettings;
+    } catch (error) {
+      console.error("Error updating site settings:", error);
+      throw new Error("Failed to update site settings");
+    }
+  }
 }
 
 // Use database storage
