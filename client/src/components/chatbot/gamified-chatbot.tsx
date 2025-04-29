@@ -296,7 +296,7 @@ export const GamifiedChatbot = () => {
               stiffness: 300, 
               damping: 15 
             }}
-            className="fixed bottom-6 right-6 z-50 touch-manipulation"
+            className="fixed bottom-20 right-6 z-50 touch-manipulation"
           >
             <Button
               onClick={toggleChatbot}
@@ -318,7 +318,7 @@ export const GamifiedChatbot = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
-            className="fixed bottom-0 sm:bottom-6 right-0 sm:right-6 z-50 w-full sm:w-auto"
+            className="fixed bottom-20 sm:bottom-20 right-0 sm:right-6 z-50 w-full sm:w-auto"
           >
             <Card className="w-full sm:w-96 shadow-xl border-primary/20 max-h-[90vh] sm:max-h-[600px] flex flex-col">
               <CardHeader className="p-3 border-b flex flex-row items-center justify-between space-y-0 bg-black/30 backdrop-blur-sm">
