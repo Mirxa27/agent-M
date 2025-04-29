@@ -698,7 +698,7 @@ export default function LandingPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 bg-primary text-white">
+        <section className="py-20 text-white">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto text-center">
               <div className="section-header-glass mx-auto mb-6">
@@ -706,7 +706,7 @@ export default function LandingPage() {
                   Ready to Transform Your Workflow?
                 </h2>
               </div>
-              <p className="text-xl mb-8 text-white text-opacity-95 text-shadow-sm">
+              <p className="text-xl mb-8 text-white/90 text-shadow-sm">
                 Join thousands of users who are already automating their tasks
                 with Mirxa.io's AI agents.
               </p>
