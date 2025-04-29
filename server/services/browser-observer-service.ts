@@ -17,7 +17,8 @@ import {
   type InsertBrowserSetting
 } from "@shared/schema";
 import { desc, eq, and, sql } from "drizzle-orm";
-import { getAiService } from "./ai-service";
+// Import AI service - adjust to your available service
+import * as openaiService from "./openai-service";
 
 /**
  * Service for handling browser action recording, sequence management,
@@ -335,9 +336,6 @@ export class BrowserObserverService {
       // Group actions by URL to identify patterns
       const actionsByUrl = this.groupActionsByUrl(recentActions);
       
-      // Get AI service for analysis
-      const aiService = getAiService();
-      
       // Generate suggestions
       const suggestions: InsertBrowserAiSuggestion[] = [];
       
@@ -345,8 +343,7 @@ export class BrowserObserverService {
       const formFillingSuggestion = await this.detectFormFillingPatterns(
         actionsByUrl,
         userId,
-        sessionId,
-        aiService
+        sessionId
       );
       
       if (formFillingSuggestion) {
@@ -357,8 +354,7 @@ export class BrowserObserverService {
       const navigationSuggestion = await this.detectNavigationPatterns(
         recentActions,
         userId, 
-        sessionId,
-        aiService
+        sessionId
       );
       
       if (navigationSuggestion) {
@@ -545,8 +541,7 @@ export class BrowserObserverService {
   private async detectFormFillingPatterns(
     actionsByUrl: Record<string, BrowserAction[]>,
     userId: number,
-    sessionId: string,
-    aiService: any
+    sessionId: string
   ): Promise<InsertBrowserAiSuggestion | null> {
     // Detect forms with multiple input actions
     for (const [url, actions] of Object.entries(actionsByUrl)) {
@@ -585,8 +580,7 @@ export class BrowserObserverService {
   private async detectNavigationPatterns(
     actions: BrowserAction[],
     userId: number,
-    sessionId: string,
-    aiService: any
+    sessionId: string
   ): Promise<InsertBrowserAiSuggestion | null> {
     // Find sequences of navigation actions that are repeated
     const navigationActions = actions.filter(a => 
