@@ -27,7 +27,21 @@
     "actions": "إجراءات",
     "confirm": "تأكيد",
     "back": "رجوع",
-    "next": "التالي"
+    "next": "التالي",
+    "add": "إضافة",
+    "manage": "إدارة",
+    "list": "قائمة",
+    "value": "القيمة",
+    "saveChanges": "حفظ التغييرات",
+    "upload": "رفع",
+    "backToDashboard": "العودة إلى لوحة التحكم",
+    "preview": "معاينة",
+    "settings": "الإعدادات",
+    "addWidget": "إضافة ودجت",
+    "recentActivity": "النشاط الأخير",
+    "analytics": "التحليلات",
+    "noRecentActivities": "لا توجد أنشطة حديثة",
+    "recentActivitiesWillAppear": "ستظهر أنشطتك الأخيرة هنا"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -55,7 +69,11 @@
     "credentials": "بيانات الاعتماد",
     "files": "الملفات",
     "recentTasks": "المهام الأخيرة",
-    "viewAll": "عرض الكل"
+    "viewAll": "عرض الكل",
+    "yourDashboard": "لوحة التحكم الخاصة بك",
+    "activity": "النشاط",
+    "metrics": "المقاييس",
+    "platformUsageStats": "إحصائيات استخدام المنصة"
   },
   "agents": {
     "title": "وكلاء الذكاء الاصطناعي",
@@ -301,6 +319,11 @@
     "requiredField": "هذا الحقل مطلوب",
     "invalidEmail": "عنوان بريد إلكتروني غير صالح",
     "passwordMismatch": "كلمات المرور غير متطابقة",
-    "weakPassword": "كلمة المرور ضعيفة جداً"
+    "weakPassword": "كلمة المرور ضعيفة جداً",
+    "invalidInput": "إدخال غير صالح",
+    "fieldRequired": "هذا الحقل مطلوب",
+    "selectOption": "يرجى اختيار خيار",
+    "minLength": "يجب أن يكون الطول على الأقل {{length}} حرف",
+    "maxLength": "يجب أن لا يتجاوز الطول {{length}} حرف"
   }
 }
