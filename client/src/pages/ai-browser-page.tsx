@@ -5,7 +5,17 @@ import {
   useMutation, 
   useQueryClient 
 } from "@tanstack/react-query";
-import { Loader2, Settings, PlayCircle, PauseCircle, List, Activity, Save } from "lucide-react";
+import { 
+  Loader2, 
+  Settings, 
+  PlayCircle, 
+  PauseCircle, 
+  List, 
+  Activity, 
+  Save,
+  RotateCw 
+} from "lucide-react";
+import { WorkflowExecutionPanel } from "@/components/workflow/workflow-execution-panel";
 import { useToast } from "@/hooks/use-toast";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { Button } from "@/components/ui/button";
@@ -168,6 +178,8 @@ export default function AiBrowserPage() {
   const [selectedSequence, setSelectedSequence] = useState<BrowserSequence | null>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<BrowserAiSuggestion | null>(null);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
+  const [activeSequenceTab, setActiveSequenceTab] = useState<"steps" | "execution">("steps");
+  const [currentExecutionId, setCurrentExecutionId] = useState<number | null>(null);
   
   // Session for recording
   const [currentSessionId, setCurrentSessionId] = useState(SESSION_ID);
@@ -391,6 +403,32 @@ export default function AiBrowserPage() {
     onError: (error) => {
       toast({
         title: "Error converting session",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const runSequenceMutation = useMutation({
+    mutationFn: async (sequenceId: number) => {
+      const response = await apiRequest("POST", `/api/browser-observer/sequences/${sequenceId}/run`);
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Sequence started",
+        description: "The automation sequence has been started.",
+      });
+      if (data.executionId) {
+        setCurrentExecutionId(data.executionId);
+        setActiveSequenceTab("execution");
+      }
+      // Update the sequence to reflect latest execution
+      queryClient.invalidateQueries({ queryKey: ["/api/browser-observer/sequences"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error running sequence",
         description: error.message,
         variant: "destructive",
       });
