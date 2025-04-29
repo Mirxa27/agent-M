@@ -72,10 +72,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get site settings (public access)
   app.get("/api/site-settings", async (req, res) => {
     try {
-      const settings = await storage.getSiteSettings();
+      // Get settings or create default if none exist
+      let settings = await storage.getSiteSettings();
+      
+      // If no settings found, create default settings
       if (!settings) {
-        return res.status(404).json({ error: "Site settings not found" });
+        console.log("No site settings found, creating default settings");
+        settings = await storage.createDefaultSiteSettings();
       }
+      
       // Remove any sensitive information before sending to the client
       const sanitizedSettings = { ...settings };
       
@@ -1096,6 +1101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Site Settings Admin Route
   app.patch("/api/admin/site-settings", requireAdmin, async (req, res) => {
     try {
+      console.log("Updating site settings with payload:", req.body);
       const updates = req.body;
       
       // Add the user ID who made the update if available
@@ -1103,12 +1109,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updates.updatedBy = req.user.id;
       }
       
+      // Check if settings exist, create default if not
+      let settings = await storage.getSiteSettings();
+      
+      if (!settings) {
+        console.log("No site settings found for admin update, creating default first");
+        settings = await storage.createDefaultSiteSettings();
+      }
+      
+      // Now update the settings
       const updatedSettings = await storage.updateSiteSettings(updates);
       
       if (!updatedSettings) {
-        return res.status(404).json({ error: "Site settings not found" });
+        return res.status(500).json({ error: "Failed to update site settings" });
       }
       
+      console.log("Site settings updated successfully");
       res.json(updatedSettings);
     } catch (error) {
       console.error("Error updating site settings:", error);
