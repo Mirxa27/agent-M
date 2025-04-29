@@ -718,6 +718,7 @@ export const insertChatbotMessageSchema = createInsertSchema(chatbotMessages).pi
   content: true,
   isBot: true,
   metadata: true,
+  timestamp: true,
 });
 
 export const insertChatbotGameProgressSchema = createInsertSchema(chatbotGameProgress).pick({
