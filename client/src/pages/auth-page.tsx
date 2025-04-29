@@ -97,7 +97,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-16 xl:p-20">
-      <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl card-glass p-6 sm:p-8 xl:p-10 rounded-xl shadow-md backdrop-blur-md bg-opacity-60 border border-white/10">
+      <div className="w-full max-w-3xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl card-glass p-6 sm:p-8 xl:p-10 rounded-xl shadow-md backdrop-blur-md bg-opacity-60 border border-white/10">
         <div className="text-center mb-6 sm:mb-8">
           <div className="inline-flex items-center justify-center">
             <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center mr-2">
