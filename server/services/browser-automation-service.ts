@@ -1,7 +1,13 @@
 import puppeteer, { Browser, Page, LaunchOptions } from 'puppeteer-core';
 import path from 'path';
 import { browserObserverService } from './browser-observer-service';
-import type { BrowserSequence, BrowserSequenceStep } from '@shared/schema';
+import { workflowProgressService } from './workflow-progress-service';
+import type { 
+  BrowserSequence, 
+  BrowserSequenceStep,
+  WorkflowExecution,
+  WorkflowStepExecution
+} from '@shared/schema';
 
 /**
  * BrowserAutomationService
@@ -326,44 +332,192 @@ export class BrowserAutomationService {
    * @param steps The steps in the sequence
    * @returns Results of the execution
    */
-  async runSequence(sequence: BrowserSequence, steps: BrowserSequenceStep[]): Promise<any> {
+  async runSequence(
+    sequence: BrowserSequence, 
+    steps: BrowserSequenceStep[], 
+    userId?: number,
+    browserSessionId?: string
+  ): Promise<any> {
     if (!steps || steps.length === 0) {
       throw new Error('No steps provided for the sequence');
     }
     
     // Generate a unique session ID for this run
-    const runSessionId = `sequence-run-${sequence.id}-${Date.now()}`;
+    const runSessionId = browserSessionId || `sequence-run-${sequence.id}-${Date.now()}`;
     let page: Page | null = null;
+    let workflowExecution: WorkflowExecution | null = null;
+    const startTime = Date.now();
     
     try {
+      // Create a workflow execution record to track progress
+      workflowExecution = await workflowProgressService.startExecution({
+        sequenceId: sequence.id,
+        userId: userId || null,
+        browserSessionId: runSessionId,
+        status: 'running',
+        startedAt: new Date(),
+        progress: 0,
+        currentStepOrder: 1,
+      });
+      
       // Launch a new browser for this sequence
       page = await this.launchBrowser(runSessionId);
       
-      // Execute each step in order
+      // Create step execution records
+      const stepExecutions: WorkflowStepExecution[] = [];
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const stepExecution = await workflowProgressService.createStepExecution({
+          executionId: workflowExecution.id,
+          stepId: step.id,
+          order: i + 1,
+          actionType: step.actionType,
+          targetElement: step.targetElement || '',
+          status: i === 0 ? 'running' : 'pending',
+          startedAt: i === 0 ? new Date() : null,
+          completedAt: null,
+          error: null,
+          retries: 0,
+          duration: null,
+          screenshot: null,
+        });
+        stepExecutions.push(stepExecution);
+      }
+      
+      // Execute each step in order with progress tracking
       const results = [];
-      for (const step of steps) {
-        const result = await this.executeStep(page, step);
-        results.push(result);
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const stepExecution = stepExecutions[i];
+        const stepStartTime = Date.now();
         
-        // Wait if specified
-        if (step.waitAfterMs && step.waitAfterMs > 0) {
-          // Use setTimeout with Promise for waiting
-          await new Promise(resolve => setTimeout(resolve, step.waitAfterMs));
+        try {
+          // Update workflow execution to track current step
+          await workflowProgressService.updateExecution(workflowExecution.id, {
+            currentStepId: stepExecution.id,
+            currentStepOrder: i + 1,
+            progress: Math.round((i / steps.length) * 100),
+          });
+          
+          // Update step to running status
+          if (i > 0) {
+            await workflowProgressService.updateStepStatus(
+              workflowExecution.id,
+              stepExecution.id,
+              'running',
+              { startedAt: new Date() }
+            );
+          }
+          
+          // Execute the step
+          const result = await this.executeStep(page, step);
+          results.push(result);
+          
+          // Take screenshot if needed
+          let screenshot = null;
+          if (step.takeScreenshot) {
+            const screenshotBase64 = await page.screenshot({ encoding: 'base64' });
+            screenshot = `data:image/png;base64,${screenshotBase64}`;
+          }
+          
+          // Update step to completed status
+          const stepEndTime = Date.now();
+          const stepDuration = stepEndTime - stepStartTime;
+          await workflowProgressService.updateStepStatus(
+            workflowExecution.id,
+            stepExecution.id,
+            'completed',
+            {
+              completedAt: new Date(),
+              duration: stepDuration,
+              screenshot: screenshot,
+            }
+          );
+          
+          // Wait if specified
+          if (step.waitAfterMs && step.waitAfterMs > 0) {
+            await new Promise(resolve => setTimeout(resolve, step.waitAfterMs));
+          }
+        } catch (error) {
+          console.error(`Error executing step ${i + 1} of sequence ${sequence.id}:`, error);
+          
+          // Handle error with proper type checking
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          
+          // Update step to failed status
+          const stepEndTime = Date.now();
+          const stepDuration = stepEndTime - stepStartTime;
+          await workflowProgressService.updateStepStatus(
+            workflowExecution.id,
+            stepExecution.id,
+            'failed',
+            {
+              completedAt: new Date(),
+              duration: stepDuration,
+              error: errorMessage,
+            }
+          );
+          
+          // Mark remaining steps as skipped
+          for (let j = i + 1; j < stepExecutions.length; j++) {
+            await workflowProgressService.updateStepStatus(
+              workflowExecution.id,
+              stepExecutions[j].id,
+              'skipped'
+            );
+          }
+          
+          // Mark workflow execution as failed
+          await workflowProgressService.updateExecution(workflowExecution.id, {
+            status: 'failed',
+            completedAt: new Date(),
+            progress: Math.round(((i + 1) / steps.length) * 100),
+            error: errorMessage,
+          });
+          
+          throw error;
         }
+      }
+      
+      // Mark workflow execution as completed
+      const endTime = Date.now();
+      const totalDuration = endTime - startTime;
+      await workflowProgressService.updateExecution(workflowExecution.id, {
+        status: 'completed',
+        completedAt: new Date(),
+        progress: 100,
+        duration: totalDuration,
+      });
+      
+      return {
+        sequenceId: sequence.id,
+        executionId: workflowExecution.id,
+        status: 'completed',
+        results,
+        duration: totalDuration,
+      };
+    } catch (error) {
+      console.error(`Error executing sequence ${sequence.id}:`, error);
+      
+      // Handle error with proper type checking
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // If workflow execution was created but the error happened before updating it as failed
+      if (workflowExecution && workflowExecution.status !== 'failed') {
+        const endTime = Date.now();
+        const totalDuration = endTime - startTime;
+        await workflowProgressService.updateExecution(workflowExecution.id, {
+          status: 'failed',
+          completedAt: new Date(),
+          duration: totalDuration,
+          error: errorMessage,
+        });
       }
       
       return {
         sequenceId: sequence.id,
-        status: 'completed',
-        results,
-      };
-    } catch (error) {
-      console.error(`Error executing sequence ${sequence.id}:`, error);
-      // Handle error with proper type checking
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        sequenceId: sequence.id,
-        status: 'error',
+        executionId: workflowExecution?.id,
+        status: 'failed',
         error: errorMessage,
         details: String(error), // Include full error details for debugging
       };
