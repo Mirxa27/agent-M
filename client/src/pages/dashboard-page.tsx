@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { DashboardWidgets as EnhancedDashboardWidgets } from "@/components/dashboard/dashboard-widgets";
 import { Button } from "@/components/ui/button";
 import {
   Card,
