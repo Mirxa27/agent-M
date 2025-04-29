@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { useTranslation } from "react-i18next";
 import { AuthProvider } from "@/hooks/use-auth";
 import { BackgroundProvider } from "@/contexts/background-context";
+import { GlobalEffectsProvider } from "@/components/providers/global-effects-provider";
 import { AppRoutes } from "@/components/router/app-routes";
 
 function App() {
@@ -36,10 +37,12 @@ function App() {
       <ThemeProvider attribute="class" defaultTheme="light">
         <AuthProvider>
           <BackgroundProvider>
-            <TooltipProvider>
-              <Toaster />
-              <AppRoutes />
-            </TooltipProvider>
+            <GlobalEffectsProvider>
+              <TooltipProvider>
+                <Toaster />
+                <AppRoutes />
+              </TooltipProvider>
+            </GlobalEffectsProvider>
           </BackgroundProvider>
         </AuthProvider>
       </ThemeProvider>
