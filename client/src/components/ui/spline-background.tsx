@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, lazy, Suspense, Component, ErrorInfo, ReactNode } from "react";
+import React, { useRef, useEffect, useState, useCallback, lazy, Suspense, Component, ErrorInfo, ReactNode } from "react";
 import { motion } from "framer-motion";
 import { backgroundEffectBus } from "@/lib/background-effect-bus";
 // Using React.lazy for dynamic import instead of next/dynamic
@@ -153,17 +153,30 @@ export function SplineBackground({
 
   // Handle loading errors for the Spline component
   const [hasError, setHasError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  // Handler for Spline loading
+  const handleSplineLoad = useCallback(() => {
+    setLoaded(true);
+  }, []);
+
+  // Handler for Spline errors
+  const handleSplineError = useCallback(() => {
+    console.warn("Spline background loading failed, falling back to gradient");
+    setHasError(true);
+  }, []);
 
   // Effect to add error boundary for Spline loading
   useEffect(() => {
-    const handleError = () => {
-      console.warn("Spline background loading failed, falling back to gradient");
-      setHasError(true);
-    };
-    
-    window.addEventListener("error", handleError);
-    return () => window.removeEventListener("error", handleError);
-  }, []);
+    const timer = setTimeout(() => {
+      // If not loaded after timeout, consider it failed
+      if (!loaded && !hasError) {
+        handleSplineError();
+      }
+    }, 8000); // 8 second timeout
+
+    return () => clearTimeout(timer);
+  }, [loaded, hasError, handleSplineError]);
 
   return (
     <div 
@@ -211,6 +224,8 @@ export function SplineBackground({
                   ref={splineRef}
                   scene={url}
                   className="w-full h-full"
+                  onLoad={handleSplineLoad}
+                  onError={handleSplineError}
                 />
               </div>
             </ErrorBoundary>
