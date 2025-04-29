@@ -557,6 +557,38 @@ export const browserSettings = pgTable("browser_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Workflow Executions - for tracking sequence execution progress 
+export const workflowExecutions = pgTable("workflow_executions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  sequenceId: integer("sequence_id").notNull(),
+  status: text("status").default("pending").notNull(), // pending, running, completed, failed, cancelled
+  progress: integer("progress").default(0).notNull(), // 0-100 percentage
+  currentStepId: integer("current_step_id"), // Currently executing step
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  error: text("error"), // Error message if failed
+  metadata: jsonb("metadata").default({}).notNull(), // Additional execution details
+  browserSessionId: text("browser_session_id"), // Associated browser session
+});
+
+// Workflow Step Executions - for tracking individual step progress
+export const workflowStepExecutions = pgTable("workflow_step_executions", {
+  id: serial("id").primaryKey(),
+  executionId: integer("execution_id").notNull(), // FK to workflowExecutions.id
+  stepId: integer("step_id").notNull(), // FK to browserSequenceSteps.id 
+  status: text("status").default("pending").notNull(), // pending, running, completed, skipped, failed
+  order: integer("order").notNull(), // Order of execution
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  duration: integer("duration"), // Duration in milliseconds
+  retries: integer("retries").default(0).notNull(), // Number of retry attempts
+  error: text("error"), // Error message if failed
+  result: jsonb("result"), // Result of step execution (e.g., extracted data)
+  screenshot: text("screenshot"), // Path to step screenshot if taken
+  logs: jsonb("logs").default([]).notNull(), // Logs for this specific step
+});
+
 // Insert schemas for browser observer tables
 export const insertBrowserActionSchema = createInsertSchema(browserActions).pick({
   userId: true,
@@ -611,6 +643,35 @@ export const insertBrowserSettingSchema = createInsertSchema(browserSettings).pi
   domainAllowList: true,
   domainBlockList: true,
   aiSuggestions: true,
+});
+
+// Insert schemas for workflow execution tracking
+export const insertWorkflowExecutionSchema = createInsertSchema(workflowExecutions).pick({
+  userId: true,
+  sequenceId: true,
+  status: true,
+  progress: true,
+  currentStepId: true,
+  startedAt: true,
+  completedAt: true,
+  error: true,
+  metadata: true,
+  browserSessionId: true,
+});
+
+export const insertWorkflowStepExecutionSchema = createInsertSchema(workflowStepExecutions).pick({
+  executionId: true,
+  stepId: true,
+  status: true,
+  order: true,
+  startedAt: true,
+  completedAt: true,
+  duration: true,
+  retries: true,
+  error: true,
+  result: true,
+  screenshot: true,
+  logs: true,
 });
 
 // Gamified Chatbot schemas
