@@ -1,9 +1,48 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword } from "./auth";
 import { db, checkDatabaseConnection } from "./db";
 import { eq, count } from "drizzle-orm";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+// Configure multer for file uploads
+const storage_engine = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    // Ensure upload directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Create unique filename with original extension
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'logo-' + uniqueSuffix + ext);
+  }
+});
+
+const upload = multer({ 
+  storage: storage_engine,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max file size
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept only image files
+    const filetypes = /jpeg|jpg|png|gif|svg/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error("Only images (jpeg, jpg, png, gif, svg) are allowed!"));
+  }
+});
 import {
   insertAgentSchema,
   insertCredentialSchema,
@@ -99,6 +138,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
   
+  // Authentication middleware
+  const requireAuth = (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    next();
+  };
+
+  // Admin middleware
+  const requireAdmin = (req, res, next) => {
+    if (!req.isAuthenticated() || req.user.role !== "admin") {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+    next();
+  };
+  
+  // Upload logo endpoint - requires admin permissions
+  app.post("/api/admin/upload-logo", requireAdmin, upload.single('logo'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      // Generate the public URL for the file
+      const fileUrl = `/uploads/${req.file.filename}`;
+      
+      // Update site settings with the new logo URL
+      const existingSettings = await storage.getSiteSettings();
+      
+      if (existingSettings) {
+        // Only update the logo URL, keep other settings the same
+        await storage.updateSiteSettings({
+          logo: {
+            ...existingSettings.logo,
+            url: fileUrl
+          }
+        });
+      }
+      
+      // Return the file URL to the client
+      res.status(200).json({ 
+        success: true, 
+        url: fileUrl,
+        message: "Logo uploaded successfully" 
+      });
+    } catch (error) {
+      console.error("Error uploading logo:", error);
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Unknown error occurred during upload",
+      });
+    }
+  });
+  
   // Dashboard preferences routes
   import("./services/dashboard-service").then((dashboardService) => {
     // Get user dashboard preferences
@@ -137,22 +229,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
   });
-
-  // Authentication middleware
-  const requireAuth = (req, res, next) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-    next();
-  };
-
-  // Admin middleware
-  const requireAdmin = (req, res, next) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
-      return res.status(403).json({ error: "Not authorized" });
-    }
-    next();
-  };
 
   // API routes
   // Get user profile
