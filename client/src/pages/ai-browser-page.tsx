@@ -634,10 +634,10 @@ export default function AiBrowserPage() {
   
   return (
     <MainLayout>
-      <div className="container mx-auto py-6 space-y-8">
+      <div className="container mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">AI Browser Observer</h1>
+            <h2 className="text-2xl font-bold">AI Browser Observer</h2>
             <p className="text-muted-foreground">Record, analyze, and automate your browsing patterns</p>
           </div>
           <div className="flex space-x-4">
