@@ -178,8 +178,8 @@ export default function AiBrowserPage() {
   const [selectedSequence, setSelectedSequence] = useState<BrowserSequence | null>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<BrowserAiSuggestion | null>(null);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
-  const [activeSequenceTab, setActiveSequenceTab] = useState<"steps" | "execution">("steps");
   const [currentExecutionId, setCurrentExecutionId] = useState<number | null>(null);
+  const [activeSequenceTab, setActiveSequenceTab] = useState<"steps" | "execution">("steps");
   
   // Session for recording
   const [currentSessionId, setCurrentSessionId] = useState(SESSION_ID);
