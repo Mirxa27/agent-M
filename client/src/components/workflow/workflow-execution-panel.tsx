@@ -12,7 +12,7 @@ import {
   Pause, 
   RotateCw, 
   ListIcon, 
-  Timeline, 
+  BarChart, 
   Activity
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,7 @@ interface WorkflowExecutionPanelProps {
   sequenceId: number;
   sequenceName: string;
   userId?: number;
+  executionId?: number | null;
   onExecutionComplete?: (executionId: number) => void;
   autoStart?: boolean;
   className?: string;
@@ -191,7 +192,7 @@ export function WorkflowExecutionPanel({
                 Steps
               </TabsTrigger>
               <TabsTrigger value="timeline">
-                <Timeline className="mr-2 h-4 w-4" />
+                <BarChart className="mr-2 h-4 w-4" />
                 Timeline
               </TabsTrigger>
             </TabsList>
