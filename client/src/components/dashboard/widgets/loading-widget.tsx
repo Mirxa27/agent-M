@@ -1,27 +1,31 @@
 import { ReactNode } from "react";
-import { Widget } from "./widget-base";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 
-export interface LoadingWidgetProps {
+interface LoadingWidgetProps {
   title: string;
-  icon: ReactNode;
-  lines?: number;
+  icon?: ReactNode;
 }
 
-export const LoadingWidget = ({ title, icon, lines = 3 }: LoadingWidgetProps) => {
+export const LoadingWidget = ({ title, icon }: LoadingWidgetProps) => {
   return (
-    <Widget id="loading" title={title} icon={icon} movable={false}>
-      <div className="flex items-center justify-center py-4">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-      <div className="space-y-3">
-        {Array(lines)
-          .fill(0)
-          .map((_, i) => (
-            <Skeleton key={i} className="h-4 w-full" />
-          ))}
-      </div>
-    </Widget>
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle>
+            <div className="flex items-center">
+              {icon && <span className="mr-2">{icon}</span>}
+              <span>{title}</span>
+            </div>
+          </CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className="flex justify-center items-center py-8">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
