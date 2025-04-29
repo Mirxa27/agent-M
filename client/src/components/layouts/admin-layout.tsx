@@ -106,6 +106,11 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
       label: "Site Editor",
       icon: <Palette className="w-5 h-5 mr-3" />,
     },
+    {
+      href: "/admin/upload-test",
+      label: "Upload Test",
+      icon: <Upload className="w-5 h-5 mr-3" />,
+    },
   ];
 
   return (
