@@ -123,14 +123,18 @@ export default function LandingPage() {
     queryKey: ["/api/plans"],
     queryFn: async () => {
       try {
-        const res = await apiRequest("GET", "/api/plans");
+        const res = await fetch("/api/plans", {
+          credentials: "include",
+        });
         if (!res.ok) throw new Error("Failed to fetch plans");
         return await res.json();
       } catch (error) {
-        console.error("Error fetching plans:", error);
+        // Silent fail - we'll use fallback plans
         return [];
       }
     },
+    // Don't retry on error, use fallback plans instead
+    retry: false,
   });
 
   // Fallback pricing plans if API call fails or is loading
