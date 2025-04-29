@@ -292,29 +292,40 @@ export default function LandingPage() {
             {/* Mobile menu button */}
             <div className="md:hidden flex items-center">
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                onClick={() => {
+                  console.log("Menu button clicked, current state:", mobileMenuOpen);
+                  setMobileMenuOpen(true); // Force it open on every click for testing
+                }}
                 className="p-2 rounded-md btn-glass bg-primary shadow-glow flex items-center justify-center"
                 aria-expanded={mobileMenuOpen}
                 aria-label="Toggle menu"
-                style={{ width: '40px', height: '40px' }}
+                style={{ width: '45px', height: '45px' }}
               >
                 {mobileMenuOpen ? (
                   <X className="h-6 w-6 text-white" />
                 ) : (
-                  <Menu className="h-6 w-6 text-white" />
+                  <Menu className="h-6 w-6 text-white font-bold" />
                 )}
               </button>
             </div>
           </div>
         </div>
 
+        {/* Mobile menu debug indicator */}
+        {mobileMenuOpen && (
+          <div className="fixed top-0 left-0 z-50 bg-green-500 text-white p-2 text-xs font-mono">
+            Menu is OPEN
+          </div>
+        )}
+        
         {/* Mobile menu */}
         <div
           ref={mobileMenuRef}
           className={cn(
-            "md:hidden fixed inset-y-0 right-0 z-50 w-full sm:max-w-sm card-glass shadow-xl transform transition-transform duration-300 ease-in-out overflow-auto",
-            mobileMenuOpen ? "translate-x-0" : "translate-x-full",
+            "md:hidden fixed inset-y-0 right-0 z-50 w-full sm:max-w-sm bg-black/95 backdrop-blur-lg border-l border-primary shadow-2xl transform transition-all duration-300 ease-in-out overflow-auto",
+            mobileMenuOpen ? "translate-x-0 opacity-100 pointer-events-auto" : "translate-x-full opacity-0 pointer-events-none",
           )}
+          style={{ top: "0px" }}
         >
           <div className="p-6">
             <div className="flex items-center justify-between mb-8 border-b border-white/20 pb-4">
@@ -325,8 +336,11 @@ export default function LandingPage() {
                 </span>
               </Link>
               <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-md btn-glass"
+                onClick={() => {
+                  console.log("Close button clicked");
+                  setMobileMenuOpen(false);
+                }}
+                className="p-2 rounded-md btn-glass bg-red-500"
               >
                 <X className="h-5 w-5 text-white" />
               </button>
