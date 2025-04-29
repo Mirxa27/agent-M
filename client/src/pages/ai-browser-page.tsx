@@ -889,7 +889,7 @@ export default function AiBrowserPage() {
               <div className="md:col-span-2">
                 {selectedSequence ? (
                   <Card>
-                    <CardHeader className="flex flex-row items-start justify-between">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <div>
                         <CardTitle>{selectedSequence.name}</CardTitle>
                         <CardDescription>
@@ -922,88 +922,130 @@ export default function AiBrowserPage() {
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <h3 className="text-lg font-medium mb-4">Sequence Steps</h3>
-                      {isLoadingSequenceSteps ? (
-                        <div className="flex items-center justify-center h-32">
-                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    
+                    <div className="px-6 mb-2">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm font-medium">Created</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatTime(selectedSequence.createdAt)}
+                          </p>
                         </div>
-                      ) : sequenceSteps?.length > 0 ? (
-                        <div className="border rounded-md">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Order</TableHead>
-                                <TableHead>Action</TableHead>
-                                <TableHead>Target</TableHead>
-                                <TableHead>Wait (ms)</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {sequenceSteps.map((step: BrowserSequenceStep) => (
-                                <TableRow key={step.id}>
-                                  <TableCell>{step.stepOrder}</TableCell>
-                                  <TableCell>{step.actionType}</TableCell>
-                                  <TableCell className="max-w-[200px] truncate">{step.targetElement}</TableCell>
-                                  <TableCell>{step.waitBeforeMs > 0 ? `Before: ${step.waitBeforeMs}` : ''} {step.waitAfterMs > 0 ? `After: ${step.waitAfterMs}` : ''}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
+                        <div>
+                          <p className="text-sm font-medium">Last Updated</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatTime(selectedSequence.updatedAt)}
+                          </p>
                         </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-32 text-center">
-                          <p className="text-muted-foreground">No steps in this sequence</p>
+                        <div>
+                          <p className="text-sm font-medium">Last Executed</p>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedSequence.lastExecutedAt 
+                              ? formatTime(selectedSequence.lastExecutedAt) 
+                              : "Never"}
+                          </p>
                         </div>
-                      )}
-
-                      <div className="mt-6">
-                        <h3 className="text-lg font-medium mb-4">Sequence Details</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-sm font-medium">Created</p>
-                            <p className="text-sm text-muted-foreground">
-                              {formatTime(selectedSequence.createdAt)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">Last Updated</p>
-                            <p className="text-sm text-muted-foreground">
-                              {formatTime(selectedSequence.updatedAt)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">Last Executed</p>
-                            <p className="text-sm text-muted-foreground">
-                              {selectedSequence.lastExecutedAt 
-                                ? formatTime(selectedSequence.lastExecutedAt) 
-                                : "Never"}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">Execution Count</p>
-                            <p className="text-sm text-muted-foreground">
-                              {selectedSequence.executionCount}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">Automated</p>
-                            <p className="text-sm text-muted-foreground">
-                              {selectedSequence.isAutomated ? "Yes" : "No"}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">Trigger Type</p>
-                            <p className="text-sm text-muted-foreground">
-                              {selectedSequence.triggerType || "Manual"}
-                            </p>
-                          </div>
+                        <div>
+                          <p className="text-sm font-medium">Execution Count</p>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedSequence.executionCount}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Automated</p>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedSequence.isAutomated ? "Yes" : "No"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Trigger Type</p>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedSequence.triggerType || "Manual"}
+                          </p>
                         </div>
                       </div>
+                    </div>
+                    
+                    <CardContent>
+                      <Tabs 
+                        value={activeSequenceTab} 
+                        onValueChange={(value) => setActiveSequenceTab(value as "steps" | "execution")}
+                        className="w-full"
+                      >
+                        <TabsList className="grid w-full grid-cols-2 mb-4">
+                          <TabsTrigger value="steps">
+                            <List className="mr-2 h-4 w-4" /> Steps
+                          </TabsTrigger>
+                          <TabsTrigger value="execution">
+                            <Activity className="mr-2 h-4 w-4" /> Execution
+                          </TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="steps" className="mt-0">
+                          <h3 className="text-lg font-medium mb-4">Sequence Steps</h3>
+                          {isLoadingSequenceSteps ? (
+                            <div className="flex items-center justify-center h-32">
+                              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                            </div>
+                          ) : sequenceSteps?.length > 0 ? (
+                            <div className="border rounded-md">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Order</TableHead>
+                                    <TableHead>Action</TableHead>
+                                    <TableHead>Target</TableHead>
+                                    <TableHead>Wait (ms)</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {sequenceSteps.map((step: BrowserSequenceStep) => (
+                                    <TableRow key={step.id}>
+                                      <TableCell>{step.stepOrder}</TableCell>
+                                      <TableCell>{step.actionType}</TableCell>
+                                      <TableCell className="max-w-[200px] truncate">{step.targetElement}</TableCell>
+                                      <TableCell>{step.waitBeforeMs > 0 ? `Before: ${step.waitBeforeMs}` : ''} {step.waitAfterMs > 0 ? `After: ${step.waitAfterMs}` : ''}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-32 text-center">
+                              <p className="text-muted-foreground">No steps in this sequence</p>
+                            </div>
+                          )}
+                        </TabsContent>
+                        
+                        <TabsContent value="execution" className="mt-0">
+                          <WorkflowExecutionPanel
+                            sequenceId={selectedSequence.id}
+                            sequenceName={selectedSequence.name}
+                            userId={selectedSequence.userId}
+                            executionId={currentExecutionId}
+                            onExecutionComplete={(executionId) => {
+                              // Update execution count when complete
+                              queryClient.invalidateQueries({ 
+                                queryKey: ["/api/browser-observer/sequences"] 
+                              });
+                            }}
+                            className="h-[450px]"
+                          />
+                        </TabsContent>
+                      </Tabs>
                     </CardContent>
+                    
                     <CardFooter>
-                      <Button className="w-full">
-                        Execute Sequence
+                      <Button 
+                        className="w-full"
+                        onClick={() => runSequenceMutation.mutate(selectedSequence.id)}
+                        disabled={runSequenceMutation.isPending}
+                      >
+                        {runSequenceMutation.isPending ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running Sequence</>
+                        ) : (
+                          <><RotateCw className="mr-2 h-4 w-4" /> Execute Sequence</>
+                        )}
                       </Button>
                     </CardFooter>
                   </Card>
