@@ -425,8 +425,11 @@ export default function LandingPage() {
                 <div
                   key={index}
                   className={`
-                    rounded-xl shadow-sm border relative overflow-hidden
-                    ${plan.popular ? "border-primary shadow-md ring-2 ring-primary scale-105 z-10" : "border-gray-200"}
+                    rounded-xl shadow-md relative overflow-hidden card-glass card-hover
+                    ${plan.popular 
+                      ? "border-primary shadow-lg ring-2 ring-primary scale-105 z-10 bg-opacity-90" 
+                      : "border-gray-200/30 bg-opacity-80"
+                    }
                   `}
                 >
                   {plan.popular && (
@@ -435,25 +438,25 @@ export default function LandingPage() {
                     </div>
                   )}
                   <div className={`p-8 ${plan.popular ? "pt-10" : ""}`}>
-                    <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
+                    <h3 className="text-xl font-semibold mb-2 text-high-contrast text-shadow-sm">{plan.name}</h3>
                     <div className="flex items-baseline mb-6">
-                      <span className="text-4xl font-bold">
+                      <span className="text-4xl font-bold text-high-contrast text-shadow-md">
                         {plan.price} SAR
                       </span>
-                      <span className="text-gray-600 ml-2">
+                      <span className="text-white/80 ml-2 text-shadow-sm">
                         {plan.interval}
                       </span>
                     </div>
                     <ul className="space-y-3 mb-8">
                       {plan.features.map((feature, i) => (
                         <li key={i} className="flex items-center">
-                          <Check className="h-5 w-5 text-green-500 mr-3" />
-                          <span>{feature}</span>
+                          <Check className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
+                          <span className="text-white/90 text-shadow-sm">{feature}</span>
                         </li>
                       ))}
                     </ul>
                     <Button
-                      className="w-full"
+                      className={`w-full ${plan.popular ? "shadow-glow" : ""}`}
                       variant={plan.popular ? "default" : "outline"}
                       onClick={() => (location.href = "/auth")}
                     >
@@ -486,14 +489,14 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="card-glass card-hover p-8 rounded-xl shadow-md">
                 <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mr-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/30 flex items-center justify-center mr-4">
                     <User className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h4 className="font-semibold">Sarah Johnson</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <h4 className="font-semibold text-high-contrast text-shadow-sm">Sarah Johnson</h4>
+                    <p className="text-sm text-white/80 text-shadow-sm">
                       Marketing Director, TechVision
                     </p>
                   </div>
@@ -507,7 +510,7 @@ export default function LandingPage() {
                     <Star className="h-5 w-5 fill-current" />
                   </div>
                 </div>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-white/90 text-shadow-sm">
                   "Mirxa.io has completely transformed how we handle our content
                   creation process. The AI agents are intelligent and the
                   security features give us peace of mind when handling
@@ -515,14 +518,14 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="card-glass card-hover p-8 rounded-xl shadow-md">
                 <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mr-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/30 flex items-center justify-center mr-4">
                     <User className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h4 className="font-semibold">Ahmed Al-Farsi</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <h4 className="font-semibold text-high-contrast text-shadow-sm">Ahmed Al-Farsi</h4>
+                    <p className="text-sm text-white/80 text-shadow-sm">
                       CTO, DataSphere
                     </p>
                   </div>
@@ -536,7 +539,7 @@ export default function LandingPage() {
                     <Star className="h-5 w-5 fill-current" />
                   </div>
                 </div>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-white/90 text-shadow-sm">
                   "The secure credential management in Mirxa.io is a
                   game-changer for us. We can safely store API keys and automate
                   interactions with multiple services without compromising
@@ -544,14 +547,14 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="card-glass card-hover p-8 rounded-xl shadow-md">
                 <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mr-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/30 flex items-center justify-center mr-4">
                     <User className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h4 className="font-semibold">Mei Lin</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <h4 className="font-semibold text-high-contrast text-shadow-sm">Mei Lin</h4>
+                    <p className="text-sm text-white/80 text-shadow-sm">
                       Operations Manager, CloudWorks
                     </p>
                   </div>
@@ -565,7 +568,7 @@ export default function LandingPage() {
                     <Star className="h-5 w-5 fill-current" />
                   </div>
                 </div>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-white/90 text-shadow-sm">
                   "We've reduced our workflow automation time by 75% using
                   Mirxa.io. The template system lets us create and deploy new
                   automations in minutes instead of days. Absolutely worth every
@@ -590,15 +593,15 @@ export default function LandingPage() {
             </div>
 
             <div className="max-w-4xl mx-auto space-y-6">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="card-glass card-hover rounded-lg shadow-md">
                 <div className="p-6">
-                  <h3 className="text-lg font-semibold mb-2 flex items-center">
-                    <span className="bg-primary/10 text-primary p-2 rounded-full mr-3">
+                  <h3 className="text-lg font-semibold mb-2 flex items-center text-high-contrast text-shadow-sm">
+                    <span className="bg-primary/20 text-primary p-2 rounded-full mr-3">
                       <MessageSquare className="h-5 w-5" />
                     </span>
                     What is an AI agent platform?
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-white/90 text-shadow-sm">
                     An AI agent platform is a system that allows you to create,
                     manage, and deploy intelligent software agents that can
                     perform tasks automatically. These agents use artificial
@@ -609,15 +612,15 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="card-glass card-hover rounded-lg shadow-md">
                 <div className="p-6">
-                  <h3 className="text-lg font-semibold mb-2 flex items-center">
-                    <span className="bg-primary/10 text-primary p-2 rounded-full mr-3">
+                  <h3 className="text-lg font-semibold mb-2 flex items-center text-high-contrast text-shadow-sm">
+                    <span className="bg-primary/20 text-primary p-2 rounded-full mr-3">
                       <ShieldCheck className="h-5 w-5" />
                     </span>
                     How does Mirxa.io handle sensitive credentials?
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-white/90 text-shadow-sm">
                     Mirxa.io uses end-to-end encryption to store all
                     credentials. Your API keys and sensitive information are
                     encrypted at rest and in transit. We follow industry best
@@ -627,15 +630,15 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="card-glass card-hover rounded-lg shadow-md">
                 <div className="p-6">
-                  <h3 className="text-lg font-semibold mb-2 flex items-center">
-                    <span className="bg-primary/10 text-primary p-2 rounded-full mr-3">
+                  <h3 className="text-lg font-semibold mb-2 flex items-center text-high-contrast text-shadow-sm">
+                    <span className="bg-primary/20 text-primary p-2 rounded-full mr-3">
                       <Zap className="h-5 w-5" />
                     </span>
                     What types of tasks can I automate with Mirxa.io?
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-white/90 text-shadow-sm">
                     You can automate a wide range of tasks including content
                     generation, data processing, social media management,
                     customer support, research, analytics, and more. Our
@@ -646,15 +649,15 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="card-glass card-hover rounded-lg shadow-md">
                 <div className="p-6">
-                  <h3 className="text-lg font-semibold mb-2 flex items-center">
-                    <span className="bg-primary/10 text-primary p-2 rounded-full mr-3">
+                  <h3 className="text-lg font-semibold mb-2 flex items-center text-high-contrast text-shadow-sm">
+                    <span className="bg-primary/20 text-primary p-2 rounded-full mr-3">
                       <Bot className="h-5 w-5" />
                     </span>
                     Do I need programming skills to use Mirxa.io?
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-white/90 text-shadow-sm">
                     No, Mirxa.io is designed to be user-friendly for both
                     technical and non-technical users. You can create and deploy
                     AI agents using our intuitive interface without any coding
@@ -664,15 +667,15 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="card-glass card-hover rounded-lg shadow-md">
                 <div className="p-6">
-                  <h3 className="text-lg font-semibold mb-2 flex items-center">
-                    <span className="bg-primary/10 text-primary p-2 rounded-full mr-3">
+                  <h3 className="text-lg font-semibold mb-2 flex items-center text-high-contrast text-shadow-sm">
+                    <span className="bg-primary/20 text-primary p-2 rounded-full mr-3">
                       <Calendar className="h-5 w-5" />
                     </span>
                     Can I schedule tasks to run automatically?
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-white/90 text-shadow-sm">
                     Yes, Mirxa.io provides robust scheduling capabilities. You
                     can set up tasks to run at specific times, on regular
                     intervals, or in response to triggers like incoming data or
