@@ -340,29 +340,33 @@ export default function LandingPage() {
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row items-center">
               <div className="md:w-1/2 md:pr-12 mb-10 md:mb-0">
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6 text-shadow-lg">
-                  <span className="bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
-                    Next-Generation
-                  </span>
-                  <br />
-                  <span className="text-high-contrast">AI Agent Platform</span>
-                </h1>
-                <p className="text-xl text-white/90 mb-8 max-w-lg text-shadow-sm">
-                  Create, manage, and automate intelligent AI agents that
-                  perform complex tasks securely with your credentials and
-                  templates.
-                </p>
+                <div className="glass-text-container p-6 mb-6">
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-4 text-shadow-lg">
+                    <span className="bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
+                      Next-Generation
+                    </span>
+                    <br />
+                    <span className="text-high-contrast">AI Agent Platform</span>
+                  </h1>
+                  <p className="text-xl text-white/90 max-w-lg text-shadow-sm">
+                    Create, manage, and automate intelligent AI agents that
+                    perform complex tasks securely with your credentials and
+                    templates.
+                  </p>
+                </div>
                 <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                  <Button
-                    size="lg"
-                    className="px-8 shadow-glow"
+                  <button
+                    className="btn-glass btn-glass-primary px-8 py-3 font-medium shadow-glow"
                     onClick={() => (location.href = "/auth")}
                   >
                     Get Started Free
-                  </Button>
-                  <Button size="lg" variant="outline" className="px-8 text-white/90 border-white/40 backdrop-blur-sm hover:bg-white/10">
+                  </button>
+                  <button 
+                    className="btn-glass px-8 py-3 font-medium"
+                    onClick={() => alert("Demo Coming Soon!")}
+                  >
                     Watch Demo
-                  </Button>
+                  </button>
                 </div>
               </div>
               <div className="md:w-1/2 relative">
@@ -381,9 +385,11 @@ export default function LandingPage() {
         <section id="features" className="py-20 bg-gray-50">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4 text-high-contrast text-shadow-md">
-                Powerful AI Agent Capabilities
-              </h2>
+              <div className="section-header-glass mx-auto mb-4">
+                <h2 className="text-3xl font-bold text-high-contrast text-shadow-md">
+                  Powerful AI Agent Capabilities
+                </h2>
+              </div>
               <p className="text-lg text-gray-700 max-w-2xl mx-auto">
                 Mirxa.io combines advanced AI with secure credential management
                 and template systems to automate your workflows.
@@ -412,9 +418,11 @@ export default function LandingPage() {
         <section id="pricing" className="py-20">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4 text-high-contrast text-shadow-md">
-                Simple, Transparent Pricing
-              </h2>
+              <div className="section-header-glass mx-auto mb-4">
+                <h2 className="text-3xl font-bold text-high-contrast text-shadow-md">
+                  Simple, Transparent Pricing
+                </h2>
+              </div>
               <p className="text-lg text-white/90 max-w-2xl mx-auto text-shadow-sm">
                 Choose the plan that's right for you, with prices in Saudi Riyal
                 (SAR).
