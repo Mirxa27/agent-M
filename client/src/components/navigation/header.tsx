@@ -25,6 +25,7 @@ import {
   LogOut,
   Menu,
   X,
+  Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -67,6 +68,11 @@ export function Header() {
       href: "/agents",
       label: "Agents",
       icon: <Bot className="w-4 h-4 mr-2" />,
+    },
+    {
+      href: "/ai-browser",
+      label: "AI Browser",
+      icon: <Globe className="w-4 h-4 mr-2" />,
     },
     {
       href: "/credentials",
@@ -228,6 +234,14 @@ export function Header() {
                     <div className="flex items-center cursor-pointer">
                       <Bot className="mr-2 h-4 w-4" />
                       <span>{t("nav.agents")}</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = "/ai-browser")}
+                  >
+                    <div className="flex items-center cursor-pointer">
+                      <Globe className="mr-2 h-4 w-4" />
+                      <span>AI Browser</span>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem
