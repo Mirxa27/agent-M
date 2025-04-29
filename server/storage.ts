@@ -73,6 +73,26 @@ export interface IStorage {
   createSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings>;
   updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined>;
   
+  // Browser Sequence operations
+  getBrowserSequence(id: number): Promise<BrowserSequence | undefined>;
+  getBrowserSequencesByUserId(userId: number): Promise<BrowserSequence[]>;
+  createBrowserSequence(sequence: InsertBrowserSequence): Promise<BrowserSequence>;
+  updateBrowserSequence(
+    id: number,
+    updates: Partial<Omit<BrowserSequence, "id">>,
+  ): Promise<BrowserSequence | undefined>;
+  deleteBrowserSequence(id: number): Promise<boolean>;
+
+  // Browser Sequence Step operations
+  getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined>;
+  getBrowserSequenceStepsBySequenceId(sequenceId: number): Promise<BrowserSequenceStep[]>;
+  createBrowserSequenceStep(step: InsertBrowserSequenceStep): Promise<BrowserSequenceStep>;
+  updateBrowserSequenceStep(
+    id: number,
+    updates: Partial<Omit<BrowserSequenceStep, "id">>,
+  ): Promise<BrowserSequenceStep | undefined>;
+  deleteBrowserSequenceStep(id: number): Promise<boolean>;
+  
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -1350,6 +1370,109 @@ export class MemStorage implements IStorage {
     this.analyticsEntries.set(id, updatedAnalytics);
     return updatedAnalytics;
   }
+  
+  // Browser Sequence operations
+  async getBrowserSequence(id: number): Promise<BrowserSequence | undefined> {
+    return this.browserSequences.get(id);
+  }
+
+  async getBrowserSequencesByUserId(userId: number): Promise<BrowserSequence[]> {
+    return Array.from(this.browserSequences.values()).filter(
+      (sequence) => sequence.userId === userId
+    );
+  }
+
+  async createBrowserSequence(sequence: InsertBrowserSequence): Promise<BrowserSequence> {
+    const id = this.browserSequenceIdCounter++;
+    const now = new Date();
+    const newSequence: BrowserSequence = {
+      id,
+      ...sequence,
+      isAutomated: sequence.isAutomated !== undefined ? sequence.isAutomated : false,
+      triggerCondition: sequence.triggerCondition || {},
+      createdAt: now,
+      updatedAt: now,
+      lastExecutedAt: null,
+      executionCount: 0,
+      isActive: sequence.isActive !== undefined ? sequence.isActive : true,
+    };
+    
+    this.browserSequences.set(id, newSequence);
+    return newSequence;
+  }
+
+  async updateBrowserSequence(
+    id: number,
+    updates: Partial<Omit<BrowserSequence, "id">>,
+  ): Promise<BrowserSequence | undefined> {
+    const sequence = await this.getBrowserSequence(id);
+    if (!sequence) return undefined;
+    
+    const updatedSequence: BrowserSequence = {
+      ...sequence,
+      ...updates,
+      updatedAt: new Date(),
+    };
+    
+    this.browserSequences.set(id, updatedSequence);
+    return updatedSequence;
+  }
+
+  async deleteBrowserSequence(id: number): Promise<boolean> {
+    // Also delete all steps associated with this sequence
+    const steps = await this.getBrowserSequenceStepsBySequenceId(id);
+    steps.forEach(step => this.deleteBrowserSequenceStep(step.id));
+    
+    return this.browserSequences.delete(id);
+  }
+  
+  // Browser Sequence Step operations
+  async getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined> {
+    return this.browserSequenceSteps.get(id);
+  }
+  
+  async getBrowserSequenceStepsBySequenceId(sequenceId: number): Promise<BrowserSequenceStep[]> {
+    return Array.from(this.browserSequenceSteps.values())
+      .filter(step => step.sequenceId === sequenceId)
+      .sort((a, b) => a.stepOrder - b.stepOrder);
+  }
+  
+  async createBrowserSequenceStep(step: InsertBrowserSequenceStep): Promise<BrowserSequenceStep> {
+    const id = this.browserSequenceStepIdCounter++;
+    
+    const newStep: BrowserSequenceStep = {
+      id,
+      ...step,
+      waitBeforeMs: step.waitBeforeMs || 0,
+      waitAfterMs: step.waitAfterMs || 0,
+      isConditional: step.isConditional || false,
+      condition: step.condition || {},
+      metadata: step.metadata || {},
+    };
+    
+    this.browserSequenceSteps.set(id, newStep);
+    return newStep;
+  }
+  
+  async updateBrowserSequenceStep(
+    id: number,
+    updates: Partial<Omit<BrowserSequenceStep, "id">>,
+  ): Promise<BrowserSequenceStep | undefined> {
+    const step = await this.getBrowserSequenceStep(id);
+    if (!step) return undefined;
+    
+    const updatedStep: BrowserSequenceStep = {
+      ...step,
+      ...updates,
+    };
+    
+    this.browserSequenceSteps.set(id, updatedStep);
+    return updatedStep;
+  }
+  
+  async deleteBrowserSequenceStep(id: number): Promise<boolean> {
+    return this.browserSequenceSteps.delete(id);
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2259,6 +2382,127 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     return result[0];
+  }
+  
+  // Browser Sequence operations
+  async getBrowserSequence(id: number): Promise<BrowserSequence | undefined> {
+    const [sequence] = await db
+      .select()
+      .from(browserSequences)
+      .where(eq(browserSequences.id, id));
+    return sequence;
+  }
+
+  async getBrowserSequencesByUserId(userId: number): Promise<BrowserSequence[]> {
+    const sequences = await db
+      .select()
+      .from(browserSequences)
+      .where(eq(browserSequences.userId, userId))
+      .orderBy(desc(browserSequences.updatedAt));
+    return sequences;
+  }
+
+  async createBrowserSequence(sequence: InsertBrowserSequence): Promise<BrowserSequence> {
+    const now = new Date();
+    const [newSequence] = await db
+      .insert(browserSequences)
+      .values({
+        ...sequence,
+        createdAt: now,
+        updatedAt: now,
+        lastExecutedAt: null,
+        executionCount: 0,
+        isActive: sequence.isActive !== undefined ? sequence.isActive : true,
+      })
+      .returning();
+    return newSequence;
+  }
+
+  async updateBrowserSequence(
+    id: number,
+    updates: Partial<Omit<BrowserSequence, "id">>,
+  ): Promise<BrowserSequence | undefined> {
+    const updatesWithTimestamp = {
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    const [updatedSequence] = await db
+      .update(browserSequences)
+      .set(updatesWithTimestamp)
+      .where(eq(browserSequences.id, id))
+      .returning();
+    
+    return updatedSequence;
+  }
+
+  async deleteBrowserSequence(id: number): Promise<boolean> {
+    // First delete all steps associated with this sequence
+    try {
+      await db
+        .delete(browserSequenceSteps)
+        .where(eq(browserSequenceSteps.sequenceId, id));
+      
+      // Then delete the sequence itself
+      const result = await db
+        .delete(browserSequences)
+        .where(eq(browserSequences.id, id));
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error(`Error deleting browser sequence ${id}:`, error);
+      return false;
+    }
+  }
+  
+  // Browser Sequence Step operations
+  async getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined> {
+    const [step] = await db
+      .select()
+      .from(browserSequenceSteps)
+      .where(eq(browserSequenceSteps.id, id));
+    return step;
+  }
+  
+  async getBrowserSequenceStepsBySequenceId(sequenceId: number): Promise<BrowserSequenceStep[]> {
+    const steps = await db
+      .select()
+      .from(browserSequenceSteps)
+      .where(eq(browserSequenceSteps.sequenceId, sequenceId))
+      .orderBy(asc(browserSequenceSteps.stepOrder));
+    return steps;
+  }
+  
+  async createBrowserSequenceStep(step: InsertBrowserSequenceStep): Promise<BrowserSequenceStep> {
+    const [newStep] = await db
+      .insert(browserSequenceSteps)
+      .values({
+        ...step,
+        waitBeforeMs: step.waitBeforeMs || 0,
+        waitAfterMs: step.waitAfterMs || 0,
+        isConditional: step.isConditional || false,
+      })
+      .returning();
+    return newStep;
+  }
+  
+  async updateBrowserSequenceStep(
+    id: number,
+    updates: Partial<Omit<BrowserSequenceStep, "id">>,
+  ): Promise<BrowserSequenceStep | undefined> {
+    const [updatedStep] = await db
+      .update(browserSequenceSteps)
+      .set(updates)
+      .where(eq(browserSequenceSteps.id, id))
+      .returning();
+    return updatedStep;
+  }
+  
+  async deleteBrowserSequenceStep(id: number): Promise<boolean> {
+    const result = await db
+      .delete(browserSequenceSteps)
+      .where(eq(browserSequenceSteps.id, id));
+    return result.rowCount > 0;
   }
 
   // Site Settings operations
