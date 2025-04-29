@@ -38,14 +38,20 @@ export async function getDashboardPreferences(userId: number): Promise<Dashboard
       ? preferences.widgets 
       : [];
       
-    const layoutData = preferences.layout && typeof preferences.layout === 'object'
-      ? preferences.layout as Record<string, unknown>
-      : { columns: 2, showWelcome: true };
+    let layoutData: DashboardLayout = { columns: 2, showWelcome: true };
+    
+    if (preferences.layout && typeof preferences.layout === 'object') {
+      const layout = preferences.layout as Record<string, unknown>;
+      layoutData = {
+        columns: typeof layout.columns === 'number' ? layout.columns : 2,
+        showWelcome: typeof layout.showWelcome === 'boolean' ? layout.showWelcome : true
+      };
+    }
 
     return {
       ...preferences,
       widgets: widgetsData as WidgetConfig[],
-      layout: layoutData as DashboardLayout,
+      layout: layoutData,
     };
   } catch (error) {
     console.error("Error fetching dashboard preferences:", error);
@@ -88,14 +94,20 @@ export async function createDefaultDashboardPreferences(
       ? newPreferences.widgets 
       : defaultWidgets;
       
-    const layoutData = newPreferences.layout && typeof newPreferences.layout === 'object'
-      ? newPreferences.layout as Record<string, unknown>
-      : defaultLayout;
+    let layoutData: DashboardLayout = defaultLayout;
+    
+    if (newPreferences.layout && typeof newPreferences.layout === 'object') {
+      const layout = newPreferences.layout as Record<string, unknown>;
+      layoutData = {
+        columns: typeof layout.columns === 'number' ? layout.columns : defaultLayout.columns,
+        showWelcome: typeof layout.showWelcome === 'boolean' ? layout.showWelcome : defaultLayout.showWelcome
+      };
+    }
 
     return {
       ...newPreferences,
       widgets: widgetsData as WidgetConfig[],
-      layout: layoutData as DashboardLayout,
+      layout: layoutData,
     };
   } catch (error) {
     console.error("Error creating dashboard preferences:", error);
@@ -124,16 +136,32 @@ export async function updateDashboardPreferences(
       updatedWidgets = updates.widgets;
     }
 
-    let updatedLayout = existingPrefs.layout;
-    if (updates.layout && typeof updates.layout === 'object') {
-      const currentLayout = typeof existingPrefs.layout === 'object' 
-        ? existingPrefs.layout as Record<string, unknown>
-        : { columns: 2, showWelcome: true };
-      
-      updatedLayout = {
-        ...currentLayout,
-        ...updates.layout as Record<string, unknown>
+    // Default layout values
+    const defaultLayout: DashboardLayout = { 
+      columns: 2, 
+      showWelcome: true 
+    };
+
+    // Extract current layout safely
+    let currentLayout: DashboardLayout = defaultLayout;
+    if (existingPrefs.layout && typeof existingPrefs.layout === 'object') {
+      const layoutObj = existingPrefs.layout as Record<string, unknown>;
+      currentLayout = {
+        columns: typeof layoutObj.columns === 'number' ? layoutObj.columns : defaultLayout.columns,
+        showWelcome: typeof layoutObj.showWelcome === 'boolean' ? layoutObj.showWelcome : defaultLayout.showWelcome
       };
+    }
+
+    // Process layout updates safely
+    let updatedLayout = currentLayout;
+    if (updates.layout) {
+      if (typeof updates.layout === 'object') {
+        const layoutUpdates = updates.layout as unknown as Record<string, unknown>;
+        updatedLayout = {
+          columns: typeof layoutUpdates.columns === 'number' ? layoutUpdates.columns : currentLayout.columns,
+          showWelcome: typeof layoutUpdates.showWelcome === 'boolean' ? layoutUpdates.showWelcome : currentLayout.showWelcome
+        };
+      }
     }
 
     // Merge updates with existing preferences
@@ -156,14 +184,21 @@ export async function updateDashboardPreferences(
       ? updated.widgets 
       : [];
       
-    const layoutData = updated.layout && typeof updated.layout === 'object'
-      ? updated.layout as Record<string, unknown>
-      : { columns: 2, showWelcome: true };
+    // Create a properly typed layout object
+    let layoutData: DashboardLayout = { columns: 2, showWelcome: true };
+    
+    if (updated.layout && typeof updated.layout === 'object') {
+      const layout = updated.layout as Record<string, unknown>;
+      layoutData = {
+        columns: typeof layout.columns === 'number' ? layout.columns : 2,
+        showWelcome: typeof layout.showWelcome === 'boolean' ? layout.showWelcome : true
+      };
+    }
 
     return {
       ...updated,
       widgets: widgetsData as WidgetConfig[],
-      layout: layoutData as DashboardLayout,
+      layout: layoutData,
     };
   } catch (error) {
     console.error("Error updating dashboard preferences:", error);

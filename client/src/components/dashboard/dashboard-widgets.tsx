@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Loader2, Plus, LayoutGrid, LayoutList } from 'lucide-react';
+import { Loader2, Plus, LayoutGrid, LayoutList, GripVertical } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { 
   Dialog, 
   DialogContent, 
@@ -35,6 +36,16 @@ import {
   AVAILABLE_WIDGETS,
   WidgetConfig
 } from './widgets';
+
+// Widget Component Map to render the correct widget based on ID
+const WIDGET_COMPONENTS: Record<string, React.FC<{ onRemove: () => void }>> = {
+  activity: ({ onRemove }) => <ActivityWidget onRemove={onRemove} />,
+  stats: ({ onRemove }) => <StatsWidget onRemove={onRemove} />,
+  quickActions: ({ onRemove }) => <QuickActionsWidget onRemove={onRemove} />,
+  recentFiles: ({ onRemove }) => <RecentFilesWidget onRemove={onRemove} />,
+  agentStatus: ({ onRemove }) => <AgentStatusWidget onRemove={onRemove} />,
+  aiProviders: ({ onRemove }) => <AIProviderWidget onRemove={onRemove} />,
+};
 
 export const DashboardWidgets = () => {
   const { toast } = useToast();
@@ -76,59 +87,10 @@ export const DashboardWidgets = () => {
     if (!data) return;
 
     const updatedWidgets = data.widgets.map((widget: WidgetConfig) =>
-      widget.id === widgetId ? { ...widget, enabled } : widget,
+      widget.id === widgetId ? { ...widget, enabled } : widget
     );
 
     updatePreferences({ widgets: updatedWidgets });
-  };
-
-  // Handle widget removal
-  const handleRemoveWidget = (widgetId: string) => {
-    if (!data) return;
-
-    const updatedWidgets = data.widgets.filter(
-      (widget: WidgetConfig) => widget.id !== widgetId,
-    );
-
-    updatePreferences({ widgets: updatedWidgets });
-    
-    toast({
-      title: 'Widget Removed',
-      description: 'The widget has been removed from your dashboard.'
-    });
-  };
-
-  // Add a new widget
-  const handleAddWidget = () => {
-    if (!data || !selectedWidgetId) return;
-
-    // Check if widget already exists
-    if (data.widgets.some((w: WidgetConfig) => w.id === selectedWidgetId)) {
-      // Just enable it if it exists
-      const updatedWidgets = data.widgets.map((widget: WidgetConfig) =>
-        widget.id === selectedWidgetId ? { ...widget, enabled: true } : widget,
-      );
-      updatePreferences({ widgets: updatedWidgets });
-    } else {
-      // Add new widget
-      const newWidget = {
-        id: selectedWidgetId,
-        position: data.widgets.length,
-        enabled: true,
-      };
-      
-      updatePreferences({ 
-        widgets: [...data.widgets, newWidget] 
-      });
-    }
-
-    setAddWidgetOpen(false);
-    setSelectedWidgetId(null);
-
-    toast({
-      title: 'Widget Added',
-      description: 'The widget has been added to your dashboard.'
-    });
   };
 
   // Handle layout change
@@ -143,14 +105,65 @@ export const DashboardWidgets = () => {
     });
   };
 
-  // Widget mappings
-  const widgetComponents: Record<string, React.FC<{onRemove: () => void}>> = {
-    activity: (props) => <ActivityWidget {...props} />,
-    stats: (props) => <StatsWidget {...props} />,
-    quickActions: (props) => <QuickActionsWidget {...props} />,
-    recentFiles: (props) => <RecentFilesWidget {...props} />,
-    agentStatus: (props) => <AgentStatusWidget {...props} />,
-    aiProviders: (props) => <AIProviderWidget {...props} />
+  // Handle the removal of a widget
+  const handleRemoveWidget = (widgetId: string) => {
+    if (!data) return;
+
+    const updatedWidgets = data.widgets.map((widget: WidgetConfig) =>
+      widget.id === widgetId ? { ...widget, enabled: false } : widget
+    );
+
+    updatePreferences({ widgets: updatedWidgets });
+  };
+
+  // Handle adding a new widget
+  const handleAddWidget = () => {
+    if (!data || !selectedWidgetId) return;
+
+    // Check if widget is already in the list but disabled
+    const existingWidget = data.widgets.find((w: WidgetConfig) => w.id === selectedWidgetId);
+    
+    if (existingWidget) {
+      // Re-enable existing widget
+      const updatedWidgets = data.widgets.map((widget: WidgetConfig) =>
+        widget.id === selectedWidgetId ? { ...widget, enabled: true } : widget
+      );
+      
+      updatePreferences({ widgets: updatedWidgets });
+    } else {
+      // Add new widget with next position
+      const maxPosition = Math.max(...data.widgets.map((w: WidgetConfig) => w.position), 0);
+      
+      const newWidget: WidgetConfig = {
+        id: selectedWidgetId,
+        position: maxPosition + 1,
+        enabled: true,
+      };
+      
+      updatePreferences({ widgets: [...data.widgets, newWidget] });
+    }
+    
+    setAddWidgetOpen(false);
+    setSelectedWidgetId(null);
+  };
+
+  // Handle drag and drop reordering
+  const handleDragEnd = (result: any) => {
+    if (!result.destination || !data) return;
+
+    const items = Array.from(data.widgets.filter((w: WidgetConfig) => w.enabled));
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    // Update positions based on new order
+    const updatedWidgets = data.widgets.map((widget: WidgetConfig) => {
+      if (!widget.enabled) return widget;
+      
+      const newIndex = items.findIndex((item: WidgetConfig) => item.id === widget.id);
+      return { ...widget, position: newIndex };
+    });
+
+    updatePreferences({ widgets: updatedWidgets });
   };
 
   if (isLoading) {
@@ -175,6 +188,11 @@ export const DashboardWidgets = () => {
   const enabledWidgets = widgets.filter((w: WidgetConfig) => w.enabled);
   const sortedWidgets = [...enabledWidgets].sort(
     (a: WidgetConfig, b: WidgetConfig) => a.position - b.position
+  );
+
+  // Get available widgets that aren't already enabled
+  const availableWidgetsToAdd = AVAILABLE_WIDGETS.filter(
+    (w) => !enabledWidgets.some((ew: WidgetConfig) => ew.id === w.id)
   );
 
   return (
@@ -207,7 +225,7 @@ export const DashboardWidgets = () => {
               <span className="sr-only">Two columns</span>
             </Button>
           </div>
-
+          
           <Dialog open={addWidgetOpen} onOpenChange={setAddWidgetOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="h-9">
@@ -217,40 +235,52 @@ export const DashboardWidgets = () => {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add Dashboard Widget</DialogTitle>
+                <DialogTitle>Add Widget</DialogTitle>
                 <DialogDescription>
-                  Select a widget to add to your dashboard.
+                  Choose a widget to add to your dashboard.
                 </DialogDescription>
               </DialogHeader>
-              
               <div className="py-4">
-                <Select onValueChange={(value) => setSelectedWidgetId(value)}>
+                <Select
+                  value={selectedWidgetId || ''}
+                  onValueChange={setSelectedWidgetId}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a widget" />
+                    <SelectValue placeholder="Select widget..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {AVAILABLE_WIDGETS.map((widget) => (
+                    {availableWidgetsToAdd.map((widget) => (
                       <SelectItem key={widget.id} value={widget.id}>
                         {widget.title}
                       </SelectItem>
                     ))}
+                    {availableWidgetsToAdd.length === 0 && (
+                      <SelectItem value="none" disabled>
+                        No widgets available
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
-                
-                <div className="mt-4">
-                  {selectedWidgetId && (
-                    <p className="text-sm text-muted-foreground">
-                      {AVAILABLE_WIDGETS.find(w => w.id === selectedWidgetId)?.description}
-                    </p>
-                  )}
-                </div>
+                {selectedWidgetId && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {AVAILABLE_WIDGETS.find((w) => w.id === selectedWidgetId)?.description}
+                  </p>
+                )}
               </div>
-              
               <DialogFooter>
-                <Button variant="outline" onClick={() => setAddWidgetOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setAddWidgetOpen(false);
+                    setSelectedWidgetId(null);
+                  }}
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleAddWidget} disabled={!selectedWidgetId}>
+                <Button
+                  onClick={handleAddWidget}
+                  disabled={!selectedWidgetId || availableWidgetsToAdd.length === 0}
+                >
                   Add Widget
                 </Button>
               </DialogFooter>
@@ -259,83 +289,105 @@ export const DashboardWidgets = () => {
         </div>
       </div>
 
-      <div
-        className={`grid gap-6 ${
-          layout.columns === 1
-            ? 'grid-cols-1'
-            : 'grid-cols-1 md:grid-cols-2'
-        }`}
-      >
-        {sortedWidgets.map((widget: WidgetConfig) => {
-          const WidgetComponent = widgetComponents[widget.id];
-          return WidgetComponent ? (
-            <div key={widget.id}>
-              <WidgetComponent onRemove={() => handleRemoveWidget(widget.id)} />
-            </div>
-          ) : null;
-        })}
-        
-        {sortedWidgets.length === 0 && (
-          <div className="col-span-full p-8 border rounded-md text-center">
-            <h3 className="text-lg font-medium mb-2">No Widgets Added</h3>
-            <p className="text-muted-foreground mb-4">
-              Your dashboard is empty. Add widgets to customize your experience.
-            </p>
-            <Button onClick={() => setAddWidgetOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Your First Widget
-            </Button>
-          </div>
-        )}
-      </div>
+      {sortedWidgets.length === 0 ? (
+        <div className="p-12 border rounded-lg text-center">
+          <p className="text-muted-foreground mb-4">
+            Your dashboard is empty. Add some widgets to get started.
+          </p>
+          <Button
+            onClick={() => setAddWidgetOpen(true)}
+            variant="outline"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Widget
+          </Button>
+        </div>
+      ) : (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="widgets" direction="vertical">
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className={`grid gap-6 ${
+                  layout.columns === 1
+                    ? "grid-cols-1"
+                    : layout.columns === 3
+                    ? "grid-cols-1 md:grid-cols-3"
+                    : "grid-cols-1 md:grid-cols-2"
+                }`}
+              >
+                {sortedWidgets.map((widget: WidgetConfig, index: number) => {
+                  const WidgetComponent = WIDGET_COMPONENTS[widget.id];
+                  if (!WidgetComponent) return null;
 
-      <div className="mt-6 p-4 border rounded-md bg-muted/50">
-        <h3 className="text-sm font-medium mb-2">Dashboard Settings</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="col-span-full pb-2 mb-2 border-b">
-            <h4 className="text-sm font-medium text-muted-foreground mb-2">Layout</h4>
-            <div className="flex items-center gap-4">
-              <Button
-                variant={layout.columns === 1 ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleLayoutChange(1)}
-              >
-                Single Column
-              </Button>
-              <Button
-                variant={layout.columns === 2 ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleLayoutChange(2)}
-              >
-                Two Columns
-              </Button>
-            </div>
-          </div>
-          
-          <div className="col-span-full">
-            <h4 className="text-sm font-medium text-muted-foreground mb-2">Widgets</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {data.widgets.map((widget: WidgetConfig) => {
-                const widgetInfo = AVAILABLE_WIDGETS.find(w => w.id === widget.id);
+                  return (
+                    <Draggable key={widget.id} draggableId={widget.id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`relative ${snapshot.isDragging ? 'z-50' : ''}`}
+                        >
+                          <div 
+                            className="absolute top-3 left-3 cursor-grab p-1 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800 z-10"
+                            {...provided.dragHandleProps}
+                          >
+                            <GripVertical className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="pl-7">
+                            <WidgetComponent onRemove={() => handleRemoveWidget(widget.id)} />
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
+
+      <Dialog open={false}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Widgets</DialogTitle>
+            <DialogDescription>
+              Enable or disable widgets on your dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-3">
+              {widgets.map((widget: WidgetConfig) => {
+                const widgetInfo = AVAILABLE_WIDGETS.find(
+                  (w) => w.id === widget.id
+                );
                 return (
-                  <div key={widget.id} className="flex items-center space-x-2">
-                    <Switch
-                      id={`widget-${widget.id}`}
-                      checked={widget.enabled}
-                      onCheckedChange={(checked) =>
-                        handleWidgetToggle(widget.id, checked)
-                      }
-                    />
-                    <Label htmlFor={`widget-${widget.id}`}>
-                      {widgetInfo?.title || widget.id}
-                    </Label>
+                  <div
+                    key={widget.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id={`widget-${widget.id}`}
+                        checked={widget.enabled}
+                        onCheckedChange={(checked) =>
+                          handleWidgetToggle(widget.id, checked)
+                        }
+                      />
+                      <Label htmlFor={`widget-${widget.id}`}>
+                        {widgetInfo?.title || widget.id}
+                      </Label>
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
