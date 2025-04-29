@@ -142,7 +142,7 @@ export default function AuthPage() {
                           <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                           <Input
                             placeholder={`${t("auth.username")}...`}
-                            className="pl-9"
+                            className="pl-9 btn-glass bg-opacity-30 border-white/10 text-white/90 text-shadow-sm placeholder:text-white/50"
                             {...field}
                           />
                         </div>
@@ -166,7 +166,7 @@ export default function AuthPage() {
                           <Input
                             type="password"
                             placeholder={`${t("auth.password")}...`}
-                            className="pl-9"
+                            className="pl-9 btn-glass bg-opacity-30 border-white/10 text-white/90 text-shadow-sm placeholder:text-white/50"
                             {...field}
                           />
                         </div>
@@ -204,7 +204,7 @@ export default function AuthPage() {
                   name="fullName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm">
+                      <FormLabel className="text-sm text-high-contrast text-shadow-sm">
                         {t("auth.fullName")}
                       </FormLabel>
                       <FormControl>
@@ -212,7 +212,7 @@ export default function AuthPage() {
                           <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                           <Input
                             placeholder={`${t("auth.fullName")}...`}
-                            className="pl-9"
+                            className="pl-9 btn-glass bg-opacity-30 border-white/10 text-white/90 text-shadow-sm placeholder:text-white/50"
                             {...field}
                           />
                         </div>
@@ -228,7 +228,7 @@ export default function AuthPage() {
                     name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm">
+                        <FormLabel className="text-sm text-high-contrast text-shadow-sm">
                           {t("auth.username")}
                         </FormLabel>
                         <FormControl>
@@ -247,7 +247,7 @@ export default function AuthPage() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm">
+                        <FormLabel className="text-sm text-high-contrast text-shadow-sm">
                           {t("auth.email")}
                         </FormLabel>
                         <FormControl>
@@ -273,7 +273,7 @@ export default function AuthPage() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm">
+                        <FormLabel className="text-sm text-high-contrast text-shadow-sm">
                           {t("auth.password")}
                         </FormLabel>
                         <FormControl>
@@ -297,7 +297,7 @@ export default function AuthPage() {
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm">
+                        <FormLabel className="text-sm text-high-contrast text-shadow-sm">
                           {t("auth.confirmPassword")}
                         </FormLabel>
                         <FormControl>
