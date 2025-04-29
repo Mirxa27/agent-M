@@ -156,27 +156,27 @@ export function SplineBackground({
   const [loaded, setLoaded] = useState(false);
 
   // Handler for Spline loading
-  const handleSplineLoad = useCallback(() => {
+  function handleSplineLoad() {
     setLoaded(true);
-  }, []);
+  }
 
   // Handler for Spline errors
-  const handleSplineError = useCallback(() => {
+  function handleSplineError() {
     console.warn("Spline background loading failed, falling back to gradient");
     setHasError(true);
-  }, []);
+  }
 
   // Effect to add error boundary for Spline loading
   useEffect(() => {
     const timer = setTimeout(() => {
       // If not loaded after timeout, consider it failed
       if (!loaded && !hasError) {
-        handleSplineError();
+        setHasError(true);
       }
     }, 8000); // 8 second timeout
 
     return () => clearTimeout(timer);
-  }, [loaded, hasError, handleSplineError]);
+  }, [loaded, hasError]);
 
   return (
     <div 

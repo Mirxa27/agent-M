@@ -29,7 +29,7 @@ export function withBackgroundEffect<
   T extends ElementType
 >(
   Component: T
-): ForwardRefExoticComponent<ComponentPropsWithHandlers<T> & RefAttributes<HTMLElement>> {
+): any {
   // Create a new forwarded ref component
   const WithBackgroundEffect = forwardRef<HTMLElement, ComponentPropsWithHandlers<T>>((props, ref) => {
     const { triggerBackgroundEffect } = useBackground();

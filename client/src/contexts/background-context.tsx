@@ -44,8 +44,9 @@ export function BackgroundProvider({ children }: BackgroundProviderProps) {
     }, 700); // Match timing with CSS transition
   };
   
-  // The URL to your Spline scene
-  const splineSceneUrl = "https://prod.spline.design/uYFcDXx7j7hzMpyL/scene.splinecode";
+  // The URL to your Spline scene - use a public Spline URL from spline.design
+  // This is a placeholder URL - you'd need to replace it with your actual Spline scene URL
+  const splineSceneUrl = "https://prod.spline.design/2K2QkxHzw9jXA5rS/scene.splinecode";
 
   return (
     <BackgroundContext.Provider
