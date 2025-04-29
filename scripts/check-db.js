@@ -1,13 +1,13 @@
 // Check database connectivity and structure for deployment
-const { Pool } = require("@neondatabase/serverless");
-const dotenv = require("dotenv");
-const ws = require("ws");
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import dotenv from "dotenv";
+import ws from "ws";
 
 // Load environment variables
 dotenv.config();
 
 // Required for Neon serverless connections
-require("@neondatabase/serverless").neonConfig.webSocketConstructor = ws;
+neonConfig.webSocketConstructor = ws;
 
 async function checkDatabase() {
   let pool;
