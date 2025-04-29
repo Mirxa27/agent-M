@@ -1588,3 +1588,6 @@ export default function AiBrowserPage() {
     </MainLayout>
   );
 }
+
+// Only use one export default
+// The function is already exported as default at line 162
