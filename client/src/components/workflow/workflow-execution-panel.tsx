@@ -35,6 +35,7 @@ export function WorkflowExecutionPanel({
   sequenceId,
   sequenceName,
   userId,
+  executionId: initialExecutionId,
   onExecutionComplete,
   autoStart = false,
   className,
@@ -56,7 +57,7 @@ export function WorkflowExecutionPanel({
     progress,
     status,
     startExecution,
-  } = useWorkflowProgress(sequenceId, {
+  } = useWorkflowProgress(sequenceId, initialExecutionId, {
     onCompleted: (execution) => {
       toast({
         title: "Workflow completed",

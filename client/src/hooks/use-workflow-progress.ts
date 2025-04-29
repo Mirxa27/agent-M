@@ -15,6 +15,7 @@ interface UseWorkflowProgressOptions {
  */
 export function useWorkflowProgress(
   sequenceId: number,
+  initialExecutionId?: number | null,
   options: UseWorkflowProgressOptions = {}
 ) {
   const {
