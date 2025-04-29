@@ -1,32 +1,27 @@
-// Check database connectivity and structure for deployment
-const { Pool } = require("@neondatabase/serverless");
-const dotenv = require("dotenv");
-const ws = require("ws");
+const mysql = require('mysql2/promise');
+const dotenv = require('dotenv');
 
 // Load environment variables
 dotenv.config();
 
-// Required for Neon serverless connections
-require("@neondatabase/serverless").neonConfig.webSocketConstructor = ws;
-
 async function checkDatabase() {
-  let pool;
+  let connection;
 
   try {
     console.log("Checking database connection...");
 
-    if (!process.env.DATABASE_URL) {
-      throw new Error("DATABASE_URL environment variable is not set");
+    if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME) {
+      throw new Error("Database environment variables are not set");
     }
 
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      max: 5,
-      connectionTimeoutMillis: 10000,
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
     });
 
-    // Test connection
-    const client = await pool.connect();
     console.log("✅ Database connection successful");
 
     // Check for required tables
@@ -50,14 +45,14 @@ async function checkDatabase() {
 
     console.log("\nChecking database tables...");
 
-    const { rows: tables } = await client.query(`
+    const [tables] = await connection.query(`
       SELECT table_name 
       FROM information_schema.tables 
-      WHERE table_schema = 'public'
+      WHERE table_schema = '${process.env.DB_NAME}'
       ORDER BY table_name;
     `);
 
-    const existingTables = tables.map((t) => t.table_name);
+    const existingTables = tables.map((t) => t.TABLE_NAME);
     console.log("Existing tables:", existingTables.join(", "));
 
     const missingTables = requiredTables.filter(
@@ -72,13 +67,10 @@ async function checkDatabase() {
     }
 
     // Check for user count
-    const { rows: userCount } = await client.query(
-      "SELECT COUNT(*) FROM users",
+    const [userCount] = await connection.query(
+      "SELECT COUNT(*) AS count FROM users",
     );
     console.log(`\nUser count: ${userCount[0].count}`);
-
-    // Release the client back to the pool
-    client.release();
 
     console.log("\n✅ Database is ready for deployment!");
   } catch (error) {
@@ -86,8 +78,8 @@ async function checkDatabase() {
     if (error.stack) console.error(error.stack);
     process.exit(1);
   } finally {
-    if (pool) {
-      await pool.end();
+    if (connection) {
+      await connection.end();
     }
   }
 }
