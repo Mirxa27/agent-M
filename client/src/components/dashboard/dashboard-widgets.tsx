@@ -310,7 +310,7 @@ export const DashboardWidgets = () => {
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className={`grid gap-6 ${
+                className={`grid gap-8 p-2 ${
                   layout.columns === 1
                     ? "grid-cols-1"
                     : layout.columns === 3
@@ -331,13 +331,14 @@ export const DashboardWidgets = () => {
                           className={`relative ${snapshot.isDragging ? 'z-50' : ''}`}
                         >
                           <div 
-                            className="absolute top-3 left-3 cursor-grab p-1 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800 z-10"
+                            className="absolute top-3 left-3 cursor-grab p-1.5 rounded-full bg-white/10 hover:bg-primary/20 hover:scale-110 transition-all duration-300 z-10 backdrop-blur-sm border border-white/20"
                             {...provided.dragHandleProps}
                           >
-                            <GripVertical className="h-4 w-4 text-muted-foreground" />
+                            <GripVertical className="h-4 w-4 text-white text-shadow-sm" />
                           </div>
                           <div className="pl-7">
-                            <div className="glass-effect-lighter rounded-lg p-4 hover:shadow-xl transition-all duration-300 card-hover text-shadow-sm border border-white/10">
+                            <div className="glass-effect-lighter rounded-lg p-4 hover:shadow-xl transition-all duration-300 card-hover text-shadow-sm border border-white/10 relative group">
+                              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-lg pointer-events-none"></div>
                               <WidgetComponent onRemove={() => handleRemoveWidget(widget.id)} />
                             </div>
                           </div>
