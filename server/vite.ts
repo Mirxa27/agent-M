@@ -44,6 +44,12 @@ export async function setupVite(app: Express, server: Server) {
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
 
+    // Add validation to ensure that the request-target is valid and does not bypass server.fs.deny
+    const denyList = ["/server/fs/deny", "/server/fs/inline", "/server/fs/raw"];
+    if (denyList.some((denyPath) => url.includes(denyPath))) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     try {
       const clientTemplate = path.resolve(
         import.meta.dirname,
