@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Card,
@@ -20,6 +20,7 @@ import {
   Palette, LayoutGrid
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 // Import improved color pickers
 import { HexColorPicker, HexColorInput } from "react-colorful";
@@ -321,10 +322,54 @@ const SiteEditorPanel: React.FC = () => {
     setWidgets(newWidgets);
   };
 
+  // Load site settings on component mount
+  useEffect(() => {
+    const loadSiteSettings = async () => {
+      setIsLoading(true);
+      try {
+        const data = await apiRequest("GET", "/api/site-settings");
+        if (data) {
+          // Update settings with data from the server
+          setSettings({
+            logo: data.logo || settings.logo,
+            colors: data.colors || settings.colors,
+            header: data.header || settings.header,
+            footer: data.footer || settings.footer,
+            chatbot: data.chatbot || settings.chatbot
+          });
+          
+          // Update widgets if they exist in the data
+          if (data.widgets) {
+            setWidgets(data.widgets);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading site settings:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load site settings. Using default values.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSiteSettings();
+  }, []);
+
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // In a real implementation, you would save the settings to the server
+      // Create a complete settings object with widgets to save
+      const settingsToSave = {
+        ...settings,
+        widgets
+      };
+      
+      // Send the updated settings to the server
+      await apiRequest("PATCH", "/api/admin/site-settings", settingsToSave);
+      
       toast({
         title: "Success",
         description: "Site settings saved successfully",
