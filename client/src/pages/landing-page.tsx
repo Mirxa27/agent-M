@@ -354,13 +354,13 @@ export default function LandingPage() {
                 </div>
                 <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                   <button
-                    className="btn-glass btn-glass-primary px-8 py-3 font-medium shadow-glow"
+                    className="btn-glass btn-glass-primary px-8 py-3 font-medium shadow-glow bg-opacity-50"
                     onClick={() => (location.href = "/auth")}
                   >
                     Get Started Free
                   </button>
                   <button 
-                    className="btn-glass px-8 py-3 font-medium"
+                    className="btn-glass px-8 py-3 font-medium bg-opacity-40"
                     onClick={() => alert("Demo Coming Soon!")}
                   >
                     Watch Demo
@@ -466,7 +466,7 @@ export default function LandingPage() {
                       ))}
                     </ul>
                     <button
-                      className={`w-full py-3 ${plan.popular ? "btn-glass btn-glass-primary shadow-glow" : "btn-glass"}`}
+                      className={`w-full py-3 ${plan.popular ? "btn-glass btn-glass-primary shadow-glow bg-opacity-50" : "btn-glass bg-opacity-40"}`}
                       onClick={() => (location.href = "/auth")}
                     >
                       {plan.buttonText}
@@ -723,7 +723,7 @@ export default function LandingPage() {
                 </p>
               </div>
               <button 
-                className="btn-glass btn-glass-primary px-10 py-4 text-lg font-medium shadow-glow"
+                className="btn-glass btn-glass-primary px-10 py-4 text-lg font-medium shadow-glow bg-opacity-50"
                 onClick={() => (location.href = "/auth")}
               >
                 Get Started Free
