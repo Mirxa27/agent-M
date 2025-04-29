@@ -380,7 +380,7 @@ export default function LandingPage() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="py-20 bg-gray-50">
+        <section id="features" className="py-20">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <div className="section-header-glass mx-auto mb-4">
@@ -388,7 +388,7 @@ export default function LandingPage() {
                   Powerful AI Agent Capabilities
                 </h2>
               </div>
-              <p className="text-lg text-gray-700 max-w-2xl mx-auto">
+              <p className="text-lg text-white/90 max-w-2xl mx-auto text-shadow-sm">
                 Mirxa.io combines advanced AI with secure credential management
                 and template systems to automate your workflows.
               </p>
@@ -397,15 +397,15 @@ export default function LandingPage() {
               {features.map((feature, index) => (
                 <div
                   key={index}
-                  className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                  className="card-glass card-hover p-8 rounded-xl shadow-md border-white/10"
                 >
-                  <div className="mb-4 p-3 rounded-full w-16 h-16 flex items-center justify-center bg-primary/10">
+                  <div className="mb-4 p-3 rounded-full w-16 h-16 flex items-center justify-center bg-primary/20">
                     {feature.icon}
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">
+                  <h3 className="text-xl font-semibold mb-3 text-high-contrast text-shadow-sm">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600">{feature.description}</p>
+                  <p className="text-white/90 text-shadow-sm">{feature.description}</p>
                 </div>
               ))}
             </div>
@@ -481,7 +481,7 @@ export default function LandingPage() {
         {/* Testimonials Section */}
         <section
           id="testimonials"
-          className="py-20 bg-gray-50 dark:bg-gray-900"
+          className="py-20"
         >
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
@@ -722,38 +722,38 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 dark:bg-gray-950 text-gray-400 py-12">
+      <footer className="py-12">
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <Bot className="h-8 w-8 text-primary" />
-                <span className="font-bold text-xl sm:text-2xl text-white">
+                <span className="font-bold text-xl sm:text-2xl bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
                   Mirxa.io
                 </span>
               </div>
-              <p className="mb-6 text-sm sm:text-base">
+              <p className="mb-6 text-sm sm:text-base text-white/90 text-shadow-sm">
                 Next-generation AI agent platform with secure credential storage
                 and task automation.
               </p>
               <div className="flex space-x-4 mb-6">
                 <a
                   href="#"
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-white/80 hover:text-primary transition-colors"
                 >
                   <Twitter className="h-5 w-5" />
                   <span className="sr-only">Twitter</span>
                 </a>
                 <a
                   href="#"
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-white/80 hover:text-primary transition-colors"
                 >
                   <Linkedin className="h-5 w-5" />
                   <span className="sr-only">LinkedIn</span>
                 </a>
                 <a
                   href="#"
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-white/80 hover:text-primary transition-colors"
                 >
                   <Github className="h-5 w-5" />
                   <span className="sr-only">GitHub</span>
@@ -762,7 +762,7 @@ export default function LandingPage() {
             </div>
 
             <div className="mt-4 sm:mt-0">
-              <h3 className="text-white text-base sm:text-lg font-semibold mb-4">
+              <h3 className="text-high-contrast text-base sm:text-lg font-semibold mb-4 text-shadow-sm">
                 Product
               </h3>
               <ul className="space-y-2 text-sm sm:text-base">
@@ -771,7 +771,7 @@ export default function LandingPage() {
                     onClick={() =>
                       document.getElementById("features")?.scrollIntoView()
                     }
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     Features
                   </a>
@@ -781,7 +781,7 @@ export default function LandingPage() {
                     onClick={() =>
                       document.getElementById("pricing")?.scrollIntoView()
                     }
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     Pricing
                   </a>
