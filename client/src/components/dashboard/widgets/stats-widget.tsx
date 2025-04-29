@@ -94,7 +94,7 @@ export const StatsWidget = ({ onRemove }: StatsWidgetProps) => {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
           <h3 className="text-sm font-medium text-white/80 mb-1 text-shadow-sm">Success Rate</h3>
           <p className="text-2xl font-bold text-high-contrast text-shadow-md">
-            {analytics.taskCount 
+            {analytics.taskCount && analytics.successfulTaskCount
               ? Math.round((analytics.successfulTaskCount / analytics.taskCount) * 100) 
               : 0}%
           </p>
