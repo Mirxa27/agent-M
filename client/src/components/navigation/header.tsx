@@ -106,10 +106,10 @@ export function Header() {
     <>
       <header
         className={cn(
-          "sticky top-0 z-30 w-full bg-white dark:bg-gray-900 transition-all duration-200",
+          "sticky top-0 z-30 w-full transition-all duration-200 glass-container bg-opacity-60 backdrop-blur-md",
           scrolled
-            ? "shadow-md"
-            : "border-b border-gray-200 dark:border-gray-800",
+            ? "shadow-glow"
+            : "border-b border-white/10",
         )}
       >
         <div className="container flex h-16 items-center justify-between px-4">
@@ -188,7 +188,7 @@ export function Header() {
             {!user ? (
               <Button
                 size="sm"
-                className="hidden md:flex"
+                className="hidden md:flex btn-glass btn-glass-primary shadow-glow bg-opacity-50 text-white/90 text-shadow-sm"
                 onClick={() => (window.location.href = "/auth")}
               >
                 {t("auth.login")}
