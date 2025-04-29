@@ -199,7 +199,7 @@ export const DashboardWidgets = () => {
     <>
       <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-lg font-medium">Your Dashboard</h2>
+          <h2 className="text-lg font-medium text-high-contrast text-shadow-sm">Your Dashboard</h2>
           <p className="text-sm text-muted-foreground">
             Customize your dashboard by adding, removing, or rearranging widgets.
           </p>
@@ -290,13 +290,14 @@ export const DashboardWidgets = () => {
       </div>
 
       {sortedWidgets.length === 0 ? (
-        <div className="p-12 border rounded-lg text-center">
-          <p className="text-muted-foreground mb-4">
+        <div className="p-12 card-glass rounded-lg text-center">
+          <p className="text-high-contrast text-shadow-sm mb-4">
             Your dashboard is empty. Add some widgets to get started.
           </p>
           <Button
             onClick={() => setAddWidgetOpen(true)}
-            variant="outline"
+            variant="default"
+            className="shadow-glow"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Widget
@@ -336,7 +337,9 @@ export const DashboardWidgets = () => {
                             <GripVertical className="h-4 w-4 text-muted-foreground" />
                           </div>
                           <div className="pl-7">
-                            <WidgetComponent onRemove={() => handleRemoveWidget(widget.id)} />
+                            <div className="card-glass card-hover text-shadow-sm">
+                              <WidgetComponent onRemove={() => handleRemoveWidget(widget.id)} />
+                            </div>
                           </div>
                         </div>
                       )}
