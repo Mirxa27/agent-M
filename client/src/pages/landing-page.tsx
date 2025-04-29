@@ -871,7 +871,7 @@ export default function LandingPage() {
                 <li>
                   <a
                     href="#"
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     Support Center
                   </a>
@@ -879,7 +879,7 @@ export default function LandingPage() {
                 <li>
                   <a
                     href="#"
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     Privacy Policy
                   </a>
@@ -887,7 +887,7 @@ export default function LandingPage() {
                 <li>
                   <a
                     href="#"
-                    className="inline-block hover:text-white transition-colors cursor-pointer"
+                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
                   >
                     Terms of Service
                   </a>
@@ -896,8 +896,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="border-t border-gray-800 mt-10 pt-8 flex flex-col sm:flex-row justify-between items-center">
-            <p className="text-sm">
+          <div className="border-t border-white/10 mt-10 pt-8 flex flex-col sm:flex-row justify-between items-center">
+            <p className="text-sm text-white/80 text-shadow-sm">
               © {new Date().getFullYear()} Mirxa.io. All rights reserved.
             </p>
             <div className="mt-4 sm:mt-0">
