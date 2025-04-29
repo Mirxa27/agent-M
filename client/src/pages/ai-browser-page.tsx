@@ -633,8 +633,8 @@ export default function AiBrowserPage() {
   };
   
   return (
-    <MainLayout>
-      <div className="container mx-auto space-y-8">
+    <MainLayout customLayout={true}>
+      <div className="container mx-auto space-y-8 pt-4">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold">AI Browser Observer</h2>
