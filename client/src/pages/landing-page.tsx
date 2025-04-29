@@ -315,73 +315,81 @@ export default function LandingPage() {
         {mobileMenuOpen && (
           <div className="fixed inset-0 bg-black/70 flex justify-end z-50">
             <div 
-              className="bg-black border-l border-primary shadow-lg w-full sm:w-96 h-full"
+              className="bg-[#111827] border-l border-primary shadow-lg w-full sm:w-96 h-full overflow-y-auto"
               ref={mobileMenuRef}
             >
-              <div className="p-6 text-white">
-                <div className="flex items-center justify-between mb-8 border-b border-primary/50 pb-4">
-                  <Link href="/" className="flex items-center space-x-2">
-                    <Bot className="h-7 w-7 text-primary" />
-                    <span className="font-bold text-xl text-white">
+              <div className="p-4 text-white">
+                <div className="flex items-center justify-between border-b border-primary/30 pb-3">
+                  <div className="flex items-center space-x-2 bg-[#111827] py-2">
+                    <Bot className="h-5 w-5 text-white" />
+                    <span className="font-medium text-white">
                       Mirxa.io
                     </span>
-                  </Link>
+                  </div>
                   <button
                     onClick={() => setMobileMenuOpen(false)}
-                    className="p-2 rounded bg-red-600 text-white"
+                    className="p-1.5 rounded-sm bg-red-600/90 hover:bg-red-700 text-white"
                   >
-                    <X className="h-6 w-6" />
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
                 
-                <div className="menu-items space-y-4 mb-8">
-                  <a href="#features" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
-                    onClick={() => setMobileMenuOpen(false)}>
-                    <div className="flex items-center">
-                      <Zap className="h-5 w-5 mr-3 text-primary" />
-                      Features
+                <div className="menu-items space-y-2 mb-8">
+                  <a href="#features" 
+                    className="flex items-center py-3 px-4 bg-[#1E293B] hover:bg-gray-800 rounded-md text-white"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center justify-center w-7 h-7 mr-3 text-blue-400">
+                      <Zap className="h-5 w-5" />
                     </div>
+                    Features
                   </a>
                   
-                  <a href="#pricing" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
-                    onClick={() => setMobileMenuOpen(false)}>
-                    <div className="flex items-center">
-                      <CreditCard className="h-5 w-5 mr-3 text-primary" />
-                      Pricing
+                  <a href="#pricing" 
+                    className="flex items-center py-3 px-4 bg-[#1E293B] hover:bg-gray-800 rounded-md text-white"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center justify-center w-7 h-7 mr-3 text-blue-400">
+                      <CreditCard className="h-5 w-5" />
                     </div>
+                    Pricing
                   </a>
                   
-                  <a href="#testimonials" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
-                    onClick={() => setMobileMenuOpen(false)}>
-                    <div className="flex items-center">
-                      <Star className="h-5 w-5 mr-3 text-primary" />
-                      Testimonials
+                  <a href="#testimonials" 
+                    className="flex items-center py-3 px-4 bg-[#1E293B] hover:bg-gray-800 rounded-md text-white"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center justify-center w-7 h-7 mr-3 text-blue-400">
+                      <Star className="h-5 w-5" />
                     </div>
+                    Testimonials
                   </a>
                   
-                  <a href="#faq" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
-                    onClick={() => setMobileMenuOpen(false)}>
-                    <div className="flex items-center">
-                      <MessageSquare className="h-5 w-5 mr-3 text-primary" />
-                      FAQ
+                  <a href="#faq" 
+                    className="flex items-center py-3 px-4 bg-[#1E293B] hover:bg-gray-800 rounded-md text-white"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center justify-center w-7 h-7 mr-3 text-blue-400">
+                      <MessageSquare className="h-5 w-5" />
                     </div>
+                    FAQ
                   </a>
                 </div>
                 
-                <div className="pt-4 border-t border-gray-700">
-                  <div className="text-lg font-bold mb-4">Account</div>
+                <div className="pt-4 mb-4">
+                  <div className="text-lg font-medium text-blue-400 mb-4">Account</div>
                   <button 
-                    className="w-full mb-3 py-3 bg-primary text-white rounded font-bold"
+                    className="w-full mb-3 py-3 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-600 transition-colors shadow-sm"
                     onClick={() => { setMobileMenuOpen(false); location.href = "/auth"; }}
                   >
                     Get Started
                   </button>
                   
                   <button 
-                    className="w-full py-3 border border-gray-600 text-white rounded"
+                    className="w-full py-3 bg-gray-600/30 hover:bg-gray-600/50 text-white rounded-md transition-colors"
                     onClick={() => { setMobileMenuOpen(false); location.href = "/auth"; }}
                   >
-                    Sign In
+                    Watch Demo
                   </button>
                 </div>
               </div>
