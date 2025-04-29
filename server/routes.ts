@@ -168,8 +168,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
-  
-  // Agent status endpoint for dashboard
+
+  // Agent status endpoint for dashboard - must come before the :id route
   app.get("/api/agents/status", requireAuth, async (req, res) => {
     try {
       const agents = await storage.getAgentsByUserId(req.user.id);
@@ -177,8 +177,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Count agents by status
       const agentCounts = {
         total: agents.length,
-        active: agents.filter(agent => agent.isActive).length,
-        inactive: agents.filter(agent => !agent.isActive).length
+        active: agents.filter(agent => agent.isActive === true).length,
+        inactive: agents.filter(agent => agent.isActive === false || agent.isActive === undefined).length
       };
       
       res.json(agentCounts);
@@ -479,6 +479,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/files", requireAuth, async (req, res) => {
     try {
       const files = await storage.getFilesByUserId(req.user.id);
+      res.json(files);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Recent files endpoint for dashboard
+  app.get("/api/files/recent", requireAuth, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit.toString()) : 5;
+      const files = await storage.getFilesByUserId(req.user.id, { limit, orderBy: 'createdAt', order: 'desc' });
       res.json(files);
     } catch (error) {
       res.status(500).json({ error: error.message });
