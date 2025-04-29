@@ -32,12 +32,12 @@ export const Widget = ({
   className = "",
 }: WidgetProps) => {
   return (
-    <Card className={`overflow-hidden ${className}`}>
+    <Card className={`border-none shadow-none overflow-hidden bg-transparent ${className}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle>
+          <CardTitle className="text-shadow-sm">
             <div className="flex items-center">
-              {icon && <span className="mr-2">{icon}</span>}
+              {icon && <span className="mr-2 text-primary">{icon}</span>}
               <span>{title}</span>
             </div>
           </CardTitle>
@@ -47,7 +47,7 @@ export const Widget = ({
                 variant="ghost"
                 size="icon"
                 onClick={onRefresh}
-                className="h-8 w-8"
+                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-white/5"
                 title="Refresh"
               >
                 <RefreshCw className="h-4 w-4" />
@@ -58,7 +58,7 @@ export const Widget = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-white/5"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                   <span className="sr-only">Open menu</span>
@@ -87,7 +87,7 @@ export const Widget = ({
             </DropdownMenu>
           </div>
         </div>
-        {description && <CardDescription>{description}</CardDescription>}
+        {description && <CardDescription className="text-muted-foreground/80 text-shadow-sm">{description}</CardDescription>}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
