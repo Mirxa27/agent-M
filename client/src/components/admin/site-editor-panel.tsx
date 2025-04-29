@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Card,
@@ -6,6 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +14,19 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Save, Upload } from "lucide-react";
+import { 
+  Loader2, Save, Upload, Layers, EyeIcon, EyeOffIcon, 
+  Move, Copy, Trash, ChevronDown, ChevronUp, Undo, Redo, 
+  Palette, LayoutGrid
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Import color pickers
-// Use dynamic imports for react-color to prevent render issues
-import { ChromePicker } from "react-color";
+// Import improved color pickers
+import { HexColorPicker, HexColorInput } from "react-colorful";
+
+// Import DnD functionality
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 interface SiteSettings {
   logo: {
@@ -139,22 +147,22 @@ const SiteEditorPanel: React.FC = () => {
     }
   };
 
-  const handleColorChange = (color: any, colorKey: string) => {
+  const handleColorChange = (colorHex: string, colorKey: string) => {
     setSettings({
       ...settings,
       colors: {
         ...settings.colors,
-        [colorKey]: color.hex,
+        [colorKey]: colorHex,
       },
     });
   };
 
-  const handleChatbotColorChange = (color: any) => {
+  const handleChatbotColorChange = (colorHex: string) => {
     setSettings({
       ...settings,
       chatbot: {
         ...settings.chatbot,
-        color: color.hex,
+        color: colorHex,
       },
     });
   };
@@ -324,11 +332,22 @@ const SiteEditorPanel: React.FC = () => {
                           className="fixed inset-0"
                           onClick={() => setActiveColorPicker(null)}
                         />
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <ChromePicker
-                            color={value}
-                            onChange={(color) => handleColorChange(color, key)}
+                        <div 
+                          className="p-3 bg-white rounded-md shadow-xl"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <HexColorPicker 
+                            color={value} 
+                            onChange={(color) => handleColorChange(color, key)} 
                           />
+                          <div className="mt-2">
+                            <HexColorInput
+                              className="w-full p-2 text-sm border rounded"
+                              color={value}
+                              onChange={(color) => handleColorChange(color, key)}
+                              prefixed
+                            />
+                          </div>
                         </div>
                       </div>
                     )}
