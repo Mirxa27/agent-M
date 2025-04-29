@@ -2193,6 +2193,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Register browser observer routes
+  import("./routes/browser-observer-routes").then(({ browserObserverRouter }) => {
+    app.use("/api/browser-observer", browserObserverRouter);
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
