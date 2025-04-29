@@ -108,8 +108,12 @@ export function Header() {
     return user.username?.substring(0, 2).toUpperCase() || "";
   };
 
+  // Check if current page is the AI Browser page
+  const isAiBrowserPage = location === "/ai-browser";
+  
   return (
     <>
+      {/* Only render the header if not on AI Browser page */}
       <header
         className={cn(
           "sticky top-0 z-30 w-full transition-all duration-200 glass-container bg-opacity-60 backdrop-blur-md",
@@ -118,7 +122,10 @@ export function Header() {
             : "border-b border-white/10",
         )}
       >
-        <div className="container flex h-16 items-center justify-between px-4">
+        <div className={cn(
+          "container flex h-16 items-center justify-between px-4",
+          isAiBrowserPage ? "hidden" : "" // Hide header content on AI Browser page
+        )}>
           {/* Logo */}
           <div className="flex items-center">
             <div
