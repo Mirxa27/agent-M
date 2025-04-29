@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { useBackground } from "@/contexts/background-context";
+import { backgroundEffectBus } from "@/lib/background-effect-bus";
 
 /**
  * Hook to set up global interaction effects for the whole application
@@ -11,7 +12,19 @@ export function useGlobalEffects() {
   const { triggerBackgroundEffect } = useBackground();
   
   // Callback for click events anywhere on the document
-  const handleDocumentClick = useCallback(() => {
+  const handleDocumentClick = useCallback((event: MouseEvent) => {
+    // Get the mouse coordinates for positioning effects
+    const { clientX, clientY } = event;
+    const { innerWidth, innerHeight } = window;
+    
+    // Trigger the effect with coordinates
+    backgroundEffectBus.triggerEffect({ 
+      x: clientX / innerWidth,
+      y: clientY / innerHeight,
+      type: 'click'
+    });
+    
+    // Also trigger the legacy background effect for compatibility
     triggerBackgroundEffect();
   }, [triggerBackgroundEffect]);
   
@@ -19,6 +32,7 @@ export function useGlobalEffects() {
   const handleKeyPress = useCallback((event: KeyboardEvent) => {
     // Only trigger on space or enter key
     if (event.key === " " || event.key === "Enter") {
+      backgroundEffectBus.triggerEffect({ type: 'keypress' });
       triggerBackgroundEffect();
     }
   }, [triggerBackgroundEffect]);
@@ -29,10 +43,10 @@ export function useGlobalEffects() {
     let lastTriggered = 0;
     const THROTTLE_MS = 700; // Match with animation duration
     
-    const throttledTrigger = () => {
+    const throttledTrigger = (event: MouseEvent) => {
       const now = Date.now();
       if (now - lastTriggered > THROTTLE_MS) {
-        triggerBackgroundEffect();
+        handleDocumentClick(event);
         lastTriggered = now;
       }
     };
@@ -47,6 +61,7 @@ export function useGlobalEffects() {
     const checkPathChange = () => {
       const currentPath = window.location.pathname;
       if (currentPath !== lastPath) {
+        backgroundEffectBus.triggerEffect({ type: 'navigation' });
         triggerBackgroundEffect();
         lastPath = currentPath;
       }
@@ -61,5 +76,5 @@ export function useGlobalEffects() {
       document.removeEventListener("keydown", handleKeyPress);
       clearInterval(routeCheckInterval);
     };
-  }, [triggerBackgroundEffect, handleKeyPress]);
+  }, [triggerBackgroundEffect, handleKeyPress, handleDocumentClick]);
 }
