@@ -7,7 +7,7 @@ import {
   InsertChatbotGameProgress,
   InsertChatbotChallenge
 } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, SQL } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import OpenAI from "openai";
 import config from "../config";
