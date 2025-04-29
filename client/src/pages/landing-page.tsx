@@ -368,9 +368,9 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="md:w-1/2 relative">
-                <div className="w-full h-[400px] rounded-xl bg-gradient-to-br from-primary/20 to-primary-foreground/20 relative overflow-hidden shadow-lg">
+                <div className="w-full h-[400px] rounded-xl backdrop-blur-md bg-white/10 glass-container relative overflow-hidden shadow-glow">
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Bot className="h-32 w-32 text-primary/40" />
+                    <Bot className="h-32 w-32 text-primary/60" />
                   </div>
                   {/* We would add a 3D robot or platform image here */}
                 </div>
@@ -471,7 +471,7 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <div className="text-center mt-10 text-gray-500 text-sm">
+            <div className="text-center mt-10 text-white/60 text-sm text-shadow-sm">
               All prices are in Saudi Riyal (SAR). Subscription billed through
               MyFatoorah payment gateway.
             </div>
