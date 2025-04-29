@@ -116,52 +116,107 @@ export default function LandingPage() {
     },
   ];
 
-  // Pricing plans
-  const plans = [
+  // Pricing plans from database
+  const { data: dbPlans, isLoading: plansLoading } = useQuery({
+    queryKey: ["/api/plans"],
+    queryFn: async () => {
+      try {
+        const res = await apiRequest("GET", "/api/plans");
+        if (!res.ok) throw new Error("Failed to fetch plans");
+        return await res.json();
+      } catch (error) {
+        console.error("Error fetching plans:", error);
+        return [];
+      }
+    },
+  });
+
+  // Fallback pricing plans if API call fails or is loading
+  const fallbackPlans = [
     {
       name: "Free",
       price: "0",
       interval: "forever",
       features: [
         "2 AI Agents",
-        "100 Tasks/month",
-        "5 Templates",
-        "1 GB Storage",
+        "50 Tasks/month",
+        "500 MB Storage",
+        "3 Credentials",
       ],
       buttonText: "Get Started",
       popular: false,
     },
     {
-      name: "Professional",
-      price: "199",
+      name: "Basic",
+      price: "149",
       interval: "per month",
       features: [
-        "Unlimited Agents",
-        "1,000 Tasks/month",
-        "Unlimited Templates",
-        "10 GB Storage",
-        "API Access",
-        "Priority Support",
+        "5 AI Agents",
+        "500 Tasks/month",
+        "2 GB Storage",
+        "10 Credentials",
+        "Advanced Models",
+        "Custom Prompts",
       ],
       buttonText: "Start Free Trial",
       popular: true,
     },
     {
-      name: "Enterprise",
-      price: "999",
+      name: "Professional",
+      price: "499",
       interval: "per month",
       features: [
-        "Unlimited Everything",
-        "Custom AI Models",
-        "Dedicated Account Manager",
-        "SSO Authentication",
-        "Custom Branding",
-        "24/7 Support",
+        "20 AI Agents",
+        "5000 Tasks/month",
+        "5 GB Storage",
+        "50 Credentials",
+        "Advanced Models",
+        "Custom Prompts",
+        "Priority Support",
       ],
       buttonText: "Contact Sales",
       popular: false,
     },
   ];
+
+  // Transform DB plans into displayable plans
+  const transformDbPlansToDisplayable = (plans) => {
+    if (!plans || plans.length === 0) return fallbackPlans;
+    
+    return plans
+      .filter(plan => plan.isActive)
+      .sort((a, b) => a.price - b.price)
+      .map(plan => {
+        // Set popularity: make the middle plan popular if there are 3+ plans
+        const isMiddlePlan = plans.length >= 3 && 
+          plans.indexOf(plan) === Math.floor(plans.length / 2) - (plans.length % 2 === 0 ? 1 : 0);
+        
+        // Extract features from plan.features object
+        const featuresList = [];
+        if (plan.features) {
+          if (plan.features.agentLimit) featuresList.push(`${plan.features.agentLimit} AI Agents`);
+          if (plan.features.taskLimit) featuresList.push(`${plan.features.taskLimit} Tasks/month`);
+          if (plan.features.storageLimit) featuresList.push(`${plan.features.storageLimit} MB Storage`);
+          if (plan.features.credentialLimit) featuresList.push(`${plan.features.credentialLimit} Credentials`);
+          if (plan.features.advancedModels) featuresList.push("Advanced AI Models");
+          if (plan.features.customPrompts) featuresList.push("Custom Prompts");
+          if (plan.features.priority) featuresList.push("Priority Support");
+        }
+        
+        return {
+          name: plan.name,
+          price: plan.price.toString(),
+          interval: plan.interval === "monthly" ? "per month" : plan.interval === "yearly" ? "per year" : "forever",
+          features: featuresList.length > 0 ? featuresList : ["Basic features"],
+          buttonText: plan.price === 0 ? "Get Started" : 
+                     isMiddlePlan ? "Start Free Trial" : "Subscribe Now",
+          popular: isMiddlePlan,
+        };
+      });
+  };
+
+  // Use database plans if available, otherwise use fallback
+  const plans = transformDbPlansToDisplayable(dbPlans);
 
   return (
     <div className="flex flex-col min-h-screen">
