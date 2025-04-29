@@ -25,8 +25,8 @@ export function useWorkflowProgress(
     onFailed,
   } = options;
 
-  const [executionId, setExecutionId] = useState<number | null>(null);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [executionId, setExecutionId] = useState<number | null>(initialExecutionId || null);
+  const [hasStarted, setHasStarted] = useState(!!initialExecutionId);
   const [isCompleted, setIsCompleted] = useState(false);
   const [hasFailed, setHasFailed] = useState(false);
   
