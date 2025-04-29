@@ -15,6 +15,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import {
+  ArrowLeft,
   Home,
   Bot,
   Key,
@@ -122,8 +123,20 @@ export function Header() {
         )}
       >
         <div className="container flex h-16 items-center justify-between px-4">
-          {/* Logo */}
-          {!isAiBrowserPage && (
+          {/* Logo or Back Button */}
+          {isAiBrowserPage ? (
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => (window.location.href = "/dashboard")}
+                className="flex items-center space-x-2 text-primary hover:bg-primary/10"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                <span>Back to Dashboard</span>
+              </Button>
+            </div>
+          ) : (
             <div className="flex items-center">
               <div
                 onClick={() => (window.location.href = user ? "/dashboard" : "/")}
