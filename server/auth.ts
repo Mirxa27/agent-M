@@ -35,15 +35,18 @@ export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "mirxa-super-secret-session-key",
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     store: storage.sessionStore,
     cookie: {
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
+      path: '/',
+      httpOnly: true,
     },
   };
   
+  app.set('trust proxy', 1); // trust first proxy
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());

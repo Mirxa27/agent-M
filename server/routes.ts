@@ -1225,7 +1225,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Providers
+  // AI Providers Status Endpoint for dashboard
+  app.get("/api/ai-providers/status", async (req, res) => {
+    try {
+      // Get active providers
+      const activeProviders = await storage.getActiveAiProviders();
+      
+      // Transform data for the widget display
+      const providerStatus = activeProviders.map(provider => ({
+        id: provider.provider,
+        name: provider.name,
+        status: provider.isActive ? 'active' : 'inactive',
+        quotaUsed: 0, // This would be populated from usage data in a real implementation
+        quotaLimit: 100, // This would be based on the user's plan
+        quotaUnit: 'USD'
+      }));
+      
+      res.json(providerStatus);
+    } catch (error) {
+      console.error("Error fetching AI provider status:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // AI Providers Admin Endpoints
   app.get("/api/admin/ai-providers", requireAdmin, async (req, res) => {
     try {
       const providers = await storage.getAllAiProviders();
