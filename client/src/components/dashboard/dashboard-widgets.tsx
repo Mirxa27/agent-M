@@ -337,7 +337,7 @@ export const DashboardWidgets = () => {
                             <GripVertical className="h-4 w-4 text-muted-foreground" />
                           </div>
                           <div className="pl-7">
-                            <div className="card-glass card-hover text-shadow-sm">
+                            <div className="glass-effect-lighter rounded-lg p-4 hover:shadow-xl transition-all duration-300 card-hover text-shadow-sm border border-white/10">
                               <WidgetComponent onRemove={() => handleRemoveWidget(widget.id)} />
                             </div>
                           </div>
