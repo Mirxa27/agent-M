@@ -430,6 +430,132 @@ export type InsertDashboardPreference = z.infer<
 export type Analytics = typeof analytics.$inferSelect;
 export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
 
+// AI Browser Observer schema
+export const browserActions = pgTable("browser_actions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  actionType: text("action_type").notNull(), // 'click', 'input', 'navigation', 'scroll', 'select', etc.
+  targetElement: text("target_element").notNull(), // CSS selector or XPath
+  url: text("url").notNull(),
+  valueOrText: text("value_or_text"), // Content of an input field or text of a clicked element
+  metadata: jsonb("metadata").default({}).notNull(), // Additional context (e.g., attributes, screen size)
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const browserSequences = pgTable("browser_sequences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isAutomated: boolean("is_automated").default(false).notNull(),
+  triggerType: text("trigger_type"), // 'manual', 'scheduled', 'event'
+  triggerCondition: jsonb("trigger_condition"), // Conditions for automatic execution
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  lastExecutedAt: timestamp("last_executed_at"),
+  executionCount: integer("execution_count").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+export const browserSequenceSteps = pgTable("browser_sequence_steps", {
+  id: serial("id").primaryKey(),
+  sequenceId: integer("sequence_id").notNull(),
+  stepOrder: integer("step_order").notNull(),
+  actionType: text("action_type").notNull(), // Same as browserActions.actionType
+  targetElement: text("target_element").notNull(),
+  targetUrl: text("target_url"),
+  valueOrText: text("value_or_text"),
+  waitBeforeMs: integer("wait_before_ms").default(0).notNull(), // Delay before this step in ms
+  waitAfterMs: integer("wait_after_ms").default(0).notNull(), // Delay after this step in ms
+  isConditional: boolean("is_conditional").default(false).notNull(),
+  condition: jsonb("condition"), // Conditions for executing this step
+  metadata: jsonb("metadata").default({}).notNull(),
+});
+
+export const browserAiSuggestions = pgTable("browser_ai_suggestions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  suggestionType: text("suggestion_type").notNull(), // 'automation', 'improvement', 'shortcut'
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  suggestedActions: jsonb("suggested_actions").notNull(), // Steps for implementation
+  status: text("status").default("pending").notNull(), // 'pending', 'accepted', 'rejected', 'implemented'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  implementedAt: timestamp("implemented_at"),
+  confidence: decimal("confidence", { precision: 3, scale: 2 }).default("0.75").notNull(),
+});
+
+export const browserSettings = pgTable("browser_settings", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().unique(),
+  isEnabled: boolean("is_enabled").default(true).notNull(),
+  privacyLevel: text("privacy_level").default("balanced").notNull(), // 'minimal', 'balanced', 'complete'
+  recordUrls: boolean("record_urls").default(true).notNull(),
+  recordInputValues: boolean("record_input_values").default(true).notNull(),
+  domainAllowList: jsonb("domain_allow_list").default([]).notNull(), // Domains to observe
+  domainBlockList: jsonb("domain_block_list").default([]).notNull(), // Domains to ignore
+  aiSuggestions: boolean("ai_suggestions").default(true).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Insert schemas for browser observer tables
+export const insertBrowserActionSchema = createInsertSchema(browserActions).pick({
+  userId: true,
+  sessionId: true,
+  actionType: true,
+  targetElement: true,
+  url: true,
+  valueOrText: true,
+  metadata: true,
+});
+
+export const insertBrowserSequenceSchema = createInsertSchema(browserSequences).pick({
+  userId: true,
+  name: true,
+  description: true,
+  isAutomated: true,
+  triggerType: true,
+  triggerCondition: true,
+  isActive: true,
+});
+
+export const insertBrowserSequenceStepSchema = createInsertSchema(browserSequenceSteps).pick({
+  sequenceId: true,
+  stepOrder: true,
+  actionType: true,
+  targetElement: true,
+  targetUrl: true,
+  valueOrText: true,
+  waitBeforeMs: true,
+  waitAfterMs: true,
+  isConditional: true,
+  condition: true,
+  metadata: true,
+});
+
+export const insertBrowserAiSuggestionSchema = createInsertSchema(browserAiSuggestions).pick({
+  userId: true,
+  sessionId: true,
+  suggestionType: true,
+  title: true,
+  description: true,
+  suggestedActions: true,
+  confidence: true,
+});
+
+export const insertBrowserSettingSchema = createInsertSchema(browserSettings).pick({
+  userId: true,
+  isEnabled: true,
+  privacyLevel: true,
+  recordUrls: true,
+  recordInputValues: true,
+  domainAllowList: true,
+  domainBlockList: true,
+  aiSuggestions: true,
+});
+
 // Gamified Chatbot schemas
 export const chatbotMessages = pgTable("chatbot_messages", {
   id: serial("id").primaryKey(),
@@ -507,3 +633,19 @@ export type InsertChatbotGameProgress = z.infer<typeof insertChatbotGameProgress
 
 export type ChatbotChallenge = typeof chatbotChallenges.$inferSelect;
 export type InsertChatbotChallenge = z.infer<typeof insertChatbotChallengeSchema>;
+
+// Browser observer type exports
+export type BrowserAction = typeof browserActions.$inferSelect;
+export type InsertBrowserAction = z.infer<typeof insertBrowserActionSchema>;
+
+export type BrowserSequence = typeof browserSequences.$inferSelect;
+export type InsertBrowserSequence = z.infer<typeof insertBrowserSequenceSchema>;
+
+export type BrowserSequenceStep = typeof browserSequenceSteps.$inferSelect;
+export type InsertBrowserSequenceStep = z.infer<typeof insertBrowserSequenceStepSchema>;
+
+export type BrowserAiSuggestion = typeof browserAiSuggestions.$inferSelect;
+export type InsertBrowserAiSuggestion = z.infer<typeof insertBrowserAiSuggestionSchema>;
+
+export type BrowserSetting = typeof browserSettings.$inferSelect;
+export type InsertBrowserSetting = z.infer<typeof insertBrowserSettingSchema>;
