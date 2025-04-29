@@ -552,8 +552,13 @@ export default function AiBrowserPage() {
       
       let path = element.tagName.toLowerCase();
       
-      if (element.className) {
+      if (element.className && typeof element.className === 'string') {
         const classes = element.className.split(' ').filter(Boolean);
+        if (classes.length > 0) {
+          path += `.${classes.join('.')}`;
+        }
+      } else if (element.classList && element.classList.length > 0) {
+        const classes = Array.from(element.classList);
         if (classes.length > 0) {
           path += `.${classes.join('.')}`;
         }
