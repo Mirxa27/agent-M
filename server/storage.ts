@@ -62,6 +62,11 @@ const MemoryStore = createMemoryStore(session);
 const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
+  // Site Settings operations
+  getSiteSettings(): Promise<SiteSettings | undefined>;
+  createSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings>;
+  updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined>;
+  
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -254,6 +259,8 @@ export class MemStorage implements IStorage {
   private dashboardPreferenceIdCounter: number;
   private analyticsIdCounter: number;
 
+  private siteSettingsObj: SiteSettings | undefined;
+  
   constructor() {
     this.users = new Map();
     this.agentTools = new Map();
@@ -293,6 +300,9 @@ export class MemStorage implements IStorage {
 
     // Initialize with some default plans
     this.initializePlans();
+    
+    // Initialize default site settings
+    this.initializeSiteSettings();
   }
 
   private initializePlans(): void {
@@ -348,6 +358,89 @@ export class MemStorage implements IStorage {
     ];
 
     plans.forEach((plan) => this.createPlan(plan));
+  }
+  
+  private initializeSiteSettings(): void {
+    // Create default site settings if none exist
+    const now = new Date();
+    this.siteSettingsObj = {
+      id: 1,
+      logo: {
+        url: "/assets/images/mirxa-logo.svg",
+        showText: true,
+        text: "Mirxa.io",
+        animated: true,
+      },
+      colors: {
+        primary: "#6366f1",
+        secondary: "#0ea5e9",
+        accent: "#f97316",
+        background: "#ffffff",
+        text: "#1e293b",
+      },
+      header: {
+        sticky: true,
+        transparent: false,
+        showLogo: true,
+        showNavigation: true,
+      },
+      footer: {
+        showCopyright: true,
+        copyrightText: "© 2025 Mirxa.io. All rights reserved.",
+        showSocial: true,
+      },
+      chatbot: {
+        enabled: true,
+        position: "bottom-right",
+        welcomeMessage: "Hi! How can I assist you today?",
+        color: "#6366f1",
+      },
+      widgets: [
+        { id: 'header-widget', label: 'Header' },
+        { id: 'hero-widget', label: 'Hero Section' },
+        { id: 'features-widget', label: 'Features' },
+        { id: 'testimonials-widget', label: 'Testimonials' },
+        { id: 'cta-widget', label: 'Call to Action' },
+        { id: 'footer-widget', label: 'Footer' },
+      ],
+      version: 1,
+      lastUpdated: now,
+      updatedBy: null,
+    };
+  }
+  
+  // Site Settings operations
+  async getSiteSettings(): Promise<SiteSettings | undefined> {
+    return this.siteSettingsObj;
+  }
+
+  async createSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings> {
+    const now = new Date();
+    const newSettings: SiteSettings = {
+      id: 1, // Always use ID 1 for site settings (singleton)
+      ...settings,
+      version: 1,
+      lastUpdated: now,
+    };
+    this.siteSettingsObj = newSettings;
+    return newSettings;
+  }
+
+  async updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined> {
+    if (!this.siteSettingsObj) {
+      return undefined;
+    }
+
+    const now = new Date();
+    const updatedSettings = {
+      ...this.siteSettingsObj,
+      ...updates,
+      version: (this.siteSettingsObj.version || 0) + 1,
+      lastUpdated: now,
+    };
+    
+    this.siteSettingsObj = updatedSettings;
+    return updatedSettings;
   }
 
   // User operations
