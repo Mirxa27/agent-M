@@ -527,10 +527,7 @@ const SiteEditorPanel: React.FC = () => {
                               onChange={handleLogoUpload}
                               className="flex-1"
                             />
-                            <Button type="button" variant="outline">
-                              <Upload className="h-4 w-4 mr-2" />
-                              {t("common.upload") || "Upload"}
-                            </Button>
+                            {/* The upload is handled by the onChange event of the input */}
                           </div>
                         </div>
 
