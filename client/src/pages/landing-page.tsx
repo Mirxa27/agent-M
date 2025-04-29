@@ -427,8 +427,8 @@ export default function LandingPage() {
                   className={`
                     rounded-xl shadow-md relative overflow-hidden card-glass card-hover
                     ${plan.popular 
-                      ? "border-primary shadow-lg ring-2 ring-primary scale-105 z-10 bg-opacity-90" 
-                      : "border-gray-200/30 bg-opacity-80"
+                      ? "border-primary shadow-lg ring-2 ring-primary scale-105 z-10 bg-opacity-70" 
+                      : "border-gray-200/30 bg-opacity-60"
                     }
                   `}
                 >
