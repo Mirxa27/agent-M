@@ -2,50 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Gradient Animation */
-@keyframes gradientMovement {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes pulseAnimation {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.animate-gradient-slow {
-  animation: gradientMovement 15s ease infinite;
-}
-
-.animate-gradient-medium {
-  animation: gradientMovement 10s ease infinite;
-}
-
-.animate-gradient-fast {
-  animation: gradientMovement 6s ease infinite;
-}
-
-.pulse-effect {
-  animation: pulseAnimation 0.7s ease-in-out;
-}
-
 /* RTL Support */
 html.rtl {
   direction: rtl;

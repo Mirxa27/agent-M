@@ -2,10 +2,9 @@ import React, { ReactNode, useState, useEffect } from "react";
 import { Link } from "wouter";
 import { AnimatedLogo } from "@/components/ui/animated-logo";
 import LanguageSwitcher from "@/components/ui/language-switcher";
-import { SimpleBackground } from "@/components/ui/simple-background";
+import { SplineBackground } from "@/components/ui/spline-background";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { useBackground } from "@/contexts/background-context";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -21,7 +20,6 @@ export function AuthLayout({
   showLogo = true,
 }: AuthLayoutProps) {
   const { t } = useTranslation();
-  const { triggerBackgroundEffect } = useBackground();
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1200,
   );
@@ -31,16 +29,6 @@ export function AuthLayout({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  // Add effect to animate background when auth page loads
-  useEffect(() => {
-    // Slight delay for smooth appearance after page transition
-    const timeoutId = setTimeout(() => {
-      triggerBackgroundEffect();
-    }, 300);
-    
-    return () => clearTimeout(timeoutId);
-  }, [triggerBackgroundEffect]);
 
   // Animation variants
   const fadeIn = {
@@ -85,10 +73,7 @@ export function AuthLayout({
                 transition={{ delay: 0.2, duration: 0.6 }}
               >
                 <Link href="/">
-                  <span 
-                    className="flex items-center space-x-2 sm:space-x-3 cursor-pointer group"
-                    onClick={() => triggerBackgroundEffect()}
-                  >
+                  <span className="flex items-center space-x-2 sm:space-x-3 cursor-pointer group">
                     <span className="transform transition-transform group-hover:scale-105">
                       <AnimatedLogo
                         size={
@@ -140,10 +125,10 @@ export function AuthLayout({
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
       >
-        {/* Gradient Background */}
+        {/* Spline 3D Model Background */}
         <div className="absolute inset-0 z-0 w-full h-full">
-          <SimpleBackground 
-            gradientColors={["#4f46e5", "#3b82f6", "#0ea5e9"]}
+          <SplineBackground 
+            url="https://my.spline.design/nexbotrobotcharacterconcept-5f03ff963626fbbf4952a35a16e4a4f3/" 
             opacity={0.6}
             overlayColor="#000010"
             gradientOverlay={true}
