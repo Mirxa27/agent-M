@@ -388,10 +388,12 @@ export default function LandingPage() {
                   Powerful AI Agent Capabilities
                 </h2>
               </div>
-              <p className="text-lg text-white/90 max-w-2xl mx-auto text-shadow-sm">
-                Mirxa.io combines advanced AI with secure credential management
-                and template systems to automate your workflows.
-              </p>
+              <div className="glass-text-container max-w-2xl mx-auto p-3 rounded-lg">
+                <p className="text-lg text-white/90 text-shadow-sm">
+                  Mirxa.io combines advanced AI with secure credential management
+                  and template systems to automate your workflows.
+                </p>
+              </div>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {features.map((feature, index) => (
@@ -421,10 +423,12 @@ export default function LandingPage() {
                   Simple, Transparent Pricing
                 </h2>
               </div>
-              <p className="text-lg text-white/90 max-w-2xl mx-auto text-shadow-sm">
-                Choose the plan that's right for you, with prices in Saudi Riyal
-                (SAR).
-              </p>
+              <div className="glass-text-container max-w-2xl mx-auto p-3 rounded-lg">
+                <p className="text-lg text-white/90 text-shadow-sm">
+                  Choose the plan that's right for you, with prices in Saudi Riyal
+                  (SAR).
+                </p>
+              </div>
             </div>
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               {plans.map((plan, index) => (
@@ -471,9 +475,11 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <div className="text-center mt-10 text-white/60 text-sm text-shadow-sm">
-              All prices are in Saudi Riyal (SAR). Subscription billed through
-              MyFatoorah payment gateway.
+            <div className="glass-text-container text-center mt-10 mx-auto p-2 rounded-lg max-w-lg">
+              <p className="text-white/60 text-sm text-shadow-sm">
+                All prices are in Saudi Riyal (SAR). Subscription billed through
+                MyFatoorah payment gateway.
+              </p>
             </div>
           </div>
         </section>
@@ -490,10 +496,12 @@ export default function LandingPage() {
                   What Our Customers Say
                 </h2>
               </div>
-              <p className="text-lg text-white/90 max-w-2xl mx-auto text-shadow-sm">
-                Hear from the businesses and individuals who've transformed
-                their workflows with Mirxa.io.
-              </p>
+              <div className="glass-text-container max-w-2xl mx-auto p-3 rounded-lg">
+                <p className="text-lg text-white/90 text-shadow-sm">
+                  Hear from the businesses and individuals who've transformed
+                  their workflows with Mirxa.io.
+                </p>
+              </div>
             </div>
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               <div className="card-glass card-hover p-8 rounded-xl shadow-md">
@@ -595,10 +603,12 @@ export default function LandingPage() {
                   Frequently Asked Questions
                 </h2>
               </div>
-              <p className="text-lg text-white/90 max-w-2xl mx-auto text-shadow-sm">
-                Find answers to common questions about Mirxa.io and our AI agent
-                platform.
-              </p>
+              <div className="glass-text-container max-w-2xl mx-auto p-3 rounded-lg">
+                <p className="text-lg text-white/90 text-shadow-sm">
+                  Find answers to common questions about Mirxa.io and our AI agent
+                  platform.
+                </p>
+              </div>
             </div>
 
             <div className="max-w-4xl mx-auto space-y-6">
@@ -706,10 +716,12 @@ export default function LandingPage() {
                   Ready to Transform Your Workflow?
                 </h2>
               </div>
-              <p className="text-xl mb-8 text-white/90 text-shadow-sm">
-                Join thousands of users who are already automating their tasks
-                with Mirxa.io's AI agents.
-              </p>
+              <div className="glass-text-container max-w-2xl mx-auto p-3 rounded-lg mb-8">
+                <p className="text-xl text-white/90 text-shadow-sm">
+                  Join thousands of users who are already automating their tasks
+                  with Mirxa.io's AI agents.
+                </p>
+              </div>
               <button 
                 className="btn-glass btn-glass-primary px-10 py-4 text-lg font-medium shadow-glow"
                 onClick={() => (location.href = "/auth")}
@@ -724,192 +736,194 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="py-12">
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Bot className="h-8 w-8 text-primary" />
-                <span className="font-bold text-xl sm:text-2xl bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
-                  Mirxa.io
-                </span>
+          <div className="card-glass rounded-xl p-6 md:p-8 bg-opacity-60 shadow-md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+              <div>
+                <div className="flex items-center space-x-2 mb-4">
+                  <Bot className="h-8 w-8 text-primary" />
+                  <span className="font-bold text-xl sm:text-2xl bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
+                    Mirxa.io
+                  </span>
+                </div>
+                <p className="mb-6 text-sm sm:text-base text-white/90 text-shadow-sm">
+                  Next-generation AI agent platform with secure credential storage
+                  and task automation.
+                </p>
+                <div className="flex space-x-4 mb-6">
+                  <a
+                    href="#"
+                    className="text-white/80 hover:text-primary transition-colors"
+                  >
+                    <Twitter className="h-5 w-5" />
+                    <span className="sr-only">Twitter</span>
+                  </a>
+                  <a
+                    href="#"
+                    className="text-white/80 hover:text-primary transition-colors"
+                  >
+                    <Linkedin className="h-5 w-5" />
+                    <span className="sr-only">LinkedIn</span>
+                  </a>
+                  <a
+                    href="#"
+                    className="text-white/80 hover:text-primary transition-colors"
+                  >
+                    <Github className="h-5 w-5" />
+                    <span className="sr-only">GitHub</span>
+                  </a>
+                </div>
               </div>
-              <p className="mb-6 text-sm sm:text-base text-white/90 text-shadow-sm">
-                Next-generation AI agent platform with secure credential storage
-                and task automation.
+
+              <div className="mt-4 sm:mt-0">
+                <h3 className="text-high-contrast text-base sm:text-lg font-semibold mb-4 text-shadow-sm">
+                  Product
+                </h3>
+                <ul className="space-y-2 text-sm sm:text-base">
+                  <li>
+                    <a
+                      onClick={() =>
+                        document.getElementById("features")?.scrollIntoView()
+                      }
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      Features
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      onClick={() =>
+                        document.getElementById("pricing")?.scrollIntoView()
+                      }
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      Pricing
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      onClick={() =>
+                        document.getElementById("faq")?.scrollIntoView()
+                      }
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      FAQ
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      API Access
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      Enterprise
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mt-4 sm:mt-0">
+                <h3 className="text-high-contrast text-base sm:text-lg font-semibold mb-4 text-shadow-sm">
+                  Company
+                </h3>
+                <ul className="space-y-2 text-sm sm:text-base">
+                  <li>
+                    <a
+                      href="#"
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      About Us
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      Careers
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      Blog
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      Contact
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mt-4 sm:mt-0">
+                <h3 className="text-high-contrast text-base sm:text-lg font-semibold mb-4 text-shadow-sm">
+                  Resources
+                </h3>
+                <ul className="space-y-2 text-sm sm:text-base">
+                  <li>
+                    <a
+                      href="#"
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      Documentation
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      Support Center
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      Privacy Policy
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
+                    >
+                      Terms of Service
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="border-t border-white/10 mt-10 pt-8 flex flex-col sm:flex-row justify-between items-center">
+              <p className="text-sm text-white/80 text-shadow-sm">
+                © {new Date().getFullYear()} Mirxa.io. All rights reserved.
               </p>
-              <div className="flex space-x-4 mb-6">
-                <a
-                  href="#"
-                  className="text-white/80 hover:text-primary transition-colors"
+              <div className="mt-4 sm:mt-0">
+                <select
+                  className="btn-glass text-white/90 text-sm rounded-md px-4 py-2 border-0 focus:outline-none focus:ring-1 focus:ring-primary"
+                  defaultValue="en"
                 >
-                  <Twitter className="h-5 w-5" />
-                  <span className="sr-only">Twitter</span>
-                </a>
-                <a
-                  href="#"
-                  className="text-white/80 hover:text-primary transition-colors"
-                >
-                  <Linkedin className="h-5 w-5" />
-                  <span className="sr-only">LinkedIn</span>
-                </a>
-                <a
-                  href="#"
-                  className="text-white/80 hover:text-primary transition-colors"
-                >
-                  <Github className="h-5 w-5" />
-                  <span className="sr-only">GitHub</span>
-                </a>
+                  <option value="en">English</option>
+                  <option value="ar">العربية</option>
+                  <option value="fr">Français</option>
+                  <option value="es">Español</option>
+                </select>
               </div>
-            </div>
-
-            <div className="mt-4 sm:mt-0">
-              <h3 className="text-high-contrast text-base sm:text-lg font-semibold mb-4 text-shadow-sm">
-                Product
-              </h3>
-              <ul className="space-y-2 text-sm sm:text-base">
-                <li>
-                  <a
-                    onClick={() =>
-                      document.getElementById("features")?.scrollIntoView()
-                    }
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a
-                    onClick={() =>
-                      document.getElementById("pricing")?.scrollIntoView()
-                    }
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    Pricing
-                  </a>
-                </li>
-                <li>
-                  <a
-                    onClick={() =>
-                      document.getElementById("faq")?.scrollIntoView()
-                    }
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    FAQ
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    API Access
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    Enterprise
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="mt-4 sm:mt-0">
-              <h3 className="text-high-contrast text-base sm:text-lg font-semibold mb-4 text-shadow-sm">
-                Company
-              </h3>
-              <ul className="space-y-2 text-sm sm:text-base">
-                <li>
-                  <a
-                    href="#"
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    About Us
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    Careers
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    Contact
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="mt-4 sm:mt-0">
-              <h3 className="text-high-contrast text-base sm:text-lg font-semibold mb-4 text-shadow-sm">
-                Resources
-              </h3>
-              <ul className="space-y-2 text-sm sm:text-base">
-                <li>
-                  <a
-                    href="#"
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    Documentation
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    Support Center
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="inline-block text-white/80 hover:text-primary transition-colors cursor-pointer text-shadow-sm"
-                  >
-                    Terms of Service
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-white/10 mt-10 pt-8 flex flex-col sm:flex-row justify-between items-center">
-            <p className="text-sm text-white/80 text-shadow-sm">
-              © {new Date().getFullYear()} Mirxa.io. All rights reserved.
-            </p>
-            <div className="mt-4 sm:mt-0">
-              <select
-                className="btn-glass text-white/90 text-sm rounded-md px-4 py-2 border-0 focus:outline-none focus:ring-1 focus:ring-primary"
-                defaultValue="en"
-              >
-                <option value="en">English</option>
-                <option value="ar">العربية</option>
-                <option value="fr">Français</option>
-                <option value="es">Español</option>
-              </select>
             </div>
           </div>
         </div>

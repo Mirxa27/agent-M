@@ -63,56 +63,58 @@ export function AuthLayout({
         <div className="absolute top-4 right-4 z-10">
           <LanguageSwitcher />
         </div>
-        <div className="w-full mx-auto relative">
-          {showLogo && (
-            <motion.div
-              className="mb-6 md:mb-8 lg:mb-10 flex items-center"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-            >
-              <Link href="/">
-                <span className="flex items-center space-x-2 sm:space-x-3 cursor-pointer group">
-                  <span className="transform transition-transform group-hover:scale-105">
-                    <AnimatedLogo
-                      size={
-                        windowWidth > 1400
-                          ? "lg"
-                          : windowWidth > 1200
-                            ? "md"
-                            : "sm"
-                      }
-                    />
+        <div className="w-full mx-auto relative z-10">
+          <div className="card-glass rounded-xl p-6 md:p-8 lg:p-10 shadow-md bg-opacity-60">
+            {showLogo && (
+              <motion.div
+                className="mb-6 md:mb-8 lg:mb-10 flex items-center"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+              >
+                <Link href="/">
+                  <span className="flex items-center space-x-2 sm:space-x-3 cursor-pointer group">
+                    <span className="transform transition-transform group-hover:scale-105">
+                      <AnimatedLogo
+                        size={
+                          windowWidth > 1400
+                            ? "lg"
+                            : windowWidth > 1200
+                              ? "md"
+                              : "sm"
+                        }
+                      />
+                    </span>
+                    <span className="font-heading text-xl md:text-2xl lg:text-3xl font-bold text-primary transition-colors duration-300 group-hover:text-primary/90">
+                      {t("app.name")}
+                    </span>
                   </span>
-                  <span className="font-heading text-xl md:text-2xl lg:text-3xl font-bold text-primary transition-colors duration-300 group-hover:text-primary/90">
-                    {t("app.name")}
-                  </span>
-                </span>
-              </Link>
-            </motion.div>
-          )}
-          <motion.div
-            className="mb-6 md:mb-8 lg:mb-10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-          >
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold leading-tight tracking-tight">
-              {title}
-            </h1>
-            {subtitle && (
-              <p className="text-gray-500 dark:text-gray-400 mt-2 md:mt-3 text-sm md:text-base lg:text-lg">
-                {subtitle}
-              </p>
+                </Link>
+              </motion.div>
             )}
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
-          >
-            {children}
-          </motion.div>
+            <motion.div
+              className="mb-6 md:mb-8 lg:mb-10"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+            >
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold leading-tight tracking-tight text-high-contrast text-shadow-sm">
+                {title}
+              </h1>
+              {subtitle && (
+                <p className="text-white/80 mt-2 md:mt-3 text-sm md:text-base lg:text-lg text-shadow-sm">
+                  {subtitle}
+                </p>
+              )}
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+            >
+              {children}
+            </motion.div>
+          </div>
         </div>
       </motion.div>
 
@@ -135,27 +137,29 @@ export function AuthLayout({
         </div>
 
         <motion.div
-          className="max-w-md lg:max-w-xl xl:max-w-2xl relative z-10 p-8 lg:p-12 xl:p-16 text-shadow-sm"
+          className="max-w-md lg:max-w-xl xl:max-w-2xl relative z-10 p-8 lg:p-12 xl:p-16 text-shadow-sm card-glass rounded-xl shadow-md bg-opacity-40"
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
         >
           <motion.h2
-            className="text-3xl lg:text-4xl xl:text-5xl font-bold mb-4 lg:mb-6 leading-tight"
+            className="text-3xl lg:text-4xl xl:text-5xl font-bold mb-4 lg:mb-6 leading-tight text-high-contrast text-shadow-md"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
             {t("auth.hero.title")}
           </motion.h2>
-          <motion.p
-            className="mb-6 lg:mb-8 text-base lg:text-lg xl:text-xl opacity-90"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            {t("auth.hero.description")}
-          </motion.p>
+          <div className="glass-text-container p-3 rounded-lg mb-6 lg:mb-8">
+            <motion.p
+              className="text-base lg:text-lg xl:text-xl text-white/90 text-shadow-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              {t("auth.hero.description")}
+            </motion.p>
+          </div>
           <motion.ul
             className="space-y-4 sm:space-y-5 lg:space-y-6"
             variants={staggerFeatures}

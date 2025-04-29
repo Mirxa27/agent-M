@@ -362,7 +362,7 @@ export const GamifiedChatbot = () => {
                     </div>
 
                     {/* Chat messages */}
-                    <CardContent className="p-3 max-h-96 overflow-y-auto">
+                    <CardContent className="p-3 max-h-96 overflow-y-auto card-glass bg-opacity-60">
                       <div className="space-y-4">
                         {messages.map((message) => (
                           <div
@@ -374,8 +374,8 @@ export const GamifiedChatbot = () => {
                             <div
                               className={`rounded-lg px-3 py-2 max-w-[80%] ${
                                 message.isBot
-                                  ? "bg-muted text-foreground"
-                                  : "bg-primary text-primary-foreground"
+                                  ? "bg-muted/70 text-foreground text-shadow-sm"
+                                  : "bg-primary/80 text-primary-foreground text-shadow-sm"
                               }`}
                             >
                               <div className="flex items-start gap-2">
@@ -392,7 +392,7 @@ export const GamifiedChatbot = () => {
                         ))}
                         {isLoading && (
                           <div className="flex justify-start">
-                            <div className="bg-muted rounded-lg px-4 py-2 max-w-[80%]">
+                            <div className="bg-muted/70 rounded-lg px-4 py-2 max-w-[80%]">
                               <div className="flex space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
                                 <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0.2s" }}></div>
