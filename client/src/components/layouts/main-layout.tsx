@@ -2,6 +2,7 @@ import React, { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Header } from "@/components/navigation/header";
 import { MobileFooterNav } from "@/components/navigation/mobile-footer-nav";
+import { GamifiedChatbot } from "@/components/chatbot";
 import { cn } from "@/lib/utils";
 
 interface MainLayoutProps {
@@ -39,6 +40,9 @@ export function MainLayout({
       </main>
 
       {!hideNav && user && <MobileFooterNav />}
+      
+      {/* Gamified Chatbot - Available for both logged in and guest users */}
+      <GamifiedChatbot />
     </div>
   );
 }
