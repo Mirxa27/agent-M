@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { useTranslation } from "react-i18next";
 import { AuthProvider } from "@/hooks/use-auth";
-import { BackgroundProvider } from "@/contexts/background-context";
 import { AppRoutes } from "@/components/router/app-routes";
 
 function App() {
@@ -35,12 +34,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light">
         <AuthProvider>
-          <BackgroundProvider>
-            <TooltipProvider>
-              <Toaster />
-              <AppRoutes />
-            </TooltipProvider>
-          </BackgroundProvider>
+          <TooltipProvider>
+            <Toaster />
+            <AppRoutes />
+          </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
