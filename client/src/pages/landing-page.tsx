@@ -185,14 +185,24 @@ export default function LandingPage() {
     },
   ];
 
+  // Define the Plan type
+  type Plan = {
+    id: number;
+    name: string;
+    price: number;
+    interval: string;
+    features: Record<string, any>;
+    isActive: boolean;
+  };
+
   // Transform DB plans into displayable plans
-  const transformDbPlansToDisplayable = (plans) => {
+  const transformDbPlansToDisplayable = (plans: Plan[]) => {
     if (!plans || plans.length === 0) return fallbackPlans;
     
     return plans
       .filter(plan => plan.isActive)
-      .sort((a, b) => a.price - b.price)
-      .map(plan => {
+      .sort((a: Plan, b: Plan) => a.price - b.price)
+      .map((plan: Plan) => {
         // Set popularity: make the middle plan popular if there are 3+ plans
         const isMiddlePlan = plans.length >= 3 && 
           plans.indexOf(plan) === Math.floor(plans.length / 2) - (plans.length % 2 === 0 ? 1 : 0);
@@ -518,7 +528,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {plans.map((plan, index) => (
+              {plans.map((plan: any, index: number) => (
                 <div
                   key={index}
                   className={`
@@ -545,7 +555,7 @@ export default function LandingPage() {
                       </span>
                     </div>
                     <ul className="space-y-3 mb-8">
-                      {plan.features.map((feature, i) => (
+                      {plan.features.map((feature: string, i: number) => (
                         <li key={i} className="flex items-center">
                           <Check className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
                           <span className="text-white/90 text-shadow-sm">{feature}</span>
