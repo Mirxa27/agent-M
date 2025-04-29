@@ -14,6 +14,7 @@ import PaymentSuccessPage from "@/pages/payment-success";
 import PaymentFailedPage from "@/pages/payment-failed";
 import AiBrowserPage from "@/pages/ai-browser-page";
 import AdminDashboard from "@/pages/admin/dashboard";
+import UploadTestPage from "@/pages/admin/upload-test-page";
 
 // Admin Components
 import TranslationsPanel from "@/components/admin/translations-panel";
@@ -225,6 +226,14 @@ export const ADMIN_ROUTES: RouteConfig[] = [
     path: "/admin/site-editor",
     component: SiteEditorPanel,
     title: "Site Editor",
+    isAdmin: true,
+    layout: "admin",
+    exact: true,
+  },
+  {
+    path: "/admin/upload-test",
+    component: UploadTestPage,
+    title: "File Upload Test",
     isAdmin: true,
     layout: "admin",
     exact: true,
