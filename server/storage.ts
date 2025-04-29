@@ -26,6 +26,12 @@ import {
   aiProviders,
   AiProvider,
   InsertAiProvider,
+  browserSequences,
+  browserSequenceSteps,
+  BrowserSequence,
+  BrowserSequenceStep,
+  InsertBrowserSequence,
+  InsertBrowserSequenceStep,
   aiModels,
   AiModel,
   InsertAiModel,
@@ -220,6 +226,26 @@ export interface IStorage {
     updates: Partial<Omit<Analytics, "id">>,
   ): Promise<Analytics | undefined>;
 
+  // Browser Sequence operations
+  getBrowserSequence(id: number): Promise<BrowserSequence | undefined>;
+  getBrowserSequencesByUserId(userId: number): Promise<BrowserSequence[]>;
+  createBrowserSequence(sequence: InsertBrowserSequence): Promise<BrowserSequence>;
+  updateBrowserSequence(
+    id: number,
+    updates: Partial<Omit<BrowserSequence, "id">>,
+  ): Promise<BrowserSequence | undefined>;
+  deleteBrowserSequence(id: number): Promise<boolean>;
+  
+  // Browser Sequence Step operations
+  getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined>;
+  getBrowserSequenceStepsBySequenceId(sequenceId: number): Promise<BrowserSequenceStep[]>;
+  createBrowserSequenceStep(step: InsertBrowserSequenceStep): Promise<BrowserSequenceStep>;
+  updateBrowserSequenceStep(
+    id: number,
+    updates: Partial<Omit<BrowserSequenceStep, "id">>,
+  ): Promise<BrowserSequenceStep | undefined>;
+  deleteBrowserSequenceStep(id: number): Promise<boolean>;
+
   // Session store
   sessionStore: any; // Using any for compatibility
 }
@@ -240,6 +266,8 @@ export class MemStorage implements IStorage {
   private userActivities: Map<number, UserActivity>;
   private dashboardPreferences: Map<number, DashboardPreference>;
   private analyticsEntries: Map<number, Analytics>;
+  private browserSequences: Map<number, BrowserSequence>;
+  private browserSequenceSteps: Map<number, BrowserSequenceStep>;
 
   sessionStore: SessionStore;
 
@@ -258,6 +286,8 @@ export class MemStorage implements IStorage {
   private userActivityIdCounter: number;
   private dashboardPreferenceIdCounter: number;
   private analyticsIdCounter: number;
+  private browserSequenceIdCounter: number;
+  private browserSequenceStepIdCounter: number;
 
   private siteSettingsObj: SiteSettings | undefined;
   
@@ -277,6 +307,8 @@ export class MemStorage implements IStorage {
     this.userActivities = new Map();
     this.dashboardPreferences = new Map();
     this.analyticsEntries = new Map();
+    this.browserSequences = new Map();
+    this.browserSequenceSteps = new Map();
 
     this.userIdCounter = 1;
     this.agentToolIdCounter = 1;
@@ -293,6 +325,8 @@ export class MemStorage implements IStorage {
     this.userActivityIdCounter = 1;
     this.dashboardPreferenceIdCounter = 1;
     this.analyticsIdCounter = 1;
+    this.browserSequenceIdCounter = 1;
+    this.browserSequenceStepIdCounter = 1;
 
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
