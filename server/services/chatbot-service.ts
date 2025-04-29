@@ -10,11 +10,13 @@ import {
 import { eq, and, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import OpenAI from "openai";
+import config from "../config";
+import { isOpenAIConfigured } from "./openai-service";
 
-// Initialize OpenAI client
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Initialize OpenAI client with configuration
+const openai = new OpenAI({ apiKey: config.ai.openai.apiKey });
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const DEFAULT_MODEL = "gpt-4o";
+const DEFAULT_MODEL = config.ai.openai.defaultModel;
 
 // Define interfaces
 interface ChatbotResponse {

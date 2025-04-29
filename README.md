@@ -1,93 +1,77 @@
 # Mirxa AI Agent Platform
 
-![Mirxa AI Logo](./generated-icon.png)
+A next-generation AI Agent platform designed to streamline task automation, developer workflows, and credential management through intelligent service integrations.
 
 ## Overview
 
-Mirxa is a next-generation AI Agent platform designed to streamline task automation, developer workflows, and credential management through intelligent service integrations. The platform provides a unified interface for creating, managing, and deploying AI agents for various tasks.
+Mirxa AI Agent Platform provides a unified interface for creating, managing, and deploying AI agents that can interact with various services and APIs. The platform focuses on secure credential management, file handling, and multi-language support, all within a user-friendly interface.
 
-## Key Features
+## Features
 
-- 🤖 **AI Agent Creation**: Build customizable AI agents with different capabilities
-- 🔄 **Task Automation**: Automate repetitive tasks with intelligent workflows
-- 🔐 **Credential Management**: Securely store and manage API keys and credentials
-- 📁 **File Management**: Upload, organize, and process files with your agents
-- 🌐 **Multi-language Support**: Full internationalization with English and Arabic languages
-- 👤 **User Management**: Comprehensive user authentication and permission system
-- 📊 **Admin Dashboard**: Manage users, plans, and system settings
+- **AI Agent Creation and Management**: Build custom AI agents using templates or from scratch
+- **Secure Credential Management**: Store and manage credentials for third-party services with 90-day expiration
+- **Multiple Authentication Methods**: Support for API Key, OAuth, and Direct Login authentication
+- **AI-Powered Browser**: Observe, record, and replay user actions for automation
+- **Gamified Chatbot**: Interactive assistant with points, badges, challenges, and user progression
+- **File Management**: Upload, manage, and process files with AI-powered analysis
+- **Multi-Language Support**: Support for multiple languages through OpenAI translation
+- **Admin Dashboard**: Monitor usage, manage users, and view analytics
 
-## Tech Stack
+## Technology Stack
 
-- **Frontend**: React with TypeScript, Vite, TailwindCSS, shadcn/ui
+- **Frontend**: React/TypeScript with shadcn/ui components
 - **Backend**: Node.js with Express
 - **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Custom auth system with session management
-- **Internationalization**: i18next for multi-language support
-- **State Management**: React Query for server state, React Context for application state
+- **AI Providers**: OpenAI, Anthropic, xAI, Perplexity
+- **Authentication**: Custom auth with PostgreSQL session storage
+- **Styling**: Tailwind CSS
+- **State Management**: TanStack Query
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or newer)
-- PostgreSQL database
+- Node.js 18+
+- PostgreSQL 13+
+- API keys for AI providers (at least one of: OpenAI, Anthropic, xAI, Perplexity)
 
 ### Installation
 
-1. Clone the repository:
-
-   ```
-   git clone https://github.com/yourusername/mirxa-ai.git
-   cd mirxa-ai
-   ```
-
+1. Clone the repository
 2. Install dependencies:
-
    ```
    npm install
    ```
-
-3. Set up environment variables:
-   Create a `.env` file in the root directory with the following:
-
-   ```
-   DATABASE_URL=postgresql://username:password@localhost:5432/mirxa
-   SESSION_SECRET=your_session_secret
-   ```
-
-4. Initialize the database:
-
+3. Copy `.env.example` to `.env` and fill in required values
+4. Set up the database:
    ```
    npm run db:push
    ```
-
-5. Create an admin user:
-
-   ```
-   node create-admin.js
-   ```
-
-6. Start the development server:
-
+5. Start the development server:
    ```
    npm run dev
    ```
 
-7. Access the application at http://localhost:3000
-
 ## Documentation
 
-For detailed documentation, please see:
+- [Deployment Guide](docs/deployment.md)
+- [Database Schema](docs/database-schema.md)
 
-- [User Guide](./docs/user-guide.md)
-- [API Documentation](./docs/api-docs.md)
-- [Development Guide](./docs/development-guide.md)
-- [Deployment Guide](./docs/deployment-guide.md)
+## Architecture
 
-## Contributing
+The Mirxa AI Agent Platform follows a component-based architecture with clear separation between client, server, and shared code:
 
-Contributions are welcome! Please see our [Contributing Guide](./docs/contributing.md) for more details.
+- **Client**: React/TypeScript application with component libraries, hooks, and state management
+- **Server**: Express API with controllers, services, and middleware
+- **Shared**: Common types, schemas, and utilities used by both client and server
+
+## Security
+
+- All credentials are encrypted using AES-256 encryption
+- Authentication uses secure session management with PostgreSQL storage
+- HTTPS is enforced in production
+- API endpoints are protected with authentication middleware
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Copyright © 2025 Mirxa AI

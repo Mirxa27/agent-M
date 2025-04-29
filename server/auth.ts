@@ -31,6 +31,7 @@ export async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Use fallback values first, will be updated with config values
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "mirxa-super-secret-session-key",
     resave: false,
@@ -42,7 +43,7 @@ export function setupAuth(app: Express) {
       sameSite: "lax",
     },
   };
-
+  
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
