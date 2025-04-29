@@ -293,7 +293,7 @@ export default function LandingPage() {
             <div className="md:hidden flex items-center">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-md btn-glass"
+                className="p-2 rounded-md btn-glass bg-primary"
                 aria-expanded={mobileMenuOpen}
                 aria-label="Toggle menu"
               >
