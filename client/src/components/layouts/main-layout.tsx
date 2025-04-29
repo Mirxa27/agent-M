@@ -1,12 +1,11 @@
-import React, { ReactNode, useEffect, useState } from "react";
+import React, { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Header } from "@/components/navigation/header";
 import { MobileFooterNav } from "@/components/navigation/mobile-footer-nav";
 import { GamifiedChatbot } from "@/components/chatbot";
-import { SimpleBackground } from "@/components/ui/simple-background";
+import { SplineBackground } from "@/components/ui/spline-background";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
-import { useBackground } from "@/contexts/background-context";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -25,29 +24,15 @@ export function MainLayout({
 }: MainLayoutProps) {
   const { user } = useAuth();
   const [location] = useLocation();
-  const { triggerBackgroundEffect } = useBackground();
   
   // Detect if we're on the AI Browser page
   const isAiBrowserPage = location === "/ai-browser";
 
-  // Set up event listeners for user interactions
-  useEffect(() => {
-    // Initial effect for page load animation
-    const timeoutId = setTimeout(() => {
-      triggerBackgroundEffect();
-    }, 300);
-    
-    // Clean up timeout
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [triggerBackgroundEffect]);
-
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Gradient Background with interactive hover effect */}
-      <SimpleBackground 
-        gradientColors={["#4f46e5", "#3b82f6", "#0ea5e9"]}
+      {/* 3D Model Background */}
+      <SplineBackground 
+        url="https://my.spline.design/nexbotrobotcharacterconcept-5f03ff963626fbbf4952a35a16e4a4f3/" 
         opacity={0.6}
         gradientOverlay={true}
       />

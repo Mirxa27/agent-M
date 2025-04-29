@@ -1,82 +1,33 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { SplineBackground } from "@/components/ui/spline-background";
-import { backgroundEffectBus } from "@/lib/background-effect-bus";
+import React, { createContext, useContext, useCallback, ReactNode } from "react";
+import { backgroundEffectBus } from "@/components/ui/spline-background";
 
-interface BackgroundContextType {
-  isAnimating: boolean;
+interface BackgroundContextProps {
   triggerBackgroundEffect: () => void;
-  backgroundType: "spline" | "simple";
-  setBackgroundType: (type: "spline" | "simple") => void;
 }
 
-// Create context with default values
-const BackgroundContext = createContext<BackgroundContextType>({
-  isAnimating: false,
-  triggerBackgroundEffect: () => {},
-  backgroundType: "spline",
-  setBackgroundType: () => {},
-});
+// Create the context
+const BackgroundContext = createContext<BackgroundContextProps | undefined>(undefined);
 
-// Props for the provider component
-interface BackgroundProviderProps {
-  children: ReactNode;
-}
+// Create the provider component
+export function BackgroundProvider({ children }: { children: ReactNode }) {
+  // Function to trigger the background effect
+  const triggerBackgroundEffect = useCallback(() => {
+    backgroundEffectBus.triggerEffect();
+  }, []);
 
-// Provider component that will wrap the app
-export function BackgroundProvider({ children }: BackgroundProviderProps) {
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [backgroundType, setBackgroundType] = useState<"spline" | "simple">("spline");
-
-  // Function to trigger the background animation effect
-  const triggerBackgroundEffect = () => {
-    // If already animating, don't restart the animation
-    if (isAnimating) return;
-    
-    // Set animation flag to true
-    setIsAnimating(true);
-    
-    // Also trigger the effect on the bus
-    backgroundEffectBus.triggerEffect({ type: 'triggered' });
-    
-    // Reset after animation is complete
-    setTimeout(() => {
-      setIsAnimating(false);
-    }, 700); // Match timing with CSS transition
-  };
-  
-  // The URL to your Spline scene - use a public Spline URL from spline.design
-  // This is a placeholder URL - you'd need to replace it with your actual Spline scene URL
-  const splineSceneUrl = "https://prod.spline.design/2K2QkxHzw9jXA5rS/scene.splinecode";
-
+  // Provide the context
   return (
-    <BackgroundContext.Provider
-      value={{
-        isAnimating,
-        triggerBackgroundEffect,
-        backgroundType,
-        setBackgroundType,
-      }}
-    >
-      {/* 3D Spline Background */}
-      {backgroundType === "spline" && (
-        <SplineBackground 
-          url={splineSceneUrl}
-          opacity={0.5}
-          gradientOverlay={true}
-          zIndex={-1}
-        />
-      )}
-      
+    <BackgroundContext.Provider value={{ triggerBackgroundEffect }}>
       {children}
     </BackgroundContext.Provider>
   );
 }
 
 // Custom hook to use the background context
-export function useBackground(): BackgroundContextType {
+export function useBackground(): BackgroundContextProps {
   const context = useContext(BackgroundContext);
   
-  if (!context) {
+  if (context === undefined) {
     throw new Error("useBackground must be used within a BackgroundProvider");
   }
   
