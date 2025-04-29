@@ -117,9 +117,9 @@ export default function AuthPage() {
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="grid grid-cols-2 mb-6 sm:mb-8 btn-glass bg-opacity-40">
-            <TabsTrigger value="login" className="text-white/90 text-shadow-sm">{t("auth.login")}</TabsTrigger>
-            <TabsTrigger value="register" className="text-white/90 text-shadow-sm">{t("auth.register")}</TabsTrigger>
+          <TabsList className="grid grid-cols-2 mb-6 sm:mb-8 btn-glass bg-opacity-30 backdrop-blur-md border border-white/10 rounded-xl shadow-glow-sm">
+            <TabsTrigger value="login" className="text-white/90 text-shadow-sm font-medium data-[state=active]:bg-primary/30 data-[state=active]:backdrop-blur-md data-[state=active]:shadow-glow-sm rounded-lg">{t("auth.login")}</TabsTrigger>
+            <TabsTrigger value="register" className="text-white/90 text-shadow-sm font-medium data-[state=active]:bg-primary/30 data-[state=active]:backdrop-blur-md data-[state=active]:shadow-glow-sm rounded-lg">{t("auth.register")}</TabsTrigger>
           </TabsList>
 
           {/* Login Form */}
@@ -234,6 +234,7 @@ export default function AuthPage() {
                         <FormControl>
                           <Input
                             placeholder={`${t("auth.username")}...`}
+                            className="btn-glass bg-opacity-30 border-white/10 text-white/90 text-shadow-sm placeholder:text-white/50"
                             {...field}
                           />
                         </FormControl>
@@ -256,7 +257,7 @@ export default function AuthPage() {
                             <Input
                               type="email"
                               placeholder={`${t("auth.email")}...`}
-                              className="pl-9"
+                              className="pl-9 btn-glass bg-opacity-30 border-white/10 text-white/90 text-shadow-sm placeholder:text-white/50"
                               {...field}
                             />
                           </div>
@@ -282,7 +283,7 @@ export default function AuthPage() {
                             <Input
                               type="password"
                               placeholder={`${t("auth.password")}...`}
-                              className="pl-9"
+                              className="pl-9 btn-glass bg-opacity-30 border-white/10 text-white/90 text-shadow-sm placeholder:text-white/50"
                               {...field}
                             />
                           </div>
@@ -304,6 +305,7 @@ export default function AuthPage() {
                           <Input
                             type="password"
                             placeholder={`${t("auth.confirmPassword")}...`}
+                            className="btn-glass bg-opacity-30 border-white/10 text-white/90 text-shadow-sm placeholder:text-white/50"
                             {...field}
                           />
                         </FormControl>
