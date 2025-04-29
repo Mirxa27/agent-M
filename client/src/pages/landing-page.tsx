@@ -311,113 +311,83 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Mobile menu debug indicator */}
+        {/* Mobile menu - new implementation */}
         {mobileMenuOpen && (
-          <div className="fixed top-0 left-0 z-50 bg-green-500 text-white p-2 text-xs font-mono">
-            Menu is OPEN
-          </div>
-        )}
-        
-        {/* Mobile menu */}
-        <div
-          ref={mobileMenuRef}
-          className="md:hidden fixed inset-0 z-50 bg-black/95 w-full sm:max-w-sm"
-          style={{
-            right: mobileMenuOpen ? "0" : "-100%",
-            top: "0",
-            bottom: "0",
-            transition: "right 0.3s ease",
-            borderLeft: "1px solid rgba(255, 255, 255, 0.1)",
-            boxShadow: "0 0 20px rgba(0, 0, 0, 0.5)",
-            overflow: "auto"
-          }}
-        >
-          <div className="p-6 bg-gradient-to-br from-gray-900 to-black/90 min-h-screen">
-            <div className="flex items-center justify-between mb-8 border-b border-primary/50 pb-4">
-              <Link href="/" className="flex items-center space-x-2">
-                <Bot className="h-7 w-7 text-primary" />
-                <span className="font-bold text-xl bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
-                  Mirxa.io
-                </span>
-              </Link>
-              <button
-                onClick={() => {
-                  console.log("Close button clicked");
-                  setMobileMenuOpen(false);
-                }}
-                className="p-3 rounded-md btn-glass bg-red-500 hover:bg-red-600 shadow-glow"
-              >
-                <X className="h-5 w-5 text-white" />
-              </button>
-            </div>
-
-            <nav className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-xs uppercase tracking-wider text-primary text-shadow-sm font-semibold">
-                  Menu
-                </h3>
-                <div className="space-y-3 pl-2">
-                  <Link
-                    href="#features"
-                    className="flex items-center py-3 px-4 text-base font-medium text-white hover:text-primary text-shadow-sm transition-colors bg-gray-800/60 rounded-lg hover:bg-gray-800/90"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Zap className="h-5 w-5 mr-3 text-primary" />
-                    Features
+          <div className="fixed inset-0 bg-black/70 flex justify-end z-50">
+            <div 
+              className="bg-black border-l border-primary shadow-lg w-full sm:w-96 h-full"
+              ref={mobileMenuRef}
+            >
+              <div className="p-6 text-white">
+                <div className="flex items-center justify-between mb-8 border-b border-primary/50 pb-4">
+                  <Link href="/" className="flex items-center space-x-2">
+                    <Bot className="h-7 w-7 text-primary" />
+                    <span className="font-bold text-xl text-white">
+                      Mirxa.io
+                    </span>
                   </Link>
-                  <Link
-                    href="#pricing"
-                    className="flex items-center py-3 px-4 text-base font-medium text-white hover:text-primary text-shadow-sm transition-colors bg-gray-800/60 rounded-lg hover:bg-gray-800/90"
+                  <button
                     onClick={() => setMobileMenuOpen(false)}
+                    className="p-2 rounded bg-red-600 text-white"
                   >
-                    <CreditCard className="h-5 w-5 mr-3 text-primary" />
-                    Pricing
-                  </Link>
-                  <Link
-                    href="#testimonials"
-                    className="flex items-center py-3 px-4 text-base font-medium text-white hover:text-primary text-shadow-sm transition-colors bg-gray-800/60 rounded-lg hover:bg-gray-800/90"
-                    onClick={() => setMobileMenuOpen(false)}
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+                
+                <div className="menu-items space-y-4 mb-8">
+                  <a href="#features" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}>
+                    <div className="flex items-center">
+                      <Zap className="h-5 w-5 mr-3 text-primary" />
+                      Features
+                    </div>
+                  </a>
+                  
+                  <a href="#pricing" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}>
+                    <div className="flex items-center">
+                      <CreditCard className="h-5 w-5 mr-3 text-primary" />
+                      Pricing
+                    </div>
+                  </a>
+                  
+                  <a href="#testimonials" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}>
+                    <div className="flex items-center">
+                      <Star className="h-5 w-5 mr-3 text-primary" />
+                      Testimonials
+                    </div>
+                  </a>
+                  
+                  <a href="#faq" className="block py-2 px-4 bg-gray-800 rounded text-white hover:bg-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}>
+                    <div className="flex items-center">
+                      <MessageSquare className="h-5 w-5 mr-3 text-primary" />
+                      FAQ
+                    </div>
+                  </a>
+                </div>
+                
+                <div className="pt-4 border-t border-gray-700">
+                  <div className="text-lg font-bold mb-4">Account</div>
+                  <button 
+                    className="w-full mb-3 py-3 bg-primary text-white rounded font-bold"
+                    onClick={() => { setMobileMenuOpen(false); location.href = "/auth"; }}
                   >
-                    <Star className="h-5 w-5 mr-3 text-primary" />
-                    Testimonials
-                  </Link>
-                  <Link
-                    href="#faq"
-                    className="flex items-center py-3 px-4 text-base font-medium text-white hover:text-primary text-shadow-sm transition-colors bg-gray-800/60 rounded-lg hover:bg-gray-800/90"
-                    onClick={() => setMobileMenuOpen(false)}
+                    Get Started
+                  </button>
+                  
+                  <button 
+                    className="w-full py-3 border border-gray-600 text-white rounded"
+                    onClick={() => { setMobileMenuOpen(false); location.href = "/auth"; }}
                   >
-                    <MessageSquare className="h-5 w-5 mr-3 text-primary" />
-                    FAQ
-                  </Link>
+                    Sign In
+                  </button>
                 </div>
               </div>
-
-              <div className="pt-6 border-t border-primary/30">
-                <div className="mt-4 text-lg font-semibold text-white mb-4">Ready to get started?</div>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    location.href = "/auth";
-                  }}
-                  className="btn-glass btn-glass-primary w-full mb-4 py-4 text-lg font-medium shadow-glow flex items-center justify-center"
-                >
-                  <RocketIcon className="h-5 w-5 mr-2" />
-                  Get Started Free
-                </button>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    location.href = "/auth";
-                  }}
-                  className="btn-glass w-full py-4 text-lg font-medium flex items-center justify-center"
-                >
-                  <User className="h-5 w-5 mr-2" />
-                  Sign In
-                </button>
-              </div>
-            </nav>
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       <main>
