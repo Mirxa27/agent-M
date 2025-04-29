@@ -1,125 +1,179 @@
-import { Router, Request, Response } from "express";
-import { browserAutomationService } from "../services/browser-automation-service";
-import { browserObserverService } from "../services/browser-observer-service";
-import { z } from "zod";
+import { Router } from 'express';
+import { browserAutomationService } from '../services/browser-automation-service';
+import { storage } from '../storage';
+import { requireAuth } from '../middleware/auth';
+import type { BrowserSequenceStep } from '@shared/schema';
 
 export const browserAutomationRouter = Router();
 
-// Middleware for checking auth
-const checkAuth = (req: Request, res: Response, next: Function) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
-  next();
-};
-
-// Run a browser sequence
-browserAutomationRouter.post("/sequences/:id/run", checkAuth, async (req: Request, res: Response) => {
+/**
+ * Launch a browser session
+ * POST /api/browser-automation/launch
+ */
+browserAutomationRouter.post('/launch', requireAuth, async (req, res) => {
   try {
-    const sequenceId = parseInt(req.params.id);
+    const sessionId = req.body.sessionId || `session-${Date.now()}`;
     
-    // Get the sequence
-    const sequence = await browserObserverService.getSequence(sequenceId);
-    if (!sequence) {
-      return res.status(404).json({ error: "Sequence not found" });
-    }
-    
-    // Check ownership
-    if (sequence.userId !== req.user.id) {
-      return res.status(403).json({ error: "You don't have permission to run this sequence" });
-    }
-    
-    // Get sequence steps
-    const steps = await browserObserverService.getSequenceSteps(sequenceId);
-    if (steps.length === 0) {
-      return res.status(400).json({ error: "Sequence has no steps to execute" });
-    }
-    
-    // Run the sequence
-    const result = await browserAutomationService.runSequence(sequence, steps);
-    
-    res.json(result);
-  } catch (error) {
-    console.error("Error running browser sequence:", error);
-    res.status(500).json({ error: "Failed to run browser sequence" });
-  }
-});
-
-// Take a screenshot of a web page
-browserAutomationRouter.post("/screenshot", checkAuth, async (req: Request, res: Response) => {
-  try {
-    const schema = z.object({
-      url: z.string().url(),
-      sessionId: z.string().optional(),
-    });
-    
-    const { url, sessionId } = schema.parse(req.body);
-    
-    const screenshot = await browserAutomationService.captureScreenshot(url, sessionId);
-    
-    res.json({ screenshot });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
-    }
-    console.error("Error capturing screenshot:", error);
-    res.status(500).json({ error: "Failed to capture screenshot" });
-  }
-});
-
-// Extract data from a web page
-browserAutomationRouter.post("/extract", checkAuth, async (req: Request, res: Response) => {
-  try {
-    const schema = z.object({
-      url: z.string().url(),
-      selectors: z.record(z.string()),
-    });
-    
-    const { url, selectors } = schema.parse(req.body);
-    
-    const data = await browserAutomationService.extractData(url, selectors);
-    
-    res.json({ data });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
-    }
-    console.error("Error extracting data:", error);
-    res.status(500).json({ error: "Failed to extract data" });
-  }
-});
-
-// Launch browser session
-browserAutomationRouter.post("/sessions", checkAuth, async (req: Request, res: Response) => {
-  try {
-    const schema = z.object({
-      sessionId: z.string(),
-    });
-    
-    const { sessionId } = schema.parse(req.body);
-    
+    // Launch the browser
     await browserAutomationService.launchBrowser(sessionId);
     
-    res.json({ success: true, message: "Browser session started" });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
-    }
-    console.error("Error launching browser session:", error);
-    res.status(500).json({ error: "Failed to launch browser session" });
+    res.json({ 
+      success: true, 
+      sessionId,
+      message: 'Browser launched successfully'
+    });
+  } catch (error: any) {
+    console.error('Error launching browser:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message
+    });
   }
 });
 
-// Close browser session
-browserAutomationRouter.delete("/sessions/:sessionId", checkAuth, async (req: Request, res: Response) => {
+/**
+ * Close a browser session
+ * POST /api/browser-automation/close
+ */
+browserAutomationRouter.post('/close', requireAuth, async (req, res) => {
   try {
-    const { sessionId } = req.params;
+    const { sessionId } = req.body;
+    
+    if (!sessionId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Session ID is required' 
+      });
+    }
     
     await browserAutomationService.closeBrowser(sessionId);
     
-    res.json({ success: true, message: "Browser session closed" });
-  } catch (error) {
-    console.error("Error closing browser session:", error);
-    res.status(500).json({ error: "Failed to close browser session" });
+    res.json({
+      success: true,
+      message: 'Browser session closed successfully'
+    });
+  } catch (error: any) {
+    console.error('Error closing browser session:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Run a browser sequence
+ * POST /api/browser-automation/run-sequence
+ */
+browserAutomationRouter.post('/run-sequence', requireAuth, async (req, res) => {
+  try {
+    const { sequenceId, steps } = req.body;
+    
+    if (!sequenceId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Sequence ID is required' 
+      });
+    }
+    
+    if (!steps || !Array.isArray(steps) || steps.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Valid steps array is required' 
+      });
+    }
+    
+    // Get the sequence from the database
+    const sequence = await storage.getBrowserSequence(sequenceId);
+    
+    if (!sequence) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Sequence not found' 
+      });
+    }
+    
+    // Run the sequence
+    const results = await browserAutomationService.runSequence(sequence, steps as BrowserSequenceStep[]);
+    
+    res.json({
+      success: true,
+      results
+    });
+  } catch (error: any) {
+    console.error('Error running browser sequence:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Take a screenshot
+ * POST /api/browser-automation/screenshot
+ */
+browserAutomationRouter.post('/screenshot', requireAuth, async (req, res) => {
+  try {
+    const { url, sessionId } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'URL is required' 
+      });
+    }
+    
+    // Capture the screenshot
+    const screenshot = await browserAutomationService.captureScreenshot(url, sessionId);
+    
+    res.json({
+      success: true,
+      screenshot
+    });
+  } catch (error: any) {
+    console.error('Error capturing screenshot:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Extract data from a webpage
+ * POST /api/browser-automation/extract-data
+ */
+browserAutomationRouter.post('/extract-data', requireAuth, async (req, res) => {
+  try {
+    const { url, selectors } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'URL is required' 
+      });
+    }
+    
+    if (!selectors || typeof selectors !== 'object') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Valid selectors object is required' 
+      });
+    }
+    
+    // Extract the data
+    const data = await browserAutomationService.extractData(url, selectors);
+    
+    res.json({
+      success: true,
+      data
+    });
+  } catch (error: any) {
+    console.error('Error extracting data:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message
+    });
   }
 });

@@ -1,4 +1,4 @@
-import puppeteer, { Browser, Page } from 'puppeteer-core';
+import puppeteer, { Browser, Page, LaunchOptions } from 'puppeteer-core';
 import path from 'path';
 import { browserObserverService } from './browser-observer-service';
 import type { BrowserSequence, BrowserSequenceStep } from '@shared/schema';
@@ -31,7 +31,7 @@ export class BrowserAutomationService {
       }
 
       // Configuration for running in Docker container
-      const browser = await puppeteer.launch({
+      const launchOptions: LaunchOptions = {
         headless: true,
         args: [
           '--no-sandbox',
@@ -87,9 +87,11 @@ export class BrowserAutomationService {
           '--disable-features=LazyFrameLoading',
           '--disable-features=BlinkGenPropertyTrees',
         ],
-        ignoreHTTPSErrors: true,
         executablePath: '/nix/store/abrj4jhpf3l8j2l62lnla1mca9h70f2s-chromium-120.0.6099.129/bin/chromium',
-      });
+      };
+      
+      // Add ignoreHTTPSErrors for puppeteer-core
+      const browser = await puppeteer.launch(launchOptions);
 
       // Store the browser instance for this session
       this.browsers.set(sessionId, browser);
@@ -330,7 +332,8 @@ export class BrowserAutomationService {
         
         // Wait if specified
         if (step.waitAfterMs && step.waitAfterMs > 0) {
-          await page.waitForTimeout(step.waitAfterMs);
+          // Use setTimeout with Promise for waiting
+          await new Promise(resolve => setTimeout(resolve, step.waitAfterMs));
         }
       }
       
@@ -364,7 +367,8 @@ export class BrowserAutomationService {
     try {
       // Wait before executing if specified
       if (step.waitBeforeMs && step.waitBeforeMs > 0) {
-        await page.waitForTimeout(step.waitBeforeMs);
+        // Use setTimeout with Promise for waiting
+        await new Promise(resolve => setTimeout(resolve, step.waitBeforeMs));
       }
       
       // Handle conditional execution
