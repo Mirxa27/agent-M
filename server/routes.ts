@@ -37,6 +37,8 @@ import {
   completeChallenge,
   updateStreak
 } from "./services/chatbot-service";
+import { credentialService, SERVICE_TYPES, AUTH_METHODS } from "./services/credential-service";
+import { gmailService } from "./services/gmail-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint - no auth required, useful for deployment monitoring
@@ -285,6 +287,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching credentials:", error);
       res.status(500).json({ error: "Failed to fetch credentials" });
+    }
+  });
+  
+  // Get credentials by type (service)
+  app.get("/api/credentials/service/:type", requireAuth, async (req, res) => {
+    try {
+      const serviceType = req.params.type;
+      
+      // Ensure valid service type
+      if (!Object.values(SERVICE_TYPES).includes(serviceType)) {
+        return res.status(400).json({ error: "Invalid service type" });
+      }
+      
+      const credentials = await credentialService.listCredentials(req.user.id, serviceType);
+      res.json(credentials);
+    } catch (error) {
+      console.error(`Error fetching ${req.params.type} credentials:`, error);
+      res.status(500).json({ error: `Failed to fetch ${req.params.type} credentials` });
+    }
+  });
+  
+  // Get expiring credentials
+  app.get("/api/credentials/expiring", requireAuth, async (req, res) => {
+    try {
+      const daysThreshold = req.query.days 
+        ? parseInt(req.query.days.toString()) 
+        : 7;
+        
+      const expiringCredentials = await credentialService.getExpiringCredentials(
+        req.user.id, 
+        daysThreshold
+      );
+      
+      res.json(expiringCredentials);
+    } catch (error) {
+      console.error("Error fetching expiring credentials:", error);
+      res.status(500).json({ error: "Failed to fetch expiring credentials" });
     }
   });
 
