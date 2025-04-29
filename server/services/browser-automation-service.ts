@@ -105,7 +105,9 @@ export class BrowserAutomationService {
       return page;
     } catch (error) {
       console.error('Error launching browser:', error);
-      throw new Error(`Failed to launch browser: ${error.message}`);
+      // Enhanced error reporting with more context for debugging
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to launch browser: ${errorMessage}. Please check if the browser service is running properly.`);
     }
   }
 
@@ -344,10 +346,13 @@ export class BrowserAutomationService {
       };
     } catch (error) {
       console.error(`Error executing sequence ${sequence.id}:`, error);
+      // Handle error with proper type checking
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         sequenceId: sequence.id,
         status: 'error',
-        error: error.message,
+        error: errorMessage,
+        details: String(error), // Include full error details for debugging
       };
     } finally {
       // Close the browser when done
@@ -374,15 +379,32 @@ export class BrowserAutomationService {
       // Handle conditional execution
       if (step.isConditional && step.condition) {
         const condition = step.condition;
+        // Define condition types for proper type checking
+        type ElementExistsCondition = { type: 'elementExists'; selector: string };
+        type ElementContainsTextCondition = { type: 'elementContainsText'; selector: string; text: string };
+        type BrowserCondition = ElementExistsCondition | ElementContainsTextCondition;
+        
         // Evaluate the condition on the page
-        const shouldExecute = await page.evaluate((condition) => {
-          // Simple condition format: { type: 'elementExists', selector: '#login-form' }
+        const shouldExecute = await page.evaluate((conditionData: any) => {
+          // Cast to our expected types for proper type checking
+          const condition = conditionData as BrowserCondition;
+          
+          // Element exists condition
           if (condition.type === 'elementExists') {
             return !!document.querySelector(condition.selector);
           }
-          // Add more condition types as needed
+          
+          // Element contains text condition
+          if (condition.type === 'elementContainsText') {
+            const element = document.querySelector(condition.selector);
+            if (!element) return false;
+            return element.textContent?.includes(condition.text) || false;
+          }
+          
+          // Default to true if condition type is unknown
+          console.warn(`Unknown condition type: ${condition.type}`);
           return true;
-        }, condition);
+        }, condition as any);
         
         if (!shouldExecute) {
           return {
@@ -438,9 +460,16 @@ export class BrowserAutomationService {
           if (step.targetElement) {
             await page.waitForSelector(step.targetElement, { timeout: 5000 });
             await page.evaluate((selector) => {
-              const form = document.querySelector(selector);
-              if (form) {
+              const form = document.querySelector(selector) as HTMLFormElement;
+              if (form && typeof form.submit === 'function') {
                 form.submit();
+              } else {
+                console.warn('Form not found or submit not available');
+                // Fallback - try to trigger submit event
+                if (form) {
+                  const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                  form.dispatchEvent(submitEvent);
+                }
               }
             }, step.targetElement);
             return {
@@ -452,15 +481,27 @@ export class BrowserAutomationService {
           }
           break;
           
-        case 'screenshot':
-          const screenshot = await page.screenshot({ type: 'jpeg', quality: 80 });
-          const screenshotBase64 = screenshot.toString('base64');
-          return {
-            stepId: step.id,
-            status: 'completed',
-            action: 'screenshot',
-            data: screenshotBase64,
-          };
+        case 'screenshot': {
+          // Create screenshot with proper error handling
+          try {
+            const screenshot = await page.screenshot({ type: 'jpeg', quality: 80 });
+            const screenshotBase64 = screenshot.toString('base64');
+            return {
+              stepId: step.id,
+              status: 'completed',
+              action: 'screenshot',
+              data: screenshotBase64,
+            };
+          } catch (screenshotError) {
+            console.error('Error taking screenshot:', screenshotError);
+            return {
+              stepId: step.id,
+              status: 'error',
+              action: 'screenshot',
+              error: 'Failed to capture screenshot',
+            };
+          }
+        }
           
         case 'extract':
           if (step.targetElement) {
@@ -494,10 +535,12 @@ export class BrowserAutomationService {
       };
     } catch (error) {
       console.error(`Error executing step ${step.id}:`, error);
+      // Handle error with proper type checking
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         stepId: step.id,
         status: 'error',
-        error: error.message,
+        error: errorMessage,
       };
     }
   }
@@ -519,7 +562,8 @@ export class BrowserAutomationService {
       return screenshot.toString('base64');
     } catch (error) {
       console.error(`Error capturing screenshot of ${url}:`, error);
-      throw new Error(`Failed to capture screenshot: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to capture screenshot of ${url}: ${errorMessage}. Please check if the URL is valid and the browser service is running properly.`);
     } finally {
       if (page && !sessionId) {
         // Only close if we created a new session for this screenshot
@@ -554,7 +598,8 @@ export class BrowserAutomationService {
       return result;
     } catch (error) {
       console.error(`Error extracting data from ${url}:`, error);
-      throw new Error(`Failed to extract data: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to extract data from ${url}: ${errorMessage}. Please verify the URL and selector syntax.`);
     } finally {
       if (page) {
         await this.closeBrowser(extractSessionId);
