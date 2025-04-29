@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword } from "./auth";
@@ -79,6 +79,14 @@ import {
 import { credentialService, SERVICE_TYPES, AUTH_METHODS } from "./services/credential-service";
 import { gmailService } from "./services/gmail-service";
 
+// Helper function to handle errors consistently
+const handleError = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Unknown error occurred";
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint - no auth required, useful for deployment monitoring
   app.get("/api/health", async (req, res) => {
@@ -103,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({
         status: "error",
         message: "Health check failed",
-        details: error.message,
+        details: handleError(error),
       });
     }
   });
@@ -131,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(sanitizedSettings);
     } catch (error) {
       console.error("Error fetching site settings:", error);
-      res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
+      res.status(500).json({ error: handleError(error) });
     }
   });
   
@@ -139,7 +147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
   
   // Authentication middleware
-  const requireAuth = (req, res, next) => {
+  const requireAuth = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Not authenticated" });
     }
@@ -147,22 +155,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Admin middleware
-  const requireAdmin = (req, res, next) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
+  const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated() || !req.user || req.user.role !== "admin") {
       return res.status(403).json({ error: "Not authorized" });
     }
     next();
   };
   
   // Simple endpoint to check if user has admin access - for testing
-  app.get("/api/admin/check", requireAdmin, (req, res) => {
+  app.get("/api/admin/check", requireAdmin, (req: Request, res: Response) => {
+    // We can safely assume user exists because requireAdmin middleware checks it
+    const user = req.user!;
     res.json({ 
       success: true, 
       message: "You have admin access", 
       user: { 
-        id: req.user.id, 
-        username: req.user.username,
-        role: req.user.role 
+        id: user.id, 
+        username: user.username,
+        role: user.role 
       } 
     });
   });
@@ -245,15 +255,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // API routes
   // Get user profile
-  app.get("/api/profile", requireAuth, (req, res) => {
+  app.get("/api/profile", requireAuth, (req: Request, res: Response) => {
+    // We can safely assume user exists because requireAuth middleware checks it
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });
 
   // Update user profile
-  app.patch("/api/profile", requireAuth, async (req, res) => {
+  app.patch("/api/profile", requireAuth, async (req: Request, res: Response) => {
     try {
-      const updates = {};
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      const updates: Record<string, any> = {};
 
       // Allow updates to specific fields
       if (req.body.fullName) updates.fullName = req.body.fullName;
@@ -273,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userWithoutPassword } = updatedUser;
       res.json(userWithoutPassword);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) });
     }
   });
 
