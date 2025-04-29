@@ -1142,6 +1142,10 @@ export class DatabaseStorage implements IStorage {
     this.sessionStore = new PostgresSessionStore({
       pool,
       createTableIfMissing: true,
+      tableName: 'session', // Explicitly name the session table
+      schemaName: 'public', // Specify the schema
+      ttl: 86400 * 30, // 30 days (in seconds)
+      pruneSessionInterval: 60 * 60, // 1 hour (in seconds)
     });
 
     // Initialize default plans if they don't exist
