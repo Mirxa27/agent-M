@@ -386,20 +386,50 @@ const SiteEditorPanel: React.FC = () => {
     }
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
+      setIsLoading(true);
+      try {
+        // Create a FormData object to send the file
+        const formData = new FormData();
+        formData.append('logo', file);
+        
+        // Upload the file to the server
+        const response = await fetch('/api/admin/upload-logo', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to upload logo');
+        }
+        
+        const result = await response.json();
+        
+        // Update the settings with the new logo URL
         setSettings({
           ...settings,
           logo: {
             ...settings.logo,
-            url: reader.result as string,
+            url: result.url,
           },
         });
-      };
-      reader.readAsDataURL(file);
+        
+        toast({
+          title: "Success",
+          description: "Logo uploaded successfully",
+        });
+      } catch (error) {
+        console.error("Error uploading logo:", error);
+        toast({
+          title: "Error",
+          description: "Failed to upload logo",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
