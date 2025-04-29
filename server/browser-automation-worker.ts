@@ -176,7 +176,8 @@ app.post('/browser/sessions/:sessionId/execute', async (req, res) => {
     
     // Wait for the specified time before execution if provided
     if (waitTime && waitTime > 0) {
-      await page.waitForTimeout(waitTime);
+      // Using setTimeout with Promise for waiting instead of native waitForTimeout
+      await new Promise(resolve => setTimeout(resolve, waitTime));
     }
     
     let result;
@@ -218,7 +219,8 @@ app.post('/browser/sessions/:sessionId/execute', async (req, res) => {
         break;
         
       case 'wait':
-        await page.waitForTimeout(value || 1000);
+        // Using setTimeout with Promise for waiting instead of native waitForTimeout
+        await new Promise(resolve => setTimeout(resolve, value || 1000));
         result = { success: true, action: 'wait' };
         break;
         
@@ -326,7 +328,8 @@ app.post('/browser/sessions/:sessionId/sequence', async (req, res) => {
       try {
         // Wait for any specified delay before the step
         if (step.waitBefore && step.waitBefore > 0) {
-          await page.waitForTimeout(step.waitBefore);
+          // Using setTimeout with Promise for waiting instead of native waitForTimeout
+          await new Promise(resolve => setTimeout(resolve, step.waitBefore));
         }
         
         // Execute the step based on its action type
@@ -374,7 +377,8 @@ app.post('/browser/sessions/:sessionId/sequence', async (req, res) => {
             break;
             
           case 'wait':
-            await page.waitForTimeout(step.value || 1000);
+            // Using setTimeout with Promise for waiting instead of native waitForTimeout
+            await new Promise(resolve => setTimeout(resolve, step.value || 1000));
             stepResult = {
               success: true,
               action: 'wait',
@@ -419,7 +423,8 @@ app.post('/browser/sessions/:sessionId/sequence', async (req, res) => {
         
         // Wait for any specified delay after the step
         if (step.waitAfter && step.waitAfter > 0) {
-          await page.waitForTimeout(step.waitAfter);
+          // Using setTimeout with Promise for waiting instead of native waitForTimeout
+          await new Promise(resolve => setTimeout(resolve, step.waitAfter));
         }
         
         results.push({
