@@ -103,6 +103,44 @@ export function Header({ customLayout = false }: HeaderProps) {
       icon: <Clock1 className="w-4 h-4 mr-2" />,
     },
   ];
+  
+  const adminNavItems = [
+    {
+      href: "/admin/dashboard",
+      label: "Dashboard",
+      icon: <PanelLeft className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/admin/users",
+      label: "Users",
+      icon: <Users className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/admin/providers",
+      label: "AI Providers",
+      icon: <Database className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/admin/models",
+      label: "AI Models",
+      icon: <Bot className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/admin/prompts",
+      label: "AI Prompts",
+      icon: <Tag className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/admin/agent-tools",
+      label: "Agent Tools",
+      icon: <Wrench className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/admin/plans",
+      label: "Plans",
+      icon: <Settings className="w-5 h-5 mr-3" />,
+    },
+  ];
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -193,66 +231,20 @@ export function Header({ customLayout = false }: HeaderProps) {
                       <NavigationMenuTrigger>Admin</NavigationMenuTrigger>
                       <NavigationMenuContent>
                         <ul className="grid w-[220px] gap-2 p-2">
-                          <li>
-                            <div
-                              onClick={() => (window.location.href = "/admin/dashboard")}
-                              className={cn(
-                                "flex items-center select-none rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
-                                location === "/admin/dashboard" ? "bg-primary/10 text-primary" : "",
-                              )}
-                            >
-                              <PanelLeft className="w-4 h-4 mr-2" />
-                              <span>Dashboard</span>
-                            </div>
-                          </li>
-                          <li>
-                            <div
-                              onClick={() => (window.location.href = "/admin/users")}
-                              className={cn(
-                                "flex items-center select-none rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
-                                location === "/admin/users" ? "bg-primary/10 text-primary" : "",
-                              )}
-                            >
-                              <Users className="w-4 h-4 mr-2" />
-                              <span>Users</span>
-                            </div>
-                          </li>
-                          <li>
-                            <div
-                              onClick={() => (window.location.href = "/admin/providers")}
-                              className={cn(
-                                "flex items-center select-none rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
-                                location === "/admin/providers" ? "bg-primary/10 text-primary" : "",
-                              )}
-                            >
-                              <Database className="w-4 h-4 mr-2" />
-                              <span>AI Providers</span>
-                            </div>
-                          </li>
-                          <li>
-                            <div
-                              onClick={() => (window.location.href = "/admin/models")}
-                              className={cn(
-                                "flex items-center select-none rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
-                                location === "/admin/models" ? "bg-primary/10 text-primary" : "",
-                              )}
-                            >
-                              <Bot className="w-4 h-4 mr-2" />
-                              <span>AI Models</span>
-                            </div>
-                          </li>
-                          <li>
-                            <div
-                              onClick={() => (window.location.href = "/admin/plans")}
-                              className={cn(
-                                "flex items-center select-none rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
-                                location === "/admin/plans" ? "bg-primary/10 text-primary" : "",
-                              )}
-                            >
-                              <Settings className="w-4 h-4 mr-2" />
-                              <span>Plans</span>
-                            </div>
-                          </li>
+                          {adminNavItems.map((item) => (
+                            <li key={item.href}>
+                              <div
+                                onClick={() => (window.location.href = item.href)}
+                                className={cn(
+                                  "flex items-center select-none rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
+                                  location === item.href ? "bg-primary/10 text-primary" : "",
+                                )}
+                              >
+                                {React.cloneElement(item.icon, { className: "w-4 h-4 mr-2" })}
+                                <span>{item.label}</span>
+                              </div>
+                            </li>
+                          ))}
                         </ul>
                       </NavigationMenuContent>
                     </NavigationMenuItem>
@@ -461,81 +453,24 @@ export function Header({ customLayout = false }: HeaderProps) {
                         Admin
                       </div>
                     </div>
-                    <div
-                      onClick={() => {
-                        window.location.href = "/admin/dashboard";
-                        setMobileMenuOpen(false);
-                      }}
-                      className={cn(
-                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
-                        location === "/admin/dashboard"
-                          ? "bg-primary/10 text-primary"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-                      )}
-                    >
-                      <PanelLeft className="h-5 w-5 mr-3" />
-                      Dashboard
-                    </div>
-                    <div
-                      onClick={() => {
-                        window.location.href = "/admin/users";
-                        setMobileMenuOpen(false);
-                      }}
-                      className={cn(
-                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
-                        location === "/admin/users"
-                          ? "bg-primary/10 text-primary"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-                      )}
-                    >
-                      <Users className="h-5 w-5 mr-3" />
-                      Users
-                    </div>
-                    <div
-                      onClick={() => {
-                        window.location.href = "/admin/providers";
-                        setMobileMenuOpen(false);
-                      }}
-                      className={cn(
-                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
-                        location === "/admin/providers"
-                          ? "bg-primary/10 text-primary"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-                      )}
-                    >
-                      <Database className="h-5 w-5 mr-3" />
-                      AI Providers
-                    </div>
-                    <div
-                      onClick={() => {
-                        window.location.href = "/admin/models";
-                        setMobileMenuOpen(false);
-                      }}
-                      className={cn(
-                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
-                        location === "/admin/models"
-                          ? "bg-primary/10 text-primary"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-                      )}
-                    >
-                      <Bot className="h-5 w-5 mr-3" />
-                      AI Models
-                    </div>
-                    <div
-                      onClick={() => {
-                        window.location.href = "/admin/plans";
-                        setMobileMenuOpen(false);
-                      }}
-                      className={cn(
-                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
-                        location === "/admin/plans"
-                          ? "bg-primary/10 text-primary"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-                      )}
-                    >
-                      <Settings className="h-5 w-5 mr-3" />
-                      Plans
-                    </div>
+                    {adminNavItems.map((item) => (
+                      <div
+                        key={item.href}
+                        onClick={() => {
+                          window.location.href = item.href;
+                          setMobileMenuOpen(false);
+                        }}
+                        className={cn(
+                          "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
+                          location === item.href
+                            ? "bg-primary/10 text-primary"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
+                        )}
+                      >
+                        {React.cloneElement(item.icon, { className: "h-5 w-5 mr-3" })}
+                        {item.label}
+                      </div>
+                    ))}
                   </>
                 )}
               </div>
