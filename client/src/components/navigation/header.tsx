@@ -228,25 +228,17 @@ export function Header({ customLayout = false }: HeaderProps) {
 
                   {user && user.role === "admin" && (
                     <NavigationMenuItem>
-                      <NavigationMenuTrigger>Admin</NavigationMenuTrigger>
-                      <NavigationMenuContent>
-                        <ul className="grid w-[220px] gap-2 p-2">
-                          {adminNavItems.map((item) => (
-                            <li key={item.href}>
-                              <div
-                                onClick={() => (window.location.href = item.href)}
-                                className={cn(
-                                  "flex items-center select-none rounded-md p-3 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
-                                  location === item.href ? "bg-primary/10 text-primary" : "",
-                                )}
-                              >
-                                {React.cloneElement(item.icon, { className: "w-4 h-4 mr-2" })}
-                                <span>{item.label}</span>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </NavigationMenuContent>
+                      <div
+                        onClick={() => (window.location.href = "/admin/dashboard")}
+                        className={cn(
+                          navigationMenuTriggerStyle(),
+                          "cursor-pointer",
+                          location.startsWith("/admin/") ? "bg-primary/10 text-primary" : "",
+                        )}
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Admin
+                      </div>
                     </NavigationMenuItem>
                   )}
                 </NavigationMenuList>
