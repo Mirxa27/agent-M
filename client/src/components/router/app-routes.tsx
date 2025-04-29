@@ -43,8 +43,7 @@ function ProtectedRoute({ route }: { route: RouteConfig }) {
   }
 
   if (!user) {
-    window.location.href = "/auth";
-    return null;
+    return <Redirect to="/auth" />;
   }
 
   if (route.isAdmin && user.role !== "admin") {
@@ -54,12 +53,12 @@ function ProtectedRoute({ route }: { route: RouteConfig }) {
         <p className="text-gray-600 mb-4">
           You don't have permission to access this area.
         </p>
-        <a
-          href="/dashboard"
+        <Link
+          to="/dashboard"
           className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
         >
           Return to Dashboard
-        </a>
+        </Link>
       </div>
     );
   }

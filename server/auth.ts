@@ -35,10 +35,10 @@ export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "mirxa-super-secret-session-key",
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false, // Changed to false to prevent empty session creation
     store: storage.sessionStore,
     cookie: {
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 30 * 24 * 60 * 60 * 1000, // Extended to 30 days for better persistence
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: '/',
