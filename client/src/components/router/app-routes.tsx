@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Route, Switch, useLocation } from "wouter";
+import { Route, Switch, useLocation, Link, Redirect } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { MainLayout } from "@/components/layouts/main-layout";
 import { AdminLayout } from "@/components/layouts/admin-layout";
