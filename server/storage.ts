@@ -103,6 +103,7 @@ export interface IStorage {
     id: number,
     updates: Partial<Omit<User, "id">>,
   ): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
 
   // Agent tools operations
   getAgentTool(id: number): Promise<AgentTool | undefined>;

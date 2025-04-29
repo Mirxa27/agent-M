@@ -1865,6 +1865,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/users", requireAdmin, async (req, res) => {
+    try {
+      // Validate required fields
+      const { username, email, password, fullName } = req.body;
+      if (!username || !email || !password || !fullName) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Check if username or email already exists
+      const existingUserByUsername = await storage.getUserByUsername(username);
+      if (existingUserByUsername) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+
+      const existingUserByEmail = await storage.getUserByEmail(email);
+      if (existingUserByEmail) {
+        return res.status(400).json({ error: "Email already exists" });
+      }
+
+      // Hash the password
+      const hashedPassword = await hashPassword(password);
+
+      // Create user object
+      const newUser = {
+        username,
+        email,
+        password: hashedPassword,
+        fullName,
+        role: req.body.role || "user",
+        isActive: req.body.isActive !== undefined ? req.body.isActive : true,
+        planId: req.body.planId || undefined,
+      };
+
+      // Save user to database
+      const createdUser = await storage.createUser(newUser);
+
+      // Create user activity log entry
+      if (req.user && req.user.id) {
+        await storage.createUserActivity({
+          userId: req.user.id,
+          activityType: "user_created",
+          resourceId: createdUser.id,
+          resourceType: "user",
+          metadata: {
+            username: createdUser.username,
+            role: createdUser.role,
+          },
+        });
+      }
+
+      // Remove sensitive data
+      const { password: _, ...userWithoutPassword } = createdUser;
+      
+      res.status(201).json(userWithoutPassword);
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
@@ -1899,10 +1959,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
+      // Log user update activity
+      if (req.user && req.user.id) {
+        await storage.createUserActivity({
+          userId: req.user.id,
+          activityType: "user_updated",
+          resourceId: userId,
+          resourceType: "user",
+          metadata: {
+            fields: Object.keys(updates),
+          },
+        });
+      }
+
       // Remove sensitive data
       const { password, ...userWithoutPassword } = updatedUser;
       res.json(userWithoutPassword);
     } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      // Don't allow deletion of the current user
+      if (req.user && req.user.id === userId) {
+        return res.status(400).json({ error: "Cannot delete your own account" });
+      }
+      
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Delete the user
+      const result = await storage.deleteUser(userId);
+      
+      if (!result) {
+        return res.status(500).json({ error: "Failed to delete user" });
+      }
+      
+      // Log user deletion activity
+      if (req.user && req.user.id) {
+        await storage.createUserActivity({
+          userId: req.user.id,
+          activityType: "user_deleted",
+          resourceId: userId,
+          resourceType: "user",
+          metadata: {
+            username: user.username,
+          },
+        });
+      }
+      
+      res.json({ success: true, message: "User deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
       res.status(500).json({ error: error.message });
     }
   });
