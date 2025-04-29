@@ -33,7 +33,14 @@ import { apiRequest } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Badge definitions with their meanings and icons
-const badgeDefinitions = {
+type BadgeKey = 'explorer' | 'communicator' | 'problemSolver' | 'credentialMaster' | 'automator' | 'teamPlayer';
+
+type BadgeInfo = {
+  label: string;
+  description: string;
+};
+
+const badgeDefinitions: Record<BadgeKey, BadgeInfo> = {
   explorer: { label: "Explorer", description: "Discovered 5 features of the platform" },
   communicator: { label: "Communicator", description: "Had 10 consecutive chats with the assistant" },
   problemSolver: { label: "Problem Solver", description: "Successfully completed 3 tasks" },
@@ -52,7 +59,7 @@ type Message = {
 type GameInfo = {
   level: number;
   points: number;
-  badges: string[];
+  badges: Array<BadgeKey | string>;  // Can be either a BadgeKey or other string 
   streak: number;
   avatarChoice: string;
   completedChallenges: string[];
@@ -170,13 +177,16 @@ export const GamifiedChatbot = () => {
       
       // Show toast if user earned new badges
       const newBadges = data.gameInfo.badges.filter(
-        badge => !gameInfo.badges.includes(badge)
+        (badge) => !gameInfo.badges.includes(badge)
       );
       
       if (newBadges.length > 0) {
         toast({
           title: "New badge earned!",
-          description: `You've earned the ${newBadges.map(b => badgeDefinitions[b]?.label || b).join(", ")} badge!`,
+          description: `You've earned the ${newBadges.map(badge => {
+            const badgeInfo = getBadgeInfo(badge);
+            return badgeInfo.label;
+          }).join(", ")} badge!`,
           variant: "default",
         });
       }
@@ -217,25 +227,43 @@ export const GamifiedChatbot = () => {
     setIsMinimized(!isMinimized);
   };
 
+  // Helper function to safely get badge data
+  const getBadgeInfo = (badge: string): { label: string, description: string } => {
+    // Check if the badge is a valid key in our definitions
+    const validBadgeKeys = Object.keys(badgeDefinitions) as Array<BadgeKey>;
+    if (validBadgeKeys.includes(badge as BadgeKey)) {
+      return badgeDefinitions[badge as BadgeKey];
+    }
+    // Return a fallback for custom/unknown badges
+    return { 
+      label: badge,
+      description: `Custom badge: ${badge}`
+    };
+  };
+
   const renderBadges = () => {
     return (
       <div className="flex flex-wrap gap-1 mt-2">
         {gameInfo.badges.length > 0 ? (
-          gameInfo.badges.map((badge, index) => (
-            <TooltipProvider key={index}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge variant="outline" className="bg-primary/10 text-primary">
-                    <Award className="w-3 h-3 mr-1" />
-                    {badgeDefinitions[badge]?.label || badge}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{badgeDefinitions[badge]?.description || badge}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ))
+          gameInfo.badges.map((badge, index) => {
+            const badgeInfo = getBadgeInfo(badge);
+            
+            return (
+              <TooltipProvider key={index}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="bg-primary/10 text-primary">
+                      <Award className="w-3 h-3 mr-1" />
+                      {badgeInfo.label}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{badgeInfo.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          })
         ) : (
           <span className="text-xs text-muted-foreground">Complete challenges to earn badges!</span>
         )}
