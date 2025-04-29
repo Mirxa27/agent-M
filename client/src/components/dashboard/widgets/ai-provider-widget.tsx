@@ -30,7 +30,7 @@ export const AIProviderWidget = ({ onRemove }: AIProviderWidgetProps) => {
   }
 
   // If no providers are available, show empty state
-  if (!providers || providers.length === 0) {
+  if (!providers || !Array.isArray(providers) || providers.length === 0) {
     return (
       <Widget 
         id="aiProviders"
@@ -97,7 +97,7 @@ export const AIProviderWidget = ({ onRemove }: AIProviderWidgetProps) => {
       onRefresh={() => refetch()}
     >
       <div className="space-y-3">
-        {data.map((provider: any) => (
+        {Array.isArray(data) && data.map((provider: any) => (
           <div key={provider.id} className="border rounded-md p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
