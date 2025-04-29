@@ -58,10 +58,26 @@ const envSchema = z.object({
   FACEBOOK_CLIENT_ID: z.string().optional(),
   FACEBOOK_CLIENT_SECRET: z.string().optional(),
   INSTAGRAM_CLIENT_ID: z.string().optional(),
-  INSTAGRAM_CLIENT_SECRET: z.string().optional(),
   
   // OAuth redirect URIs
-  BASE_URL: z.string().default("http://localhost:5000"),
+  BASE_URL: z.string().default("https://bot.mirxa.io"),
+  
+  // SMTP Configuration
+  SMTP_HOST: z.string({
+    required_error: "SMTP_HOST is required",
+  }).default("smtp.hostinger.com"),
+  SMTP_PORT: z.coerce.number({
+    required_error: "SMTP_PORT is required",
+  }).default(465),
+  SMTP_USER: z.string({
+    required_error: "SMTP_USER is required",
+  }).default("join@Mirxa.io"),
+  SMTP_PASS: z.string({
+    required_error: "SMTP_PASS is required",
+  }).default("Mirxa420$"),
+  EMAIL_FROM: z.string({
+    required_error: "EMAIL_FROM is required",
+  }).default("Mirxa"),
 });
 
 // Parse environment variables
@@ -196,6 +212,15 @@ const createConfig = () => {
     credentials: {
       defaultExpirationDays: 90,
       refreshTokenBeforeDays: 7,
+    },
+    
+    // SMTP Configuration
+    smtp: {
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT,
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS,
+      from: env.EMAIL_FROM,
     },
   };
   
