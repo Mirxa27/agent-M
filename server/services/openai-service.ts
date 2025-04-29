@@ -1,8 +1,18 @@
 import OpenAI from "openai";
+import config from "../config";
+import { checkRequiredApiKey } from "../config";
 
-// Initialize OpenAI client
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Initialize OpenAI client with API key from config
+const openai = new OpenAI({ 
+  apiKey: config.ai.openai.apiKey 
+});
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+const DEFAULT_MODEL = config.ai.openai.defaultModel;
+
+// Helper function to check if OpenAI API is configured
+export function isOpenAIConfigured(): boolean {
+  return checkRequiredApiKey('openai');
+}
 
 /**
  * Translates text to a target language using OpenAI
