@@ -1,10 +1,5 @@
-import { apiRequest, queryClient } from './queryClient';
-import type { 
-  WorkflowExecution, 
-  WorkflowStepExecution,
-  InsertWorkflowExecution,
-  InsertWorkflowStepExecution
-} from '@shared/schema';
+import { apiRequest } from '@/lib/queryClient';
+import type { WorkflowExecution, WorkflowStepExecution } from '@shared/schema';
 
 /**
  * Client service for interacting with workflow progress API
@@ -21,34 +16,14 @@ export const workflowProgressService = {
     sequenceId: number, 
     browserSessionId?: string
   ): Promise<WorkflowExecution> {
-    const data: Partial<InsertWorkflowExecution> = {
+    const response = await apiRequest('POST', '/api/workflow-progress/executions', {
       sequenceId,
-      status: 'pending',
-      progress: 0,
-    };
-    
-    if (browserSessionId) {
-      data.browserSessionId = browserSessionId;
-    }
-    
-    const res = await apiRequest('POST', '/api/workflow-progress/executions', data);
-    
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(error);
-    }
-    
-    const execution = await res.json();
-    
-    // Invalidate queries that might include this execution
-    queryClient.invalidateQueries({ queryKey: ['/api/workflow-progress/executions'] });
-    queryClient.invalidateQueries({ 
-      queryKey: [`/api/workflow-progress/sequences/${sequenceId}/executions`]
+      browserSessionId
     });
-    
-    return execution;
+
+    return await response.json();
   },
-  
+
   /**
    * Get a specific execution
    * 
@@ -56,16 +31,10 @@ export const workflowProgressService = {
    * @returns The workflow execution
    */
   async getExecution(executionId: number): Promise<WorkflowExecution> {
-    const res = await apiRequest('GET', `/api/workflow-progress/executions/${executionId}`);
-    
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(error);
-    }
-    
-    return await res.json();
+    const response = await apiRequest('GET', `/api/workflow-progress/executions/${executionId}`);
+    return await response.json();
   },
-  
+
   /**
    * Get steps for a workflow execution
    * 
@@ -73,16 +42,10 @@ export const workflowProgressService = {
    * @returns List of workflow step executions
    */
   async getExecutionSteps(executionId: number): Promise<WorkflowStepExecution[]> {
-    const res = await apiRequest('GET', `/api/workflow-progress/executions/${executionId}/steps`);
-    
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(error);
-    }
-    
-    return await res.json();
+    const response = await apiRequest('GET', `/api/workflow-progress/executions/${executionId}/steps`);
+    return await response.json();
   },
-  
+
   /**
    * Update a step's status
    * 
@@ -95,42 +58,23 @@ export const workflowProgressService = {
   async updateStepStatus(
     executionId: number,
     stepId: number,
-    status: 'running' | 'completed' | 'failed',
-    options?: {
-      result?: any;
+    status: string,
+    options: {
       error?: string;
       screenshot?: string;
-    }
+      startedAt?: Date;
+      completedAt?: Date;
+      duration?: number;
+    } = {}
   ): Promise<WorkflowStepExecution> {
-    const data = {
+    const response = await apiRequest('PATCH', `/api/workflow-progress/executions/${executionId}/steps/${stepId}`, {
       status,
       ...options
-    };
-    
-    const res = await apiRequest(
-      'PATCH', 
-      `/api/workflow-progress/executions/${executionId}/steps/${stepId}`,
-      data
-    );
-    
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(error);
-    }
-    
-    const updatedStep = await res.json();
-    
-    // Invalidate queries to reflect new step status
-    queryClient.invalidateQueries({ 
-      queryKey: [`/api/workflow-progress/executions/${executionId}`] 
     });
-    queryClient.invalidateQueries({ 
-      queryKey: [`/api/workflow-progress/executions/${executionId}/steps`] 
-    });
-    
-    return updatedStep;
+
+    return await response.json();
   },
-  
+
   /**
    * Add a log entry to a step execution
    * 
@@ -144,27 +88,16 @@ export const workflowProgressService = {
     executionId: number,
     stepId: number,
     message: string,
-    level: 'info' | 'warn' | 'error' | 'debug' = 'info'
+    level: string = 'info'
   ): Promise<WorkflowStepExecution> {
-    const data = {
+    const response = await apiRequest('POST', `/api/workflow-progress/executions/${executionId}/steps/${stepId}/logs`, {
       message,
       level
-    };
-    
-    const res = await apiRequest(
-      'POST',
-      `/api/workflow-progress/executions/${executionId}/steps/${stepId}/logs`,
-      data
-    );
-    
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(error);
-    }
-    
-    return await res.json();
+    });
+
+    return await response.json();
   },
-  
+
   /**
    * Get user's recent workflow executions
    * 
@@ -172,16 +105,10 @@ export const workflowProgressService = {
    * @returns List of workflow executions
    */
   async getUserExecutions(limit = 10): Promise<WorkflowExecution[]> {
-    const res = await apiRequest('GET', `/api/workflow-progress/executions?limit=${limit}`);
-    
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(error);
-    }
-    
-    return await res.json();
+    const response = await apiRequest('GET', `/api/workflow-progress/executions?limit=${limit}`);
+    return await response.json();
   },
-  
+
   /**
    * Get executions for a specific sequence
    * 
@@ -190,16 +117,18 @@ export const workflowProgressService = {
    * @returns List of workflow executions
    */
   async getSequenceExecutions(sequenceId: number, limit = 10): Promise<WorkflowExecution[]> {
-    const res = await apiRequest(
-      'GET', 
-      `/api/workflow-progress/sequences/${sequenceId}/executions?limit=${limit}`
-    );
-    
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(error);
-    }
-    
-    return await res.json();
+    const response = await apiRequest('GET', `/api/workflow-progress/executions?sequenceId=${sequenceId}&limit=${limit}`);
+    return await response.json();
+  },
+
+  /**
+   * Cancel a running workflow execution
+   * 
+   * @param executionId The execution ID to cancel
+   * @returns The cancelled workflow execution
+   */
+  async cancelExecution(executionId: number): Promise<WorkflowExecution> {
+    const response = await apiRequest('POST', `/api/workflow-progress/executions/${executionId}/cancel`);
+    return await response.json();
   }
 };
