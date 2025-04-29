@@ -715,20 +715,22 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="container px-4 py-8 max-w-7xl mx-auto">
+    <div className="container px-4 py-8 max-w-7xl mx-auto relative z-10 glass-effect-container rounded-xl backdrop-blur-sm border border-white/10 shadow-xl">
       <Tabs defaultValue="dashboard">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Your Dashboard</h1>
-          <TabsList>
-            <TabsTrigger value="dashboard">
+        <div className="glass-card-header relative overflow-hidden rounded-lg px-6 py-4 backdrop-blur-sm border border-white/10 group hover:shadow-lg transition-shadow duration-300 mb-6 flex items-center justify-between flex-col sm:flex-row gap-4">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-accent/15 to-primary/20 opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
+          <div className="absolute inset-0 bg-white/5 backdrop-blur-md"></div>
+          <h1 className="text-3xl font-bold text-high-contrast text-shadow-md relative z-10">Your Dashboard</h1>
+          <TabsList className="glass-effect-lighter backdrop-blur-sm border border-white/20 relative z-10">
+            <TabsTrigger value="dashboard" className="text-shadow-sm data-[state=active]:bg-primary/30 data-[state=active]:text-white">
               <LayoutDashboardIcon className="h-4 w-4 mr-2" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="activity">
+            <TabsTrigger value="activity" className="text-shadow-sm data-[state=active]:bg-primary/30 data-[state=active]:text-white">
               <ActivityIcon className="h-4 w-4 mr-2" />
               Activity
             </TabsTrigger>
-            <TabsTrigger value="analytics">
+            <TabsTrigger value="analytics" className="text-shadow-sm data-[state=active]:bg-primary/30 data-[state=active]:text-white">
               <BarChart2Icon className="h-4 w-4 mr-2" />
               Analytics
             </TabsTrigger>
@@ -740,10 +742,11 @@ const DashboardPage = () => {
         </TabsContent>
 
         <TabsContent value="activity" className="mt-0">
-          <Card>
+          <Card className="glass-effect-lighter border border-white/10 shadow-xl relative group overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/10 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-lg pointer-events-none"></div>
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-high-contrast text-shadow-md">Recent Activity</CardTitle>
+              <CardDescription className="text-white/90 text-shadow-sm">
                 A log of your recent actions and system events
               </CardDescription>
             </CardHeader>
@@ -754,10 +757,11 @@ const DashboardPage = () => {
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-0">
-          <Card>
+          <Card className="glass-effect-lighter border border-white/10 shadow-xl relative group overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/10 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-lg pointer-events-none"></div>
             <CardHeader>
-              <CardTitle>Usage Analytics</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-high-contrast text-shadow-md">Usage Analytics</CardTitle>
+              <CardDescription className="text-white/90 text-shadow-sm">
                 Detailed metrics about your platform usage
               </CardDescription>
             </CardHeader>
