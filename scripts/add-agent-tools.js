@@ -21,9 +21,11 @@ const agentTools = [
     name: "OpenAI Chat",
     description: "Uses OpenAI's GPT-4o model for advanced text generation and responses",
     type: "ai_chat",
-    provider: "openai",
-    model: "gpt-4o",
+    category: "language",
+    icon: "message-square",
     config: {
+      provider: "openai",
+      model: "gpt-4o",
       temperature: 0.7,
       max_tokens: 2048,
       top_p: 1,
@@ -35,9 +37,11 @@ const agentTools = [
     name: "Anthropic Claude",
     description: "Leverages Anthropic's Claude model for nuanced AI conversations and content creation",
     type: "ai_chat",
-    provider: "anthropic",
-    model: "claude-3-7-sonnet-20250219",
+    category: "language",
+    icon: "message-circle",
     config: {
+      provider: "anthropic",
+      model: "claude-3-7-sonnet-20250219",
       temperature: 0.7,
       max_tokens: 2048,
       top_p: 0.9,
@@ -49,9 +53,11 @@ const agentTools = [
     name: "Perplexity AI",
     description: "Research-focused AI with real-time web access for accurate information",
     type: "ai_chat",
-    provider: "perplexity",
-    model: "llama-3.1-sonar-small-128k-online",
+    category: "research",
+    icon: "search",
     config: {
+      provider: "perplexity",
+      model: "llama-3.1-sonar-small-128k-online",
       temperature: 0.2,
       max_tokens: 2048,
       search_enabled: true,
@@ -63,9 +69,11 @@ const agentTools = [
     name: "Grok by xAI",
     description: "xAI's conversational AI model with creative and informative responses",
     type: "ai_chat",
-    provider: "xai",
-    model: "grok-2-1212",
+    category: "language",
+    icon: "zap",
     config: {
+      provider: "xai",
+      model: "grok-2-1212",
       temperature: 0.8,
       max_tokens: 2048,
       top_p: 0.9,
@@ -77,9 +85,11 @@ const agentTools = [
     name: "Code Generator",
     description: "Specialized tool for generating development code across multiple languages",
     type: "code_generator",
-    provider: "openai",
-    model: "gpt-4o",
+    category: "development",
+    icon: "code",
     config: {
+      provider: "openai",
+      model: "gpt-4o",
       temperature: 0.3,
       max_tokens: 4096,
       languages: ["javascript", "python", "html", "css", "sql", "typescript", "bash"],
@@ -91,9 +101,11 @@ const agentTools = [
     name: "Data Analyzer",
     description: "Tool for analyzing datasets and generating insights",
     type: "data_analysis",
-    provider: "openai",
-    model: "gpt-4o",
+    category: "analysis",
+    icon: "bar-chart-2",
     config: {
+      provider: "openai",
+      model: "gpt-4o",
       temperature: 0.2,
       max_tokens: 4096,
       data_formats: ["csv", "json", "excel"],
@@ -105,9 +117,11 @@ const agentTools = [
     name: "Content Optimizer",
     description: "Tool for optimizing content for SEO and readability",
     type: "content_optimizer",
-    provider: "anthropic",
-    model: "claude-3-7-sonnet-20250219",
+    category: "marketing",
+    icon: "edit",
     config: {
+      provider: "anthropic",
+      model: "claude-3-7-sonnet-20250219",
       temperature: 0.6,
       max_tokens: 2048,
       optimization_types: ["seo", "readability", "tone", "engagement"],
@@ -138,13 +152,13 @@ async function addAgentTools() {
         // Update existing tool
         await pool.query(
           `UPDATE agent_tools 
-           SET description = $1, type = $2, provider = $3, model = $4, config = $5, is_active = $6, updated_at = $7
+           SET description = $1, type = $2, category = $3, icon = $4, config = $5, is_active = $6, updated_at = $7
            WHERE id = $8`,
           [
             tool.description,
             tool.type,
-            tool.provider,
-            tool.model,
+            tool.category,
+            tool.icon,
             JSON.stringify(tool.config),
             tool.isActive,
             now,
@@ -155,14 +169,14 @@ async function addAgentTools() {
         // Insert new tool
         const result = await pool.query(
           `INSERT INTO agent_tools (
-            name, description, type, provider, model, config, is_active, created_at, updated_at
+            name, description, type, category, icon, config, is_active, created_at, updated_at
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
           [
             tool.name,
             tool.description,
             tool.type,
-            tool.provider,
-            tool.model,
+            tool.category,
+            tool.icon,
             JSON.stringify(tool.config),
             tool.isActive,
             now,
