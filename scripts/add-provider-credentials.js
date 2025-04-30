@@ -2,10 +2,10 @@
  * Script to add AI provider credentials for the agents
  */
 
-const { db } = require('../server/db');
-const { aiProviders, aiModels } = require('../shared/schema');
-const { eq } = require('drizzle-orm');
-const crypto = require('crypto');
+import { db } from '../server/db.js';
+import { aiProviders, aiModels } from '../shared/schema.js';
+import { eq } from 'drizzle-orm';
+import crypto from 'crypto';
 
 function encryptData(text) {
   const iv = crypto.randomBytes(16);
@@ -399,17 +399,15 @@ async function addOrUpdateCredential(credential) {
   }
 }
 
-// Run the script if executed directly
-if (require.main === module) {
-  addProvidersAndCredentials()
-    .then(() => {
-      console.log('Script completed successfully.');
-      process.exit(0);
-    })
-    .catch(error => {
-      console.error('Script failed:', error);
-      process.exit(1);
-    });
-}
+// Run the script
+addProvidersAndCredentials()
+  .then(() => {
+    console.log('Script completed successfully.');
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error('Script failed:', error);
+    process.exit(1);
+  });
 
-module.exports = { addProvidersAndCredentials };
+export { addProvidersAndCredentials };

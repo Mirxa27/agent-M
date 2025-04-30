@@ -983,6 +983,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // API endpoint to register AI agent tools
+  app.post("/api/admin/register-tools", requireAdmin, async (req, res) => {
+    try {
+      const tools = [
+        {
+          name: "OpenAI Chat",
+          description: "Connect with OpenAI's GPT models for natural language tasks",
+          category: "ai",
+          icon: "sparkles",
+          isActive: true,
+          isSystem: true,
+          config: {
+            provider: "openai",
+            models: ["gpt-4o", "gpt-4-turbo", "gpt-4o-mini"],
+            capabilities: ["text generation", "instruction following", "creative writing", "summarization", "code generation"]
+          }
+        },
+        {
+          name: "Anthropic Claude",
+          description: "Use Anthropic's Claude models for nuanced and safe outputs",
+          category: "ai",
+          icon: "brain",
+          isActive: true,
+          isSystem: true,
+          config: {
+            provider: "anthropic",
+            models: ["claude-3-7-sonnet-20250219", "claude-3-5-sonnet", "claude-3-haiku"],
+            capabilities: ["text generation", "instruction following", "creative writing", "document analysis", "nuanced reasoning"]
+          }
+        },
+        {
+          name: "Perplexity AI",
+          description: "Leverage Perplexity for real-time research and information gathering",
+          category: "research",
+          icon: "search",
+          isActive: true,
+          isSystem: true,
+          config: {
+            provider: "perplexity",
+            models: ["llama-3.1-sonar-small-128k-online", "llama-3.1-sonar-large-128k-online"],
+            capabilities: ["online search", "fact verification", "current information", "research synthesis", "citation"]
+          }
+        },
+        {
+          name: "Grok by xAI",
+          description: "Utilize Grok for analytical and technical tasks",
+          category: "ai",
+          icon: "zap",
+          isActive: true,
+          isSystem: true,
+          config: {
+            provider: "xai",
+            models: ["grok-2-1212", "grok-2-vision-1212"],
+            capabilities: ["analytical reasoning", "technical explanations", "real-time data analysis", "image understanding"]
+          }
+        },
+        {
+          name: "Code Generator",
+          description: "Generate code in various programming languages",
+          category: "code",
+          icon: "code",
+          isActive: true,
+          isSystem: true,
+          config: {
+            provider: "openai",
+            models: ["gpt-4o"],
+            capabilities: ["code generation", "debugging", "optimization", "documentation"]
+          }
+        },
+        {
+          name: "Data Analyzer",
+          description: "Analyze datasets and provide insights",
+          category: "data",
+          icon: "barChart",
+          isActive: true, 
+          isSystem: true,
+          config: {
+            provider: "openai",
+            supportedProviders: ["openai", "xai", "perplexity"],
+            models: ["gpt-4o", "grok-2-1212"],
+            capabilities: ["data analysis", "visualization recommendations", "statistical inference", "trend identification"]
+          }
+        },
+        {
+          name: "Content Optimizer",
+          description: "Improve and optimize existing content",
+          category: "content",
+          icon: "fileText",
+          isActive: true,
+          isSystem: true,
+          config: {
+            provider: "openai",
+            supportedProviders: ["openai", "anthropic"],
+            models: ["gpt-4o", "claude-3-7-sonnet-20250219"],
+            capabilities: ["content improvement", "tone adjustment", "SEO optimization", "readability enhancement"]
+          }
+        }
+      ];
+      
+      const existingTools = await db.select().from(agentTools);
+      const existingToolNames = existingTools.map(tool => tool.name);
+      
+      let added = 0;
+      let updated = 0;
+      
+      // Add or update each tool
+      for (const tool of tools) {
+        if (!existingToolNames.includes(tool.name)) {
+          await db.insert(agentTools).values(tool);
+          added++;
+        } else {
+          const existingTool = existingTools.find(t => t.name === tool.name);
+          await db
+            .update(agentTools)
+            .set({
+              description: tool.description,
+              category: tool.category,
+              icon: tool.icon,
+              isActive: tool.isActive,
+              isSystem: tool.isSystem,
+              config: tool.config
+            })
+            .where(eq(agentTools.id, existingTool.id));
+          updated++;
+        }
+      }
+      
+      res.json({ 
+        success: true,
+        message: `Successfully registered tools: ${added} added, ${updated} updated`
+      });
+    } catch (error) {
+      console.error("Error registering tools:", error);
+      res.status(500).json({ error: "Failed to register tools" });
+    }
+  });
 
   app.get("/api/agents/:agentId/tasks", requireAuth, async (req, res) => {
     try {
