@@ -104,6 +104,7 @@ export default function AiProvidersPanel() {
         isActive: true,
         baseUrl: "",
         authType: "apiKey",
+        apiKey: "",
       });
     },
     onError: (error) => {
@@ -180,6 +181,7 @@ export default function AiProvidersPanel() {
       isActive: true,
       baseUrl: "",
       authType: "apiKey",
+      apiKey: "",
     },
   });
 
@@ -193,6 +195,7 @@ export default function AiProvidersPanel() {
       isActive: true,
       baseUrl: "",
       authType: "apiKey",
+      apiKey: "",
     },
   });
 
@@ -228,6 +231,7 @@ export default function AiProvidersPanel() {
       isActive: provider.isActive,
       baseUrl: provider.baseUrl,
       authType: provider.authType,
+      apiKey: "", // Always reset API key field for security
     });
     setIsEditDialogOpen(true);
   };
