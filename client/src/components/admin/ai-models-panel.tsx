@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -12,6 +12,9 @@ import {
   SearchIcon,
   TrashIcon,
   TagIcon,
+  CloudIcon,
+  ServerIcon,
+  CheckIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -102,7 +105,14 @@ export default function AiModelsPanel() {
   const [selectedCapabilities, setSelectedCapabilities] = useState<Set<string>>(
     new Set(),
   );
-
+  
+  // OpenRouter support
+  const [openRouterModels, setOpenRouterModels] = useState<any[]>([]);
+  const [openRouterGroupedModels, setOpenRouterGroupedModels] = useState<Record<string, string[]>>({});
+  const [openRouterModelCapabilities, setOpenRouterModelCapabilities] = useState<any[]>([]);
+  const [isOpenRouterProvider, setIsOpenRouterProvider] = useState(false);
+  const [selectedOpenRouterProvider, setSelectedOpenRouterProvider] = useState<string>("");
+  
   const queryClient = useQueryClient();
 
   // Fetch all AI models
@@ -124,6 +134,38 @@ export default function AiModelsPanel() {
       return await apiRequest("GET", "/api/admin/ai-providers");
     },
   });
+  
+  // Fetch OpenRouter models (only if needed)
+  const { data: openRouterData, isLoading: isLoadingOpenRouter, error: openRouterError } = useQuery({
+    queryKey: ["/api/admin/openrouter/models"],
+    queryFn: async () => {
+      return await apiRequest("GET", "/api/admin/openrouter/models");
+    },
+    enabled: isOpenRouterProvider, // Only fetch when OpenRouter provider is selected
+    retry: 1, // Limit retries as this could fail if API key is not configured
+  });
+  
+  // Update OpenRouter state when data is fetched
+  useEffect(() => {
+    if (openRouterData) {
+      setOpenRouterModels(openRouterData.models || []);
+      setOpenRouterGroupedModels(openRouterData.groupedModels || {});
+      setOpenRouterModelCapabilities(openRouterData.modelCapabilities || []);
+    }
+  }, [openRouterData]);
+  
+  // Check if a provider is OpenRouter when provider changes
+  const handleProviderChange = (providerId: number) => {
+    const provider = providers.find(p => p.id === providerId);
+    const isOpenRouter = provider?.name.toLowerCase().includes('openrouter');
+    setIsOpenRouterProvider(!!isOpenRouter);
+    
+    // Reset OpenRouter state
+    setSelectedOpenRouterProvider("");
+    
+    // Set form providerId
+    form.setValue('providerId', providerId);
+  };
 
   // Create model mutation
   const createModelMutation = useMutation({
@@ -578,9 +620,11 @@ export default function AiModelsPanel() {
                     <FormItem>
                       <FormLabel>AI Provider</FormLabel>
                       <Select
-                        onValueChange={(value) =>
-                          field.onChange(parseInt(value))
-                        }
+                        onValueChange={(value) => {
+                          const providerId = parseInt(value);
+                          field.onChange(providerId);
+                          handleProviderChange(providerId);
+                        }}
                         value={field.value?.toString()}
                       >
                         <FormControl>
@@ -601,11 +645,21 @@ export default function AiModelsPanel() {
                                 disabled={!provider.isActive}
                               >
                                 {provider.name}
+                                {provider.name.toLowerCase().includes('openrouter') && (
+                                  <CloudIcon className="inline-block ml-2 h-4 w-4 text-blue-400" />
+                                )}
                               </SelectItem>
                             ))
                           )}
                         </SelectContent>
                       </Select>
+                      <FormDescription>
+                        {isOpenRouterProvider && (
+                          <span className="text-blue-500 flex items-center mt-1">
+                            <CloudIcon className="mr-1 h-4 w-4" /> OpenRouter gives access to multiple AI models
+                          </span>
+                        )}
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
