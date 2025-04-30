@@ -15,6 +15,16 @@ import { eq } from "drizzle-orm";
 const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// Set up Perplexity client (using fetch API as there's no official SDK)
+const perplexityApiKey = process.env.PERPLEXITY_API_KEY;
+const perplexityBaseUrl = 'https://api.perplexity.ai/chat/completions';
+
+// Set up xAI/Grok client (using OpenAI SDK with custom base URL)
+const xaiClient = new OpenAI({ 
+  baseURL: "https://api.x.ai/v1", 
+  apiKey: process.env.XAI_API_KEY 
+});
+
 // Simple encryption/decryption for API keys
 function decrypt(encryptedData: string, key: string): string {
   const [ivHex, encryptedHex] = encryptedData.split(':');
@@ -370,7 +380,9 @@ async function processDataAnalystTask(
   const prompt = preparePrompt(agent, task, messages);
   
   try {
-    // Use OpenAI for data analysis
+    // Determine which AI service to use based on available tools
+    const perplexityTool = tools.find(t => t.name === "Perplexity AI");
+    const grokTool = tools.find(t => t.name === "Grok by xAI");
     const openaiTool = tools.find(t => t.name === "OpenAI Chat" || t.name === "Data Analyzer");
     
     // Determine the analysis type from the task description
@@ -389,26 +401,108 @@ async function processDataAnalystTask(
                               task.description?.toLowerCase().includes("chart") ||
                               task.description?.toLowerCase().includes("graph");
     
-    let systemPrompt = `You are a data analyst specializing in ${analysisType} analysis. `;
+    // Determine if research is required
+    const needsResearch = task.description?.toLowerCase().includes("research") || 
+                          task.description?.toLowerCase().includes("find") ||
+                          task.description?.toLowerCase().includes("search") || 
+                          task.description?.toLowerCase().includes("latest");
     
-    if (needsVisualization) {
-      systemPrompt += "Include recommendations for appropriate data visualizations. For each visualization, describe what it should show and how it should be structured. ";
-    }
+    let content = '';
     
-    systemPrompt += "Provide clear, actionable insights based on the data described. If statistical methods are needed, explain them briefly.";
-    
-    const response = await openaiClient.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: prompt }
-      ],
-      max_tokens: 4000,
-      temperature: 0.2,
-    });
+    // If research is required and Perplexity is available, use it
+    if (needsResearch && perplexityTool && perplexityApiKey) {
+      console.log("Using Perplexity AI for research-based data analysis");
+      
+      const systemPrompt = `You are a data analyst specializing in ${analysisType} analysis. Provide up-to-date research and insights. Be precise and concise.`;
+      
+      // Call Perplexity API
+      const response = await fetch(perplexityBaseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${perplexityApiKey}`
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-sonar-small-128k-online",
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.2,
+          top_p: 0.9,
+          max_tokens: 2048
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Perplexity API error: ${response.status} ${await response.text()}`);
+      }
+      
+      const result = await response.json();
+      content = result.choices[0].message.content;
+      
+      // If citations are available, add them
+      if (result.citations && result.citations.length > 0) {
+        content += '\n\nSources:\n';
+        result.citations.forEach((citation: string, index: number) => {
+          content += `[${index + 1}] ${citation}\n`;
+        });
+      }
+    } 
+    // If Grok is available, use it for data analysis
+    else if (grokTool) {
+      console.log("Using Grok by xAI for data analysis");
+      
+      let systemPrompt = `You are a data analyst specializing in ${analysisType} analysis. `;
+      
+      if (needsVisualization) {
+        systemPrompt += "Include recommendations for appropriate data visualizations. For each visualization, describe what it should show and how it should be structured. ";
+      }
+      
+      systemPrompt += "Provide clear, actionable insights based on the data described. If statistical methods are needed, explain them briefly.";
+      
+      const response = await xaiClient.chat.completions.create({
+        model: "grok-2-1212", // The text model is sufficient for data analysis
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 4000,
+        temperature: 0.2,
+      });
 
-    // Extract the response content
-    const content = response.choices[0].message.content || "";
+      content = response.choices[0].message.content || "";
+    }
+    // Fall back to OpenAI
+    else {
+      console.log("Using OpenAI for data analysis");
+      
+      let systemPrompt = `You are a data analyst specializing in ${analysisType} analysis. `;
+      
+      if (needsVisualization) {
+        systemPrompt += "Include recommendations for appropriate data visualizations. For each visualization, describe what it should show and how it should be structured. ";
+      }
+      
+      systemPrompt += "Provide clear, actionable insights based on the data described. If statistical methods are needed, explain them briefly.";
+      
+      const response = await openaiClient.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 4000,
+        temperature: 0.2,
+      });
+
+      content = response.choices[0].message.content || "";
+    }
     
     // Log the interaction
     await storage.createMessage({
@@ -424,6 +518,7 @@ async function processDataAnalystTask(
         type: "analysis",
         analysisType: analysisType,
         visualization: needsVisualization,
+        research: needsResearch,
         content: content
       }),
     });
@@ -440,11 +535,11 @@ async function processDataAnalystTask(
     await storage.updateTask(task.id, {
       status: "failed",
       result: JSON.stringify({
-        error: error.message
+        error: error instanceof Error ? error.message : "Unknown error occurred"
       }),
     });
     
-    return `Error: ${error.message}`;
+    return `Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`;
   }
 }
 

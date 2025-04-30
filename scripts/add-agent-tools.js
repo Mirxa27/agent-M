@@ -1,201 +1,161 @@
 /**
  * Script to add AI agent tools to the database
  */
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import dotenv from 'dotenv';
-import ws from 'ws';
 
-dotenv.config();
-
-// Required for Neon serverless connections
-neonConfig.webSocketConstructor = ws;
-
-// Connect to the database
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
-
-// Agent tools to add
-const agentTools = [
-  {
-    name: "OpenAI Chat",
-    description: "Uses OpenAI's GPT-4o model for advanced text generation and responses",
-    type: "ai_chat",
-    category: "language",
-    icon: "message-square",
-    config: {
-      provider: "openai",
-      model: "gpt-4o",
-      temperature: 0.7,
-      max_tokens: 2048,
-      top_p: 1,
-      capabilities: ["text", "image_analysis", "code_generation"]
-    },
-    isActive: true
-  },
-  {
-    name: "Anthropic Claude",
-    description: "Leverages Anthropic's Claude model for nuanced AI conversations and content creation",
-    type: "ai_chat",
-    category: "language",
-    icon: "message-circle",
-    config: {
-      provider: "anthropic",
-      model: "claude-3-7-sonnet-20250219",
-      temperature: 0.7,
-      max_tokens: 2048,
-      top_p: 0.9,
-      capabilities: ["text", "image_analysis", "reasoning"]
-    },
-    isActive: true
-  },
-  {
-    name: "Perplexity AI",
-    description: "Research-focused AI with real-time web access for accurate information",
-    type: "ai_chat",
-    category: "research",
-    icon: "search",
-    config: {
-      provider: "perplexity",
-      model: "llama-3.1-sonar-small-128k-online",
-      temperature: 0.2,
-      max_tokens: 2048,
-      search_enabled: true,
-      capabilities: ["text", "web_search", "information_retrieval"]
-    },
-    isActive: true
-  },
-  {
-    name: "Grok by xAI",
-    description: "xAI's conversational AI model with creative and informative responses",
-    type: "ai_chat",
-    category: "language",
-    icon: "zap",
-    config: {
-      provider: "xai",
-      model: "grok-2-1212",
-      temperature: 0.8,
-      max_tokens: 2048,
-      top_p: 0.9,
-      capabilities: ["text", "code_generation", "creative_content"]
-    },
-    isActive: true
-  },
-  {
-    name: "Code Generator",
-    description: "Specialized tool for generating development code across multiple languages",
-    type: "code_generator",
-    category: "development",
-    icon: "code",
-    config: {
-      provider: "openai",
-      model: "gpt-4o",
-      temperature: 0.3,
-      max_tokens: 4096,
-      languages: ["javascript", "python", "html", "css", "sql", "typescript", "bash"],
-      capabilities: ["code_generation", "code_explanation", "debugging"]
-    },
-    isActive: true
-  },
-  {
-    name: "Data Analyzer",
-    description: "Tool for analyzing datasets and generating insights",
-    type: "data_analysis",
-    category: "analysis",
-    icon: "bar-chart-2",
-    config: {
-      provider: "openai",
-      model: "gpt-4o",
-      temperature: 0.2,
-      max_tokens: 4096,
-      data_formats: ["csv", "json", "excel"],
-      capabilities: ["statistical_analysis", "data_visualization", "trend_analysis"]
-    },
-    isActive: true
-  },
-  {
-    name: "Content Optimizer",
-    description: "Tool for optimizing content for SEO and readability",
-    type: "content_optimizer",
-    category: "marketing",
-    icon: "edit",
-    config: {
-      provider: "anthropic",
-      model: "claude-3-7-sonnet-20250219",
-      temperature: 0.6,
-      max_tokens: 2048,
-      optimization_types: ["seo", "readability", "tone", "engagement"],
-      capabilities: ["keyword_analysis", "content_refinement", "headline_optimization"]
-    },
-    isActive: true
-  }
-];
+import { db } from '../server/db.js';
+import { agentTools } from '../shared/schema.js';
+import { eq } from 'drizzle-orm';
 
 async function addAgentTools() {
-  console.log('Adding agent tools to database...');
+  console.log('Adding agent tools to the database...');
 
-  try {
-    // Current timestamp
-    const now = new Date();
+  // Check if tools already exist (by name)
+  const existingTools = await db.select().from(agentTools);
+  const existingToolNames = existingTools.map(tool => tool.name);
 
-    for (const tool of agentTools) {
-      // Check if tool already exists
-      const existingTool = await pool.query(
-        'SELECT id FROM agent_tools WHERE name = $1',
-        [tool.name]
-      );
+  console.log('Existing tools:', existingToolNames);
 
-      if (existingTool.rows.length > 0) {
-        const toolId = existingTool.rows[0].id;
-        console.log(`Tool "${tool.name}" already exists (ID: ${toolId}), updating...`);
-
-        // Update existing tool
-        await pool.query(
-          `UPDATE agent_tools 
-           SET description = $1, type = $2, category = $3, icon = $4, config = $5, is_active = $6, updated_at = $7
-           WHERE id = $8`,
-          [
-            tool.description,
-            tool.type,
-            tool.category,
-            tool.icon,
-            JSON.stringify(tool.config),
-            tool.isActive,
-            now,
-            toolId
-          ]
-        );
-      } else {
-        // Insert new tool
-        const result = await pool.query(
-          `INSERT INTO agent_tools (
-            name, description, type, category, icon, config, is_active, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-          [
-            tool.name,
-            tool.description,
-            tool.type,
-            tool.category,
-            tool.icon,
-            JSON.stringify(tool.config),
-            tool.isActive,
-            now,
-            now
-          ]
-        );
-
-        console.log(`Added tool "${tool.name}" with ID ${result.rows[0].id}`);
+  // Define tools
+  const tools = [
+    {
+      name: "OpenAI Chat",
+      description: "Connect with OpenAI's GPT models for natural language tasks",
+      category: "ai",
+      icon: "sparkles",
+      isActive: true,
+      isSystem: true,
+      config: {
+        provider: "openai",
+        models: ["gpt-4o", "gpt-4-turbo", "gpt-4o-mini"],
+        capabilities: ["text generation", "instruction following", "creative writing", "summarization", "code generation"]
+      }
+    },
+    {
+      name: "Anthropic Claude",
+      description: "Use Anthropic's Claude models for nuanced and safe outputs",
+      category: "ai",
+      icon: "brain",
+      isActive: true,
+      isSystem: true,
+      config: {
+        provider: "anthropic",
+        models: ["claude-3-7-sonnet-20250219", "claude-3-5-sonnet", "claude-3-haiku"],
+        capabilities: ["text generation", "instruction following", "creative writing", "document analysis", "nuanced reasoning"]
+      }
+    },
+    {
+      name: "Perplexity AI",
+      description: "Leverage Perplexity for real-time research and information gathering",
+      category: "research",
+      icon: "search",
+      isActive: true,
+      isSystem: true,
+      config: {
+        provider: "perplexity",
+        models: ["llama-3.1-sonar-small-128k-online", "llama-3.1-sonar-large-128k-online"],
+        capabilities: ["online search", "fact verification", "current information", "research synthesis", "citation"]
+      }
+    },
+    {
+      name: "Grok by xAI",
+      description: "Utilize Grok for analytical and technical tasks",
+      category: "ai",
+      icon: "zap",
+      isActive: true,
+      isSystem: true,
+      config: {
+        provider: "xai",
+        models: ["grok-2-1212", "grok-2-vision-1212"],
+        capabilities: ["analytical reasoning", "technical explanations", "real-time data analysis", "image understanding"]
+      }
+    },
+    {
+      name: "Code Generator",
+      description: "Generate code in various programming languages",
+      category: "code",
+      icon: "code",
+      isActive: true,
+      isSystem: true,
+      config: {
+        provider: "openai",
+        models: ["gpt-4o"],
+        capabilities: ["code generation", "debugging", "optimization", "documentation"]
+      }
+    },
+    {
+      name: "Data Analyzer",
+      description: "Analyze datasets and provide insights",
+      category: "data",
+      icon: "barChart",
+      isActive: true, 
+      isSystem: true,
+      config: {
+        provider: "openai",
+        supportedProviders: ["openai", "xai", "perplexity"],
+        models: ["gpt-4o", "grok-2-1212"],
+        capabilities: ["data analysis", "visualization recommendations", "statistical inference", "trend identification"]
+      }
+    },
+    {
+      name: "Content Optimizer",
+      description: "Improve and optimize existing content",
+      category: "content",
+      icon: "fileText",
+      isActive: true,
+      isSystem: true,
+      config: {
+        provider: "openai",
+        supportedProviders: ["openai", "anthropic"],
+        models: ["gpt-4o", "claude-3-7-sonnet-20250219"],
+        capabilities: ["content improvement", "tone adjustment", "SEO optimization", "readability enhancement"]
       }
     }
+  ];
 
-    console.log('All agent tools added successfully.');
-  } catch (error) {
-    console.error('Error adding agent tools:', error);
-  } finally {
-    // Close the database connection
-    await pool.end();
+  // Insert tools that don't already exist
+  for (const tool of tools) {
+    if (!existingToolNames.includes(tool.name)) {
+      try {
+        const [insertedTool] = await db.insert(agentTools).values(tool).returning();
+        console.log(`Added tool: ${tool.name}`);
+      } catch (error) {
+        console.error(`Error adding tool ${tool.name}:`, error);
+      }
+    } else {
+      // Update existing tool
+      const existingTool = existingTools.find(t => t.name === tool.name);
+      try {
+        const [updatedTool] = await db
+          .update(agentTools)
+          .set({
+            description: tool.description,
+            category: tool.category,
+            icon: tool.icon,
+            isActive: tool.isActive,
+            isSystem: tool.isSystem,
+            config: tool.config
+          })
+          .where(eq(agentTools.id, existingTool.id))
+          .returning();
+        console.log(`Updated tool: ${tool.name}`);
+      } catch (error) {
+        console.error(`Error updating tool ${tool.name}:`, error);
+      }
+    }
   }
+
+  console.log('All tools have been added or updated.');
 }
 
-// Run the function
-addAgentTools();
+// Run the script
+addAgentTools()
+  .then(() => {
+    console.log('Script completed successfully.');
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error('Script failed:', error);
+    process.exit(1);
+  });
+
+export { addAgentTools };
