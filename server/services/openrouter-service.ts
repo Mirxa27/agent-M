@@ -12,7 +12,7 @@ const openai = new OpenAI({
 });
 
 // Model capabilities table for reference
-const openRouterModels = [
+export const openRouterModels = [
   // Anthropic models
   { id: 'anthropic/claude-3-opus', provider: 'anthropic', capabilities: ['chat', 'reasoning'] },
   { id: 'anthropic/claude-3-sonnet', provider: 'anthropic', capabilities: ['chat', 'reasoning'] },
@@ -187,4 +187,5 @@ export default {
   analyzeImage,
   getAvailableModels,
   isOpenRouterConfigured,
+  openRouterModels,
 };
