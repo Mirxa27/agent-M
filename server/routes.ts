@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, hashPassword } from "./auth";
 import { db, checkDatabaseConnection } from "./db";
 import { checkRequiredApiKey } from "./config";
-import { eq, count } from "drizzle-orm";
+import { eq, count, and } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -57,6 +57,7 @@ import {
   insertAgentToolSchema,
   aiModels,
   aiPrompts,
+  agentTools,
 } from "@shared/schema";
 import { encrypt, decrypt } from "../shared/crypto";
 import { paymentService } from "./services/payment-service";
@@ -1092,22 +1093,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add or update each tool
       for (const tool of tools) {
         if (!existingToolNames.includes(tool.name)) {
-          await db.insert(agentTools).values(tool);
+          // Add required fields for database schema
+          const newTool = {
+            ...tool,
+            isSystem: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          
+          await db.insert(agentTools).values(newTool);
           added++;
         } else {
           const existingTool = existingTools.find(t => t.name === tool.name);
-          await db
-            .update(agentTools)
-            .set({
-              description: tool.description,
-              category: tool.category,
-              icon: tool.icon,
-              isActive: tool.isActive,
-              isSystem: tool.isSystem,
-              config: tool.config
-            })
-            .where(eq(agentTools.id, existingTool.id));
-          updated++;
+          if (existingTool) {
+            await db
+              .update(agentTools)
+              .set({
+                description: tool.description,
+                category: tool.category,
+                icon: tool.icon,
+                isActive: tool.isActive,
+                isSystem: true,
+                config: tool.config,
+                updatedAt: new Date()
+              })
+              .where(eq(agentTools.id, existingTool.id));
+            updated++;
+          }
         }
       }
       
