@@ -2456,7 +2456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const generatedContent = await generateContent(prompt, contentType, tone);
+      const generatedContent = await aiService.generateContent(prompt, contentType, tone);
       return res.json({ content: generatedContent });
     } catch (error: any) {
       console.error("Content generation error:", error);
@@ -2479,7 +2479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const analysis = await analyzeContent(text);
+      const analysis = await aiService.analyzeContent(text);
       return res.json(analysis);
     } catch (error: any) {
       console.error("Content analysis error:", error);
