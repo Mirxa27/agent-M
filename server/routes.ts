@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword } from "./auth";
 import { db, checkDatabaseConnection } from "./db";
+import { checkRequiredApiKey } from "./config";
 import { eq, count } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
@@ -1447,7 +1448,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/ai-providers", requireAdmin, async (req, res) => {
     try {
       const providers = await storage.getAllAiProviders();
-      res.json(providers);
+      
+      // Enhance each provider with API key availability
+      const enhancedProviders = providers.map(provider => {
+        const hasApiKey = checkRequiredApiKey(provider.provider);
+        return {
+          ...provider,
+          hasApiKey
+        };
+      });
+      
+      res.json(enhancedProviders);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Check if API key is available for provider
+  app.get("/api/admin/ai-providers/check-key/:provider", requireAdmin, (req, res) => {
+    try {
+      const { provider } = req.params;
+      const hasApiKey = checkRequiredApiKey(provider);
+      res.json({ hasApiKey });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
