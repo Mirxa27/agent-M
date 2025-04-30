@@ -647,6 +647,24 @@ export class MemStorage implements IStorage {
     this.users.set(id, updatedUser);
     return updatedUser;
   }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    // Check if user exists
+    const user = await this.getUser(id);
+    if (!user) {
+      return false;
+    }
+    
+    // Don't delete admin users if they're the only admin left
+    if (user.role === "admin") {
+      const admins = Array.from(this.users.values()).filter(u => u.role === "admin");
+      if (admins.length <= 1) {
+        throw new Error("Cannot delete the last admin user");
+      }
+    }
+    
+    return this.users.delete(id);
+  }
 
   // Agent Tool operations
   async getAgentTool(id: number): Promise<AgentTool | undefined> {
