@@ -736,7 +736,13 @@ export class MemStorage implements IStorage {
 
   async getAgentsByUserId(userId: number): Promise<Agent[]> {
     return Array.from(this.agents.values()).filter(
-      (agent) => agent.userId === userId,
+      (agent) => agent.userId === userId && !(agent.isTemplate === true),
+    );
+  }
+  
+  async getAgentTemplates(): Promise<Agent[]> {
+    return Array.from(this.agents.values()).filter(
+      (agent) => agent.isTemplate === true
     );
   }
 
@@ -1770,7 +1776,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAgentsByUserId(userId: number): Promise<Agent[]> {
-    return await db.select().from(agents).where(eq(agents.userId, userId));
+    return await db
+      .select()
+      .from(agents)
+      .where(and(
+        eq(agents.userId, userId),
+        eq(agents.isTemplate, false)
+      ));
+  }
+  
+  async getAgentTemplates(): Promise<Agent[]> {
+    return await db
+      .select()
+      .from(agents)
+      .where(eq(agents.isTemplate, true));
   }
 
   async createAgent(agent: InsertAgent): Promise<Agent> {

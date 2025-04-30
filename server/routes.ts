@@ -310,6 +310,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: handleError(error) });
     }
   });
+  
+  // Get agent templates for creating new agents
+  app.get("/api/agent-templates", requireAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      const templates = await storage.getAgentTemplates();
+      res.json(templates);
+    } catch (error) {
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Unknown error occurred" 
+      });
+    }
+  });
 
   // Agent status endpoint for dashboard - must come before the :id route
   app.get("/api/agents/status", requireAuth, async (req: Request, res: Response) => {
@@ -1258,7 +1273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check ownership
-      if (task.userId !== req.user.id) {
+      if (task.userId !== req.user!.id) {
         return res.status(403).json({ error: "Not authorized" });
       }
 
@@ -1279,20 +1294,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If the message is from the user, process it with the AI agent
       if (validatedData.data.role === 'user') {
+        // Update task status to pending if it was completed or failed
+        if (task.status === 'completed' || task.status === 'failed') {
+          await storage.updateTask(taskId, { status: "pending" });
+        }
+        
         // Process the task in the background
         setTimeout(async () => {
           try {
-            const { processAgentTask } = require('./services/ai-service');
             await processAgentTask(taskId, storage);
           } catch (error) {
-            console.error('Error processing agent task:', error);
+            console.error('Error processing agent task:', error instanceof Error ? error.message : String(error));
+            // Update task status to failed if there was an error
+            await storage.updateTask(taskId, { 
+              status: "failed",
+              result: JSON.stringify({ 
+                error: error instanceof Error ? error.message : "Unknown error occurred"
+              })
+            });
           }
         }, 0);
+        
+        res.status(201).json({
+          message,
+          taskStatus: "pending",
+          processing: true
+        });
+      } else {
+        res.status(201).json(message);
       }
-      
-      res.status(201).json(message);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Unknown error occurred" 
+      });
     }
   });
   
