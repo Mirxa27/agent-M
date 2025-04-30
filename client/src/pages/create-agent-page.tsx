@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/query-client";
 
 // UI Components
 import {
@@ -74,10 +73,20 @@ export default function CreateAgentPage() {
         name: `${templateData.name} (${new Date().toLocaleDateString()})`,
       };
 
-      return apiRequest("/api/agents", {
+      const response = await fetch("/api/agents", {
         method: "POST",
-        data: agentData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(agentData),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || "Failed to create agent");
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/agents"] });

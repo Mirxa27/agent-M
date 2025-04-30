@@ -6,6 +6,7 @@ import AuthPage from "@/pages/auth-page";
 import LandingPage from "@/pages/landing-page";
 import DashboardPage from "@/pages/dashboard-page";
 import AgentsPage from "@/pages/agents-page";
+import CreateAgentPage from "@/pages/create-agent-page";
 import CredentialsPage from "@/pages/credentials-page";
 import FilesPage from "@/pages/files-page";
 import TaskHistoryPage from "@/pages/task-history-page";
@@ -83,6 +84,13 @@ export const PRIVATE_ROUTES: RouteConfig[] = [
     path: "/agents",
     component: AgentsPage,
     title: "My Agents",
+    layout: "main",
+    exact: true,
+  },
+  {
+    path: "/agents/create",
+    component: CreateAgentPage,
+    title: "Create New Agent",
     layout: "main",
     exact: true,
   },

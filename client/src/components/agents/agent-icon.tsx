@@ -1,6 +1,7 @@
 import React from "react";
 import * as Icons from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Bot } from "lucide-react";
 
 // List of available icons from Lucide
 const iconNames = Object.keys(Icons).filter(
@@ -14,7 +15,7 @@ interface AgentIconProps {
 }
 
 const AgentIcon: React.FC<AgentIconProps> = ({ 
-  icon = "robot", 
+  icon = "bot", 
   className = "",
   size = 24
 }) => {
@@ -24,8 +25,8 @@ const AgentIcon: React.FC<AgentIconProps> = ({
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join("");
 
-  // Default to Robot icon
-  let IconComponent = Icons.Robot;
+  // Default to Bot icon
+  let IconComponent = Bot;
 
   // Try to find matching icon from Lucide
   if (iconNames.includes(formattedIconName)) {
