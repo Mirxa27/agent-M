@@ -493,7 +493,7 @@ export default function AiProvidersPanel() {
                 name="apiKey"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>API Key (Optional)</FormLabel>
+                    <FormLabel>API Key</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
