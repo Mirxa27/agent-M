@@ -96,6 +96,7 @@ export const credentials = pgTable("credentials", {
   type: text("type").notNull(),
   data: text("data").notNull(), // Encrypted data
   authMethod: text("auth_method").default("api_key").notNull(), // 'api_key', 'oauth', 'direct_login'
+  service: text("service"), // Service identifier (e.g., 'openai', 'anthropic', etc.)
   expiresAt: timestamp("expires_at"), // When credentials expire (null for non-expiring)
   lastRefreshedAt: timestamp("last_refreshed_at"), // For OAuth refresh tokens
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -108,6 +109,7 @@ export const insertCredentialSchema = createInsertSchema(credentials).pick({
   type: true,
   data: true,
   authMethod: true,
+  service: true,
   expiresAt: true,
   lastRefreshedAt: true,
 });
