@@ -1477,8 +1477,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/ai-providers", requireAdmin, async (req, res) => {
     try {
-      const provider = await storage.createAiProvider(req.body);
-      res.status(201).json(provider);
+      // Extract apiKey from the request if present
+      const { apiKey, ...providerData } = req.body;
+      
+      // Store provider in database
+      const provider = await storage.createAiProvider(providerData);
+      
+      // If API key was provided, create a credential record
+      if (apiKey && req.user) {
+        // Create credential using the credential service
+        await credentialService.createCredential({
+          userId: req.user.id,
+          name: `${provider.name} API Key`,
+          type: 'api_key',
+          authMethod: 'apiKey',
+          data: encrypt(apiKey), // Encrypt the API key
+          service: provider.provider // Associate with the provider
+        });
+      }
+      
+      // Add hasApiKey flag
+      const hasApiKey = checkRequiredApiKey(provider.provider);
+      res.status(201).json({
+        ...provider,
+        hasApiKey: hasApiKey || (apiKey ? true : false)
+      });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -1487,16 +1510,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/ai-providers/:id", requireAdmin, async (req, res) => {
     try {
       const providerId = parseInt(req.params.id);
+      
+      // Extract apiKey from the request if present
+      const { apiKey, ...providerData } = req.body;
+      
+      // Update provider in database
       const updatedProvider = await storage.updateAiProvider(
         providerId,
-        req.body,
+        providerData,
       );
 
       if (!updatedProvider) {
         return res.status(404).json({ error: "AI Provider not found" });
       }
-
-      res.json(updatedProvider);
+      
+      // If API key was provided, update or create a credential record
+      if (apiKey && req.user) {
+        // Get existing credential for this provider
+        const existingCredential = await credentialService.getCredentialByService(
+          req.user.id,
+          updatedProvider.provider
+        );
+        
+        if (existingCredential) {
+          // Update existing credential
+          await credentialService.updateCredential(existingCredential.id, {
+            data: encrypt(apiKey)
+          });
+        } else {
+          // Create new credential
+          await credentialService.createCredential({
+            userId: req.user.id,
+            name: `${updatedProvider.name} API Key`,
+            type: 'api_key',
+            authMethod: 'apiKey',
+            data: encrypt(apiKey),
+            service: updatedProvider.provider
+          });
+        }
+      }
+      
+      // Add hasApiKey flag
+      const hasApiKey = checkRequiredApiKey(updatedProvider.provider);
+      res.json({
+        ...updatedProvider,
+        hasApiKey: hasApiKey || (apiKey ? true : false)
+      });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

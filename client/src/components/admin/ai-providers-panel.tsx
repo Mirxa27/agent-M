@@ -57,6 +57,7 @@ const providerFormSchema = z.object({
   isActive: z.boolean().default(true),
   baseUrl: z.string().optional().nullable(),
   authType: z.string().default("apiKey"),
+  apiKey: z.string().optional(), // Optional since providers can use env vars
 });
 
 type ProviderFormValues = z.infer<typeof providerFormSchema>;
@@ -486,6 +487,28 @@ export default function AiProvidersPanel() {
                   )}
                 />
               </div>
+              
+              <FormField
+                control={form.control}
+                name="apiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Key (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Enter API key if not using environment variables"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Leave empty if using environment variables or add securely in credentials.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
@@ -644,6 +667,28 @@ export default function AiProvidersPanel() {
                   )}
                 />
               </div>
+              
+              <FormField
+                control={editForm.control}
+                name="apiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Key (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Enter new API key or leave empty to keep current"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Leave empty to keep existing key or use environment variables.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={editForm.control}
