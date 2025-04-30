@@ -312,8 +312,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get agent templates for creating new agents
-  app.get("/api/agent-templates", async (req: Request, res: Response) => {
+  app.get("/api/agent-templates", requireAuth, async (req: Request, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
       const templates = await storage.getAgentTemplates();
       res.json(templates);
     } catch (error) {
