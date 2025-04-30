@@ -304,6 +304,7 @@ export default function AiProvidersPanel() {
                     <TableHead>Description</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Auth Type</TableHead>
+                    <TableHead>API Key</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -337,6 +338,13 @@ export default function AiProvidersPanel() {
                           </Badge>
                         </TableCell>
                         <TableCell>{provider.authType || "apiKey"}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={provider.hasApiKey ? "success" : "destructive"}
+                          >
+                            {provider.hasApiKey ? "Available" : "Missing"}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-right">
                           <Button
                             variant="ghost"
