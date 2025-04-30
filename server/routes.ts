@@ -1847,6 +1847,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // Get OpenRouter models endpoint
+  app.get("/api/admin/openrouter/models", requireAdmin, async (req, res) => {
+    try {
+      if (!process.env.OPENROUTER_API_KEY) {
+        return res.status(400).json({
+          error: "OpenRouter not configured",
+          details: "OpenRouter API key is missing",
+        });
+      }
+      
+      // Import when needed to avoid startup errors if OpenRouter isn't configured
+      const { default: openrouterService } = await import("./services/openrouter-service");
+      const models = await openrouterService.getAvailableModels();
+      
+      // Group models by provider for easier selection in UI
+      const groupedModels = models.reduce((acc, modelId) => {
+        // Extract provider from model ID (e.g., "openai/gpt-4o" -> "openai")
+        const provider = modelId.split('/')[0];
+        if (!acc[provider]) {
+          acc[provider] = [];
+        }
+        acc[provider].push(modelId);
+        return acc;
+      }, {} as Record<string, string[]>);
+      
+      return res.json({ 
+        models, 
+        groupedModels,
+        // Return static model capabilities info for reference
+        modelCapabilities: openrouterService.openRouterModels
+      });
+    } catch (error: any) {
+      console.error("Error fetching OpenRouter models:", error);
+      return res.status(500).json({
+        error: "Failed to fetch OpenRouter models",
+        details: error.message,
+      });
+    }
+  });
 
   app.get("/api/admin/ai-models/:id", requireAdmin, async (req, res) => {
     try {
