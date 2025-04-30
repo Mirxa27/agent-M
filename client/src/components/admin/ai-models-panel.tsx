@@ -673,11 +673,133 @@ export default function AiModelsPanel() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Model ID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., gpt-4o" {...field} />
-                      </FormControl>
+                      {isOpenRouterProvider ? (
+                        <div>
+                          {isLoadingOpenRouter ? (
+                            <Skeleton className="h-10 w-full" />
+                          ) : openRouterError ? (
+                            <div className="text-destructive text-sm mb-2">
+                              Error loading OpenRouter models. Please check your API key.
+                            </div>
+                          ) : (
+                            <>
+                              {/* OpenRouter Provider Selection for grouped models */}
+                              {Object.keys(openRouterGroupedModels || {}).length > 0 && (
+                                <div className="mb-2">
+                                  <Select
+                                    onValueChange={(value) => {
+                                      setSelectedOpenRouterProvider(value);
+                                    }}
+                                    value={selectedOpenRouterProvider}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger className="bg-muted/20">
+                                        <SelectValue placeholder="Select a provider" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {Object.keys(openRouterGroupedModels).map((provider) => (
+                                        <SelectItem key={provider} value={provider}>
+                                          <div className="flex items-center">
+                                            <ServerIcon className="mr-2 h-4 w-4 text-blue-500" />
+                                            {provider}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+                              
+                              {/* OpenRouter Model Selection */}
+                              <Select
+                                onValueChange={(value) => {
+                                  field.onChange(value);
+                                  
+                                  // Automatically update capabilities based on model
+                                  const modelCaps = openRouterModelCapabilities.find(m => m.id === value)?.capabilities || [];
+                                  
+                                  if (modelCaps.length > 0) {
+                                    const newCaps = new Set(selectedCapabilities);
+                                    // Add vision capability if it has it
+                                    if (modelCaps.includes('vision')) {
+                                      newCaps.add('vision');
+                                      form.setValue('isVisionModel', true);
+                                    } else {
+                                      newCaps.delete('vision');
+                                      form.setValue('isVisionModel', false);
+                                    }
+                                    
+                                    // Always add chat for OpenRouter models
+                                    newCaps.add('chat');
+                                    form.setValue('isChatModel', true);
+                                    
+                                    setSelectedCapabilities(newCaps);
+                                  }
+                                  
+                                  // Set model name from OpenRouter if not set
+                                  const modelInfo = openRouterModels.find(m => m.id === value);
+                                  if (modelInfo && !form.getValues('name')) {
+                                    const displayName = modelInfo.name || modelInfo.id.split('/').pop();
+                                    form.setValue('name', displayName);
+                                  }
+                                  
+                                  // Set context length if available
+                                  const contextInfo = openRouterModels.find(m => m.id === value)?.context_length;
+                                  if (contextInfo) {
+                                    form.setValue('contextLength', contextInfo);
+                                  }
+                                }}
+                                value={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a model" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {selectedOpenRouterProvider ? (
+                                    // Grouped models by selected provider
+                                    (openRouterGroupedModels[selectedOpenRouterProvider] || []).map((modelId) => {
+                                      const model = openRouterModels.find(m => m.id === modelId);
+                                      return (
+                                        <SelectItem key={modelId} value={modelId}>
+                                          <div className="flex items-center">
+                                            {model?.name || modelId.split('/').pop()}
+                                            {model?.capabilities?.includes('vision') && (
+                                              <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-1 rounded">Vision</span>
+                                            )}
+                                          </div>
+                                        </SelectItem>
+                                      );
+                                    })
+                                  ) : (
+                                    // All models
+                                    openRouterModels.map((model) => (
+                                      <SelectItem key={model.id} value={model.id}>
+                                        <div className="flex items-center">
+                                          {model.name || model.id.split('/').pop()}
+                                          {model.capabilities?.includes('vision') && (
+                                            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-1 rounded">Vision</span>
+                                          )}
+                                        </div>
+                                      </SelectItem>
+                                    ))
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <FormControl>
+                          <Input placeholder="e.g., gpt-4o" {...field} />
+                        </FormControl>
+                      )}
                       <FormDescription>
-                        The internal identifier used by the provider
+                        {isOpenRouterProvider 
+                          ? "Select a model from OpenRouter's collection of AI models" 
+                          : "The internal identifier used by the provider"}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

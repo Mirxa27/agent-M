@@ -1860,25 +1860,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Import when needed to avoid startup errors if OpenRouter isn't configured
       const { default: openrouterService } = await import("./services/openrouter-service");
-      const models = await openrouterService.getAvailableModels();
       
-      // Group models by provider for easier selection in UI
-      const groupedModels = models.reduce((acc, modelId) => {
-        // Extract provider from model ID (e.g., "openai/gpt-4o" -> "openai")
-        const provider = modelId.split('/')[0];
-        if (!acc[provider]) {
-          acc[provider] = [];
-        }
-        acc[provider].push(modelId);
-        return acc;
-      }, {} as Record<string, string[]>);
+      // Get detailed model information
+      const modelData = await openrouterService.getDetailedModels();
       
-      return res.json({ 
-        models, 
-        groupedModels,
-        // Return static model capabilities info for reference
-        modelCapabilities: openrouterService.openRouterModels
-      });
+      return res.json(modelData);
     } catch (error: any) {
       console.error("Error fetching OpenRouter models:", error);
       return res.status(500).json({

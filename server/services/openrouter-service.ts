@@ -158,8 +158,8 @@ export async function analyzeImage(
   }
 }
 
-// Get available models from OpenRouter
-export async function getAvailableModels(): Promise<string[]> {
+// Get detailed model information from OpenRouter
+export async function getDetailedModels() {
   try {
     const response = await fetch('https://openrouter.ai/api/v1/models', {
       headers: {
@@ -174,11 +174,103 @@ export async function getAvailableModels(): Promise<string[]> {
     }
     
     const data = await response.json();
-    return data.data.map((model: any) => model.id);
+    
+    // Process the model data
+    const models = data.data.map((model: any) => ({
+      id: model.id,
+      name: model.name || model.id.split('/').pop(),
+      context_length: model.context_length || 4096,
+      capabilities: getModelCapabilities(model),
+      pricing: model.pricing || { prompt: 0, completion: 0 },
+      provider: model.id.split('/')[0]
+    }));
+    
+    // Group models by provider
+    const groupedModels: Record<string, string[]> = {};
+    models.forEach((model: any) => {
+      const provider = model.provider;
+      if (!groupedModels[provider]) {
+        groupedModels[provider] = [];
+      }
+      groupedModels[provider].push(model.id);
+    });
+    
+    // Extract capabilities mapping for each model
+    const modelCapabilities = models.map((model: any) => ({
+      id: model.id,
+      capabilities: model.capabilities
+    }));
+    
+    return {
+      models,
+      groupedModels,
+      modelCapabilities
+    };
   } catch (error) {
     console.error('Error fetching models from OpenRouter:', error);
-    return openRouterModels.map(model => model.id); // Fall back to static list
+    
+    // Fall back to static list
+    const fallbackModels = openRouterModels.map(model => ({
+      id: model.id,
+      name: model.id.split('/').pop(),
+      context_length: 4096,
+      capabilities: model.capabilities,
+      provider: model.provider
+    }));
+    
+    // Group models by provider using the static list
+    const fallbackGrouped: Record<string, string[]> = {};
+    openRouterModels.forEach(model => {
+      const provider = model.provider;
+      if (!fallbackGrouped[provider]) {
+        fallbackGrouped[provider] = [];
+      }
+      fallbackGrouped[provider].push(model.id);
+    });
+    
+    return {
+      models: fallbackModels,
+      groupedModels: fallbackGrouped,
+      modelCapabilities: openRouterModels.map(model => ({
+        id: model.id,
+        capabilities: model.capabilities
+      }))
+    };
   }
+}
+
+// Get available model IDs from OpenRouter (simplified version for backward compatibility)
+export async function getAvailableModels(): Promise<string[]> {
+  try {
+    const { models } = await getDetailedModels();
+    return models.map(model => model.id);
+  } catch (error) {
+    console.error('Error in getAvailableModels:', error);
+    return openRouterModels.map(model => model.id);
+  }
+}
+
+// Helper function to determine model capabilities from OpenRouter API data
+function getModelCapabilities(model: any): string[] {
+  const capabilities: string[] = ['chat']; // All models support chat
+  
+  // Check for vision capability
+  if (model.multimodal) {
+    capabilities.push('vision');
+  }
+  
+  // Check for size/performance characteristics
+  if (model.context_length >= 100000) {
+    capabilities.push('long-context');
+  }
+  
+  if (model.id.includes('opus') || model.id.includes('large') || model.id.includes('70b')) {
+    capabilities.push('reasoning');
+  } else if (model.id.includes('haiku') || model.id.includes('flash') || model.id.includes('small')) {
+    capabilities.push('fast');
+  }
+  
+  return capabilities;
 }
 
 export default {
@@ -186,6 +278,7 @@ export default {
   generateImage,
   analyzeImage,
   getAvailableModels,
+  getDetailedModels,
   isOpenRouterConfigured,
   openRouterModels,
 };
