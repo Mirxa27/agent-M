@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AgentIcon from "@/components/agents/agent-icon";
+import AgentCreationProgress, { CreationStage } from "@/components/agents/agent-creation-progress";
 
 // Type for Agent Template
 interface AgentTemplate {
@@ -44,6 +45,8 @@ export default function CreateAgentPage() {
   const queryClient = useQueryClient();
   const [selectedTemplate, setSelectedTemplate] = useState<AgentTemplate | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [creationStage, setCreationStage] = useState<CreationStage>("selecting");
+  const [creationError, setCreationError] = useState<string | null>(null);
 
   // Fetch agent templates
   const {
@@ -94,15 +97,20 @@ export default function CreateAgentPage() {
         title: "Agent created successfully",
         description: "Your new agent has been created from the template.",
       });
-      // Navigate to the agent page
-      navigate(`/agents/${data.id}`);
+      // Complete the flow and then navigate
+      setTimeout(() => {
+        navigate(`/agents/${data.id}`);
+      }, 1000);
     },
     onError: (error) => {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
       toast({
         title: "Failed to create agent",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
+      setCreationError(errorMessage);
+      setCreationStage("connecting"); // Keep stage at connecting to show where it failed
       setIsCreating(false);
     },
   });
@@ -112,12 +120,48 @@ export default function CreateAgentPage() {
     setSelectedTemplate(template);
   };
 
+  // Effect to simulate the agent creation stages
+  useEffect(() => {
+    if (!isCreating) return;
+    
+    const simulateCreationProcess = async () => {
+      try {
+        // Simulate the configuring stage
+        setCreationStage("configuring");
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Simulate the initializing stage
+        setCreationStage("initializing");
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Simulate connecting to AI services
+        setCreationStage("connecting");
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Actual API call to create the agent
+        if (selectedTemplate) {
+          createAgentMutation.mutate(selectedTemplate);
+        }
+        
+        // Final completion stage
+        setCreationStage("completed");
+      } catch (error) {
+        // Handle any errors during the simulation
+        setCreationError(error instanceof Error ? error.message : "An error occurred during agent creation");
+        setIsCreating(false);
+      }
+    };
+    
+    simulateCreationProcess();
+  }, [isCreating, selectedTemplate]);
+
   // Handle creating an agent from the selected template
-  const handleCreateAgent = async () => {
+  const handleCreateAgent = () => {
     if (!selectedTemplate) return;
     
+    setCreationError(null);
     setIsCreating(true);
-    createAgentMutation.mutate(selectedTemplate);
+    // The staging process will now be handled by the effect
   };
 
   // Group templates by type
@@ -318,22 +362,37 @@ export default function CreateAgentPage() {
         </Alert>
       )}
 
-      <div className="flex justify-end mt-4">
-        <Button
-          onClick={handleCreateAgent}
-          disabled={!selectedTemplate || isCreating}
-          className="w-full md:w-auto"
-        >
-          {isCreating ? (
-            <>Creating Agent...</>
-          ) : (
-            <>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Create Agent from Template
-            </>
-          )}
-        </Button>
-      </div>
+      {isCreating ? (
+        <div className="mt-8 space-y-6">
+          <h3 className="text-lg font-medium">Creating Your Agent</h3>
+          <AgentCreationProgress 
+            currentStage={creationStage}
+            isError={!!creationError}
+            errorMessage={creationError || undefined}
+          />
+          
+          <div className="flex justify-end mt-6">
+            <Button
+              variant="outline"
+              disabled={creationStage !== "completed" && !creationError}
+              onClick={() => navigate("/agents")}
+            >
+              {creationStage === "completed" ? "View All Agents" : "Cancel"}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-end mt-4">
+          <Button
+            onClick={handleCreateAgent}
+            disabled={!selectedTemplate || isCreating}
+            className="w-full md:w-auto"
+          >
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Create Agent from Template
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
