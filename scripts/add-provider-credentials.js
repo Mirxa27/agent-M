@@ -1,356 +1,415 @@
 /**
  * Script to add AI provider credentials for the agents
  */
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import dotenv from 'dotenv';
-import ws from 'ws';
-import crypto from 'crypto';
 
-dotenv.config();
+const { db } = require('../server/db');
+const { aiProviders, aiModels } = require('../shared/schema');
+const { eq } = require('drizzle-orm');
+const crypto = require('crypto');
 
-// Required for Neon serverless connections
-neonConfig.webSocketConstructor = ws;
-
-// Connect to the database
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
-
-// Generate a secure encryption key for credentials
-const ENCRYPTION_KEY = process.env.ENCRYPTION_SECRET || 'default-encryption-key-for-development-only';
-
-// Simple encryption function for API keys (in production, use stronger encryption)
 function encryptData(text) {
   const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY.padEnd(32).slice(0, 32)), iv);
+  const cipher = crypto.createCipheriv(
+    'aes-256-cbc',
+    Buffer.from(process.env.DATABASE_URL.slice(0, 32).padEnd(32)),
+    iv
+  );
   let encrypted = cipher.update(text);
   encrypted = Buffer.concat([encrypted, cipher.final()]);
   return iv.toString('hex') + ':' + encrypted.toString('hex');
 }
 
-// AI Provider configurations to add
-const providers = [
-  {
-    name: "OpenAI API Integration",
-    provider: "openai",
-    description: "Integration with OpenAI API for ChatGPT, DALL-E, and other services",
-    baseUrl: "https://api.openai.com/v1",
-    authType: "api_key",
-    isActive: true
-  },
-  {
-    name: "Anthropic API Integration",
-    provider: "anthropic",
-    description: "Integration with Anthropic Claude API for advanced reasoning",
-    baseUrl: "https://api.anthropic.com",
-    authType: "api_key",
-    isActive: true
-  },
-  {
-    name: "xAI Grok Integration",
-    provider: "xai",
-    description: "Integration with xAI's Grok API for creative conversations",
-    baseUrl: "https://api.x.ai/v1",
-    authType: "api_key",
-    isActive: true
-  },
-  {
-    name: "Perplexity API Integration",
-    provider: "perplexity",
-    description: "Integration with Perplexity API for research-focused responses",
-    baseUrl: "https://api.perplexity.ai",
-    authType: "api_key",
-    isActive: true
-  }
-];
-
-// Credentials for the admin user to use with the providers
-const credentials = [
-  {
-    userId: 2, // Admin user ID
-    name: "OpenAI API Key",
-    type: "api_key",
-    service: "openai",
-    authMethod: "api_key",
-    // The actual API key value is stored encrypted and uses the environment variable
-    apiKeyEnvVar: "OPENAI_API_KEY"
-  },
-  {
-    userId: 2, // Admin user ID
-    name: "Anthropic API Key",
-    type: "api_key",
-    service: "anthropic",
-    authMethod: "api_key",
-    apiKeyEnvVar: "ANTHROPIC_API_KEY"
-  },
-  {
-    userId: 2, // Admin user ID
-    name: "xAI API Key",
-    type: "api_key",
-    service: "xai",
-    authMethod: "api_key",
-    apiKeyEnvVar: "XAI_API_KEY"
-  },
-  {
-    userId: 2, // Admin user ID
-    name: "Perplexity API Key",
-    type: "api_key",
-    service: "perplexity",
-    authMethod: "api_key",
-    apiKeyEnvVar: "PERPLEXITY_API_KEY"
-  }
-];
-
-// Models for the providers
-const models = [
-  {
-    providerId: 1, // Will be set dynamically
-    name: "GPT-4o",
-    modelId: "gpt-4o",
-    description: "OpenAI's most advanced model, blending intelligence across text, vision, and audio",
-    capabilities: ["text", "image", "audio"],
-    contextWindow: 128000,
-    maxOutputTokens: 4096,
-    costInputPerK: 0.005,
-    costOutputPerK: 0.015,
-    isActive: true,
-    isDefault: true
-  },
-  {
-    providerId: 2, // Will be set dynamically
-    name: "Claude 3.7 Sonnet",
-    modelId: "claude-3-7-sonnet-20250219",
-    description: "Anthropic's advanced model with exceptional reasoning and safety features",
-    capabilities: ["text", "image"],
-    contextWindow: 200000,
-    maxOutputTokens: 4096,
-    costInputPerK: 0.003,
-    costOutputPerK: 0.015,
-    isActive: true,
-    isDefault: true
-  },
-  {
-    providerId: 3, // Will be set dynamically
-    name: "Grok-2-1212",
-    modelId: "grok-2-1212",
-    description: "xAI's conversational model with web search capabilities",
-    capabilities: ["text"],
-    contextWindow: 131072,
-    maxOutputTokens: 4096,
-    costInputPerK: 0.005,
-    costOutputPerK: 0.015,
-    isActive: true,
-    isDefault: true
-  },
-  {
-    providerId: 4, // Will be set dynamically
-    name: "Llama-3.1-Sonar-Small",
-    modelId: "llama-3.1-sonar-small-128k-online",
-    description: "Perplexity's research-focused model with real-time web search",
-    capabilities: ["text"],
-    contextWindow: 128000,
-    maxOutputTokens: 4096,
-    costInputPerK: 0.0015,
-    costOutputPerK: 0.006,
-    isActive: true,
-    isDefault: true
-  }
-];
-
 async function addProvidersAndCredentials() {
-  console.log('Setting up AI providers and credentials...');
+  console.log('Adding AI providers and credentials to the database...');
 
-  try {
-    // Current timestamp
-    const now = new Date();
+  // Check if providers already exist
+  const existingProviders = await db.select().from(aiProviders);
+  const existingProviderNames = existingProviders.map(provider => provider.name);
 
-    // Add or update providers
-    for (const provider of providers) {
-      // Check if provider already exists
-      const existingProvider = await pool.query(
-        'SELECT id FROM ai_providers WHERE provider = $1',
-        [provider.provider]
-      );
+  console.log('Existing providers:', existingProviderNames);
 
-      let providerId;
-
-      if (existingProvider.rows.length > 0) {
-        providerId = existingProvider.rows[0].id;
-        console.log(`Provider "${provider.name}" already exists (ID: ${providerId}), updating...`);
-
-        // Update existing provider
-        await pool.query(
-          `UPDATE ai_providers 
-           SET name = $1, description = $2, base_url = $3, auth_type = $4, is_active = $5, updated_at = $6
-           WHERE id = $7`,
-          [
-            provider.name,
-            provider.description,
-            provider.baseUrl,
-            provider.authType,
-            provider.isActive,
-            now,
-            providerId
-          ]
-        );
-      } else {
-        // Insert new provider
-        const result = await pool.query(
-          `INSERT INTO ai_providers (
-            name, provider, description, base_url, auth_type, is_active, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-          [
-            provider.name,
-            provider.provider,
-            provider.description,
-            provider.baseUrl,
-            provider.authType,
-            provider.isActive,
-            now,
-            now
-          ]
-        );
-
-        providerId = result.rows[0].id;
-        console.log(`Added provider "${provider.name}" with ID ${providerId}`);
+  // Define AI providers
+  const providers = [
+    {
+      name: "OpenAI",
+      description: "OpenAI's advanced AI models for various tasks",
+      apiEndpoint: "https://api.openai.com/v1",
+      authMethod: "apiKey",
+      isActive: true,
+      config: {
+        apiKeyHeader: "Authorization",
+        apiKeyPrefix: "Bearer "
       }
-
-      // Store providerId for models
-      const index = providers.findIndex(p => p.provider === provider.provider);
-      if (index !== -1) {
-        models[index].providerId = providerId;
+    },
+    {
+      name: "Anthropic",
+      description: "Anthropic's Claude models for conversational AI",
+      apiEndpoint: "https://api.anthropic.com/v1",
+      authMethod: "apiKey",
+      isActive: true,
+      config: {
+        apiKeyHeader: "x-api-key",
+        apiKeyPrefix: ""
+      }
+    },
+    {
+      name: "Perplexity",
+      description: "Perplexity AI for real-time research and information retrieval",
+      apiEndpoint: "https://api.perplexity.ai",
+      authMethod: "apiKey",
+      isActive: true,
+      config: {
+        apiKeyHeader: "Authorization",
+        apiKeyPrefix: "Bearer "
+      }
+    },
+    {
+      name: "xAI",
+      description: "xAI's Grok models for analytical and technical tasks",
+      apiEndpoint: "https://api.x.ai/v1",
+      authMethod: "apiKey",
+      isActive: true,
+      config: {
+        apiKeyHeader: "Authorization",
+        apiKeyPrefix: "Bearer "
       }
     }
+  ];
 
-    // Add credentials
-    for (const credential of credentials) {
-      // Get API key from environment variable
-      const apiKey = process.env[credential.apiKeyEnvVar];
-      
-      if (!apiKey) {
-        console.log(`Warning: Environment variable ${credential.apiKeyEnvVar} not found. Using placeholder for "${credential.name}"`);
-        continue;
+  // Insert providers that don't already exist
+  for (const provider of providers) {
+    if (!existingProviderNames.includes(provider.name)) {
+      try {
+        const [insertedProvider] = await db.insert(aiProviders).values(provider).returning();
+        console.log(`Added provider: ${provider.name}`);
+      } catch (error) {
+        console.error(`Error adding provider ${provider.name}:`, error);
       }
-      
-      // Encrypt the API key
-      const encryptedData = encryptData(apiKey);
-
-      // Check if credential already exists
-      const existingCredential = await pool.query(
-        'SELECT id FROM credentials WHERE user_id = $1 AND service = $2',
-        [credential.userId, credential.service]
-      );
-
-      if (existingCredential.rows.length > 0) {
-        const credentialId = existingCredential.rows[0].id;
-        console.log(`Credential "${credential.name}" already exists (ID: ${credentialId}), updating...`);
-
-        // Update existing credential
-        await pool.query(
-          `UPDATE credentials 
-           SET name = $1, type = $2, data = $3, auth_method = $4, updated_at = $5
-           WHERE id = $6`,
-          [
-            credential.name,
-            credential.type,
-            encryptedData,
-            credential.authMethod,
-            now,
-            credentialId
-          ]
-        );
-      } else {
-        // Insert new credential
-        const result = await pool.query(
-          `INSERT INTO credentials (
-            user_id, name, type, data, auth_method, service, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-          [
-            credential.userId,
-            credential.name,
-            credential.type,
-            encryptedData,
-            credential.authMethod,
-            credential.service,
-            now,
-            now
-          ]
-        );
-
-        console.log(`Added credential "${credential.name}" with ID ${result.rows[0].id}`);
+    } else {
+      // Update existing provider
+      const existingProvider = existingProviders.find(p => p.name === provider.name);
+      try {
+        const [updatedProvider] = await db
+          .update(aiProviders)
+          .set({
+            description: provider.description,
+            apiEndpoint: provider.apiEndpoint,
+            authMethod: provider.authMethod,
+            isActive: provider.isActive,
+            config: provider.config
+          })
+          .where(eq(aiProviders.id, existingProvider.id))
+          .returning();
+        console.log(`Updated provider: ${provider.name}`);
+      } catch (error) {
+        console.error(`Error updating provider ${provider.name}:`, error);
       }
     }
+  }
 
-    // Add models
-    for (const model of models) {
-      // Check if model already exists
-      const existingModel = await pool.query(
-        'SELECT id FROM ai_models WHERE provider_id = $1 AND model_id = $2',
-        [model.providerId, model.modelId]
-      );
+  // Add models for each provider
+  await addModels();
 
-      if (existingModel.rows.length > 0) {
-        const modelId = existingModel.rows[0].id;
-        console.log(`Model "${model.name}" already exists (ID: ${modelId}), updating...`);
+  // Add credentials if environment variables are available
+  await addCredentials();
 
-        // Update existing model
-        await pool.query(
-          `UPDATE ai_models 
-           SET name = $1, description = $2, capabilities = $3, context_window = $4,
-               max_output_tokens = $5, cost_input_per_k = $6, cost_output_per_k = $7,
-               is_active = $8, is_default = $9, updated_at = $10
-           WHERE id = $11`,
-          [
-            model.name,
-            model.description,
-            JSON.stringify(model.capabilities),
-            model.contextWindow,
-            model.maxOutputTokens,
-            model.costInputPerK,
-            model.costOutputPerK,
-            model.isActive,
-            model.isDefault,
-            now,
-            modelId
-          ]
-        );
-      } else {
-        // Insert new model
-        const result = await pool.query(
-          `INSERT INTO ai_models (
-            provider_id, name, model_id, description, capabilities, context_window,
-            max_output_tokens, cost_input_per_k, cost_output_per_k, is_active, is_default,
-            created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
-          [
-            model.providerId,
-            model.name,
-            model.modelId,
-            model.description,
-            JSON.stringify(model.capabilities),
-            model.contextWindow,
-            model.maxOutputTokens,
-            model.costInputPerK,
-            model.costOutputPerK,
-            model.isActive,
-            model.isDefault,
-            now,
-            now
-          ]
-        );
+  console.log('All providers, models, and credentials have been added or updated.');
+}
 
-        console.log(`Added model "${model.name}" with ID ${result.rows[0].id}`);
+async function addModels() {
+  // Get providers
+  const providers = await db.select().from(aiProviders);
+  const existingModels = await db.select().from(aiModels);
+  const existingModelNames = existingModels.map(model => model.name);
+
+  // Add OpenAI models
+  const openaiProvider = providers.find(p => p.name === "OpenAI");
+  if (openaiProvider) {
+    const openaiModels = [
+      {
+        providerId: openaiProvider.id,
+        name: "gpt-4o",
+        displayName: "GPT-4o",
+        description: "OpenAI's most advanced multimodal model",
+        capabilities: ["text", "vision", "reasoning", "code"],
+        contextWindow: 128000,
+        isActive: true
+      },
+      {
+        providerId: openaiProvider.id,
+        name: "gpt-4-turbo",
+        displayName: "GPT-4 Turbo",
+        description: "Powerful model with good performance/cost balance",
+        capabilities: ["text", "reasoning", "code"],
+        contextWindow: 128000,
+        isActive: true
+      },
+      {
+        providerId: openaiProvider.id,
+        name: "gpt-4o-mini",
+        displayName: "GPT-4o Mini",
+        description: "Smaller, cost-effective version of GPT-4o",
+        capabilities: ["text", "vision", "reasoning", "code"],
+        contextWindow: 128000,
+        isActive: true
+      }
+    ];
+
+    for (const model of openaiModels) {
+      if (!existingModelNames.includes(model.name)) {
+        try {
+          await db.insert(aiModels).values(model);
+          console.log(`Added model: ${model.name}`);
+        } catch (error) {
+          console.error(`Error adding model ${model.name}:`, error);
+        }
       }
     }
+  }
 
-    console.log('AI providers and credentials setup completed successfully.');
-  } catch (error) {
-    console.error('Error setting up AI providers and credentials:', error);
-  } finally {
-    // Close the database connection
-    await pool.end();
+  // Add Anthropic models
+  const anthropicProvider = providers.find(p => p.name === "Anthropic");
+  if (anthropicProvider) {
+    const anthropicModels = [
+      {
+        providerId: anthropicProvider.id,
+        name: "claude-3-7-sonnet-20250219",
+        displayName: "Claude 3.7 Sonnet",
+        description: "Anthropic's newest and most capable model",
+        capabilities: ["text", "vision", "reasoning"],
+        contextWindow: 200000,
+        isActive: true
+      },
+      {
+        providerId: anthropicProvider.id,
+        name: "claude-3-5-sonnet",
+        displayName: "Claude 3.5 Sonnet",
+        description: "Balanced performance and cost",
+        capabilities: ["text", "vision", "reasoning"],
+        contextWindow: 200000,
+        isActive: true
+      },
+      {
+        providerId: anthropicProvider.id,
+        name: "claude-3-haiku",
+        displayName: "Claude 3 Haiku",
+        description: "Fast and cost-effective",
+        capabilities: ["text", "vision", "reasoning"],
+        contextWindow: 200000,
+        isActive: true
+      }
+    ];
+
+    for (const model of anthropicModels) {
+      if (!existingModelNames.includes(model.name)) {
+        try {
+          await db.insert(aiModels).values(model);
+          console.log(`Added model: ${model.name}`);
+        } catch (error) {
+          console.error(`Error adding model ${model.name}:`, error);
+        }
+      }
+    }
+  }
+
+  // Add Perplexity models
+  const perplexityProvider = providers.find(p => p.name === "Perplexity");
+  if (perplexityProvider) {
+    const perplexityModels = [
+      {
+        providerId: perplexityProvider.id,
+        name: "llama-3.1-sonar-small-128k-online",
+        displayName: "Llama 3.1 Sonar Small (Online)",
+        description: "Fast model with online search capabilities",
+        capabilities: ["text", "search", "citations"],
+        contextWindow: 128000,
+        isActive: true
+      },
+      {
+        providerId: perplexityProvider.id,
+        name: "llama-3.1-sonar-large-128k-online",
+        displayName: "Llama 3.1 Sonar Large (Online)",
+        description: "Large model with enhanced online search capabilities",
+        capabilities: ["text", "search", "citations"],
+        contextWindow: 128000,
+        isActive: true
+      }
+    ];
+
+    for (const model of perplexityModels) {
+      if (!existingModelNames.includes(model.name)) {
+        try {
+          await db.insert(aiModels).values(model);
+          console.log(`Added model: ${model.name}`);
+        } catch (error) {
+          console.error(`Error adding model ${model.name}:`, error);
+        }
+      }
+    }
+  }
+
+  // Add xAI models
+  const xaiProvider = providers.find(p => p.name === "xAI");
+  if (xaiProvider) {
+    const xaiModels = [
+      {
+        providerId: xaiProvider.id,
+        name: "grok-2-1212",
+        displayName: "Grok 2",
+        description: "xAI's powerful text model",
+        capabilities: ["text", "reasoning", "analysis"],
+        contextWindow: 131072,
+        isActive: true
+      },
+      {
+        providerId: xaiProvider.id,
+        name: "grok-2-vision-1212",
+        displayName: "Grok 2 Vision",
+        description: "xAI's multimodal model with vision capabilities",
+        capabilities: ["text", "vision", "reasoning", "analysis"],
+        contextWindow: 8192,
+        isActive: true
+      }
+    ];
+
+    for (const model of xaiModels) {
+      if (!existingModelNames.includes(model.name)) {
+        try {
+          await db.insert(aiModels).values(model);
+          console.log(`Added model: ${model.name}`);
+        } catch (error) {
+          console.error(`Error adding model ${model.name}:`, error);
+        }
+      }
+    }
   }
 }
 
-// Run the function
-addProvidersAndCredentials();
+async function addCredentials() {
+  // Add system credentials for providers using environment variables
+  // System user ID is typically 1, make sure it exists
+  const [adminUser] = await db.select().from('users').where(eq('users.role', 'admin')).limit(1);
+  
+  if (!adminUser) {
+    console.warn('No admin user found to attach credentials to');
+    return;
+  }
+  
+  const userId = adminUser.id;
+  console.log(`Using admin user ID ${userId} for system credentials`);
+  
+  // OpenAI
+  if (process.env.OPENAI_API_KEY) {
+    const [openaiProvider] = await db.select().from(aiProviders).where(eq(aiProviders.name, "OpenAI"));
+    if (openaiProvider) {
+      const encryptedKey = encryptData(process.env.OPENAI_API_KEY);
+      await addOrUpdateCredential({
+        userId,
+        name: "OpenAI System Credential",
+        type: "apiKey",
+        service: "openai",
+        data: encryptedKey,
+        authMethod: "apiKey"
+      });
+    }
+  }
+  
+  // Anthropic
+  if (process.env.ANTHROPIC_API_KEY) {
+    const [anthropicProvider] = await db.select().from(aiProviders).where(eq(aiProviders.name, "Anthropic"));
+    if (anthropicProvider) {
+      const encryptedKey = encryptData(process.env.ANTHROPIC_API_KEY);
+      await addOrUpdateCredential({
+        userId,
+        name: "Anthropic System Credential",
+        type: "apiKey",
+        service: "anthropic",
+        data: encryptedKey,
+        authMethod: "apiKey"
+      });
+    }
+  }
+  
+  // Perplexity
+  if (process.env.PERPLEXITY_API_KEY) {
+    const [perplexityProvider] = await db.select().from(aiProviders).where(eq(aiProviders.name, "Perplexity"));
+    if (perplexityProvider) {
+      const encryptedKey = encryptData(process.env.PERPLEXITY_API_KEY);
+      await addOrUpdateCredential({
+        userId,
+        name: "Perplexity System Credential",
+        type: "apiKey",
+        service: "perplexity",
+        data: encryptedKey,
+        authMethod: "apiKey"
+      });
+    }
+  }
+  
+  // xAI
+  if (process.env.XAI_API_KEY) {
+    const [xaiProvider] = await db.select().from(aiProviders).where(eq(aiProviders.name, "xAI"));
+    if (xaiProvider) {
+      const encryptedKey = encryptData(process.env.XAI_API_KEY);
+      await addOrUpdateCredential({
+        userId,
+        name: "xAI System Credential",
+        type: "apiKey",
+        service: "xai",
+        data: encryptedKey,
+        authMethod: "apiKey"
+      });
+    }
+  }
+}
+
+async function addOrUpdateCredential(credential) {
+  try {
+    // Check if credential already exists for this user and service
+    const [existingCredential] = await db
+      .select()
+      .from('credentials')
+      .where(eq('credentials.userId', credential.userId))
+      .where(eq('credentials.service', credential.service));
+    
+    if (existingCredential) {
+      // Update existing credential
+      await db
+        .update('credentials')
+        .set({
+          name: credential.name,
+          type: credential.type,
+          data: credential.data,
+          authMethod: credential.authMethod,
+          updatedAt: new Date()
+        })
+        .where(eq('credentials.id', existingCredential.id));
+      console.log(`Updated credential: ${credential.name}`);
+    } else {
+      // Insert new credential
+      await db.insert('credentials').values({
+        ...credential,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      console.log(`Added credential: ${credential.name}`);
+    }
+  } catch (error) {
+    console.error(`Error adding/updating credential ${credential.name}:`, error);
+  }
+}
+
+// Run the script if executed directly
+if (require.main === module) {
+  addProvidersAndCredentials()
+    .then(() => {
+      console.log('Script completed successfully.');
+      process.exit(0);
+    })
+    .catch(error => {
+      console.error('Script failed:', error);
+      process.exit(1);
+    });
+}
+
+module.exports = { addProvidersAndCredentials };
