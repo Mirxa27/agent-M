@@ -1126,7 +1126,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const message = await storage.createMessage(validatedData.data);
+      
+      // If the message is from the user, process it with the AI agent
+      if (validatedData.data.role === 'user') {
+        // Process the task in the background
+        setTimeout(async () => {
+          try {
+            const { processAgentTask } = require('./services/ai-service');
+            await processAgentTask(taskId, storage);
+          } catch (error) {
+            console.error('Error processing agent task:', error);
+          }
+        }, 0);
+      }
+      
       res.status(201).json(message);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Endpoint to explicitly execute a task with an agent
+  app.post("/api/tasks/:taskId/execute", requireAuth, async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const task = await storage.getTask(taskId);
+
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+
+      // Check ownership
+      if (task.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
+      // Update task status to pending
+      await storage.updateTask(taskId, { status: "pending" });
+      
+      // Execute the task with the AI agent
+      const { processAgentTask } = require('./services/ai-service');
+      
+      // Process in the background
+      setTimeout(async () => {
+        try {
+          await processAgentTask(taskId, storage);
+        } catch (error) {
+          console.error('Error executing agent task:', error);
+          await storage.updateTask(taskId, { 
+            status: "failed",
+            result: JSON.stringify({ error: error.message })
+          });
+        }
+      }, 0);
+      
+      res.json({ message: "Task execution initiated" });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
