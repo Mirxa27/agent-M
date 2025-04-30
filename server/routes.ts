@@ -1924,6 +1924,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+
 
   app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
     try {
@@ -2018,6 +2020,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: "User deleted successfully" });
     } catch (error: any) {
       console.error("Error deleting user:", error);
+      
+      // Handle the specific error for last admin user
+      if (error.message === "Cannot delete the last admin user") {
+        return res.status(400).json({ error: error.message });
+      }
+      
       res.status(500).json({ error: error.message });
     }
   });
