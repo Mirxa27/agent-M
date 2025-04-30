@@ -365,14 +365,15 @@ async function registerAgentTemplates() {
         updatedAt: new Date(),
         tools: [
           allTools.find(t => t.name === 'OpenAI Chat')?.id,
-          allTools.find(t => t.name === 'Perplexity AI')?.id,
+          allTools.find(t => t.name === 'OpenRouter AI')?.id,
           allTools.find(t => t.name === 'Grok by xAI')?.id,
           allTools.find(t => t.name === 'Data Analyzer')?.id
         ].filter(Boolean),
         config: {
           instructions: 'You are a data analysis expert. Analyze datasets, identify trends, and provide actionable insights with visualizations.',
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'anthropic/claude-3-5-sonnet',
           temperature: 0.2,
+          provider: 'openrouter',
           capabilities: ['data analysis', 'statistical modeling', 'trend identification', 'visualization recommendation']
         }
       }

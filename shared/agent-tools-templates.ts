@@ -707,6 +707,26 @@ export const XAI_TEMPLATE: AgentToolTemplate = {
 };
 
 /**
+ * Template for OpenRouter Integration
+ */
+export const OPENROUTER_TEMPLATE: AgentToolTemplate = {
+  name: "OpenRouter AI",
+  description:
+    "Access hundreds of AI models from various providers through a single unified API",
+  category: TOOL_CATEGORIES.CONTENT_GENERATION,
+  type: "openrouter",
+  icon: "Network",
+  config: {
+    model: "openai/gpt-4o",
+    temperature: 0.7,
+    maxTokens: 2000,
+    supportedProviders: ["openai", "anthropic", "mistral", "meta", "google"],
+    systemPrompt:
+      "You are a helpful AI assistant with access to a wide variety of models from different providers.",
+  },
+};
+
+/**
  * Template for Audio Generation
  */
 export const AUDIO_GENERATION_TEMPLATE: AgentToolTemplate = {
@@ -922,6 +942,7 @@ export const TOOL_TEMPLATES: Record<string, AgentToolTemplate> = {
   GEMINI: GEMINI_TEMPLATE,
   PERPLEXITY: PERPLEXITY_TEMPLATE,
   XAI: XAI_TEMPLATE,
+  OPENROUTER: OPENROUTER_TEMPLATE,
 
   // Content Generation
   IMAGE_EDITOR: IMAGE_EDITOR_TEMPLATE,
