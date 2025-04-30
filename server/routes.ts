@@ -8,6 +8,7 @@ import { eq, count, and } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { processAgentTask } from "./services/ai-service";
 
 // Configure multer for file uploads
 const storage_engine = multer.diskStorage({
@@ -1306,32 +1307,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check ownership
-      if (task.userId !== req.user.id) {
+      if (task.userId !== req.user!.id) {
         return res.status(403).json({ error: "Not authorized" });
       }
       
       // Update task status to pending
       await storage.updateTask(taskId, { status: "pending" });
       
-      // Execute the task with the AI agent
-      const { processAgentTask } = require('./services/ai-service');
-      
       // Process in the background
       setTimeout(async () => {
         try {
           await processAgentTask(taskId, storage);
         } catch (error) {
-          console.error('Error executing agent task:', error);
+          console.error('Error executing agent task:', error instanceof Error ? error.message : String(error));
           await storage.updateTask(taskId, { 
             status: "failed",
-            result: JSON.stringify({ error: error.message })
+            result: JSON.stringify({ 
+              error: error instanceof Error ? error.message : "Unknown error occurred"
+            })
           });
         }
       }, 0);
       
-      res.json({ message: "Task execution initiated" });
+      res.json({ 
+        message: "Task execution initiated",
+        task: {
+          id: task.id,
+          status: "pending"
+        }
+      });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Unknown error occurred"
+      });
     }
   });
 
