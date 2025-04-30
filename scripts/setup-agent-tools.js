@@ -198,11 +198,12 @@ async function setupAgentTemplates(sessionCookie) {
         icon: 'barChart',
         isTemplate: true,
         isActive: true,
-        tools: ['OpenAI Chat', 'Perplexity AI', 'Grok by xAI', 'Data Analyzer'],
+        tools: ['OpenAI Chat', 'OpenRouter AI', 'Grok by xAI', 'Data Analyzer'],
         config: {
           instructions: 'You are a data analysis expert. Analyze datasets, identify trends, and provide actionable insights with visualizations.',
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'anthropic/claude-3-5-sonnet',
           temperature: 0.2,
+          provider: 'openrouter',
           capabilities: ['data analysis', 'statistical modeling', 'trend identification', 'visualization recommendation']
         }
       }
