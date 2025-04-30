@@ -1622,6 +1622,39 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedUser;
   }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    try {
+      // Check if user exists first
+      const user = await this.getUser(id);
+      if (!user) {
+        return false;
+      }
+      
+      // Don't delete admin users if they're the only admin left
+      if (user.role === "admin") {
+        const admins = await db
+          .select()
+          .from(users)
+          .where(eq(users.role, "admin"));
+          
+        if (admins.length <= 1) {
+          throw new Error("Cannot delete the last admin user");
+        }
+      }
+      
+      // Perform deletion
+      const result = await db
+        .delete(users)
+        .where(eq(users.id, id))
+        .returning({ id: users.id });
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error(`Error deleting user with ID ${id}:`, error);
+      return false;
+    }
+  }
 
   // Helper method to get AI model by name
   async getAiModelByName(modelId: string): Promise<AiModel | undefined> {
