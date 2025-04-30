@@ -1800,6 +1800,7 @@ export class DatabaseStorage implements IStorage {
         ...agent,
         taskCount: 0,
         createdAt: now,
+        updatedAt: now,
       })
       .returning();
     return newAgent;
@@ -2090,7 +2091,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(messages)
       .where(eq(messages.taskId, taskId))
-      .orderBy(asc(messages.createdAt));
+      .orderBy(asc(messages.timestamp));
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
@@ -2099,7 +2100,7 @@ export class DatabaseStorage implements IStorage {
       .insert(messages)
       .values({
         ...message,
-        createdAt: now,
+        timestamp: message.timestamp || now,
       })
       .returning();
     return newMessage;

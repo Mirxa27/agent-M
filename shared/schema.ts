@@ -70,6 +70,7 @@ export const agents = pgTable("agents", {
   type: text("type").notNull(),
   icon: text("icon").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
+  isTemplate: boolean("is_template").default(false).notNull(), // Flag for agent templates
   taskCount: integer("task_count").default(0).notNull(),
   config: jsonb("config").default({}).notNull(),
   tools: jsonb("tools").default([]).notNull(), // List of attached tool IDs
@@ -84,6 +85,7 @@ export const insertAgentSchema = createInsertSchema(agents).pick({
   type: true,
   icon: true,
   isActive: true,
+  isTemplate: true,
   config: true,
   tools: true,
 });
