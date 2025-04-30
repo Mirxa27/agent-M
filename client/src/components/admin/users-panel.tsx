@@ -276,9 +276,9 @@ export default function UsersPanel() {
         updateData.role = values.role;
       }
 
-      // Use plan property instead of planId
-      if (values.plan !== selectedUser.plan) {
-        updateData.plan = values.plan;
+      // Update planId if changed
+      if (values.planId !== selectedUser.planId) {
+        updateData.planId = values.planId;
       }
 
       // Only include password if it's not empty
@@ -318,7 +318,8 @@ export default function UsersPanel() {
       fullName: user.fullName || "",
       role: user.role as "user" | "admin",
       password: "",
-      plan: user.plan,
+      planId: user.planId,
+      isActive: user.isActive,
     });
     setIsEditDialogOpen(true);
   };
@@ -459,10 +460,14 @@ export default function UsersPanel() {
                           )}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
-                          {user.plan || "No Plan"}
+                          {plans.find(p => p.id === user.planId)?.name || "No Plan"}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          <Badge variant="success">Active</Badge>
+                          {user.isActive ? (
+                            <Badge variant="success">Active</Badge>
+                          ) : (
+                            <Badge variant="destructive">Inactive</Badge>
+                          )}
                         </TableCell>
                         <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                           {user.createdAt
@@ -617,13 +622,13 @@ export default function UsersPanel() {
 
                 <FormField
                   control={form.control}
-                  name="plan"
+                  name="planId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Subscription Plan</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        value={field.value}
+                        value={field.value?.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -631,10 +636,12 @@ export default function UsersPanel() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="free">Free Plan</SelectItem>
-                          <SelectItem value="starter">Starter Plan</SelectItem>
-                          <SelectItem value="pro">Pro Plan</SelectItem>
-                          <SelectItem value="enterprise">Enterprise</SelectItem>
+                          <SelectItem value="">No Plan</SelectItem>
+                          {plans.map((plan) => (
+                            <SelectItem key={plan.id} value={plan.id.toString()}>
+                              {plan.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -811,22 +818,20 @@ export default function UsersPanel() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="none">No Plan</SelectItem>
+                          <SelectItem value="">No Plan</SelectItem>
                           {isLoadingPlans ? (
                             <div className="flex items-center justify-center p-2">
                               <Skeleton className="h-5 w-full" />
                             </div>
                           ) : (
-                            plans
-                              .filter((plan) => plan.isActive)
-                              .map((plan) => (
-                                <SelectItem
-                                  key={plan.id}
-                                  value={plan.id.toString()}
-                                >
-                                  {plan.name}
-                                </SelectItem>
-                              ))
+                            plans.map((plan) => (
+                              <SelectItem
+                                key={plan.id}
+                                value={plan.id.toString()}
+                              >
+                                {plan.name}
+                              </SelectItem>
+                            ))
                           )}
                         </SelectContent>
                       </Select>
