@@ -1450,13 +1450,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const providers = await storage.getAllAiProviders();
       
       // Enhance each provider with API key availability
-      const enhancedProviders = providers.map(provider => {
-        const hasApiKey = checkRequiredApiKey(provider.provider);
+      const enhancedProviders = await Promise.all(providers.map(async provider => {
+        // Check env var first
+        let hasApiKey = checkRequiredApiKey(provider.provider);
+        
+        // If not in env vars, check credentials table if user is authenticated
+        if (!hasApiKey && req.user) {
+          try {
+            const credential = await credentialService.getCredentialByService(
+              req.user.id,
+              provider.provider
+            );
+            hasApiKey = !!credential;
+          } catch (credError) {
+            console.error("Error checking credential:", credError);
+          }
+        }
+        
         return {
           ...provider,
           hasApiKey
         };
-      });
+      }));
       
       res.json(enhancedProviders);
     } catch (error) {
@@ -1465,10 +1480,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Check if API key is available for provider
-  app.get("/api/admin/ai-providers/check-key/:provider", requireAdmin, (req, res) => {
+  app.get("/api/admin/ai-providers/check-key/:provider", requireAdmin, async (req, res) => {
     try {
       const { provider } = req.params;
-      const hasApiKey = checkRequiredApiKey(provider);
+      
+      // Check env var first
+      let hasApiKey = checkRequiredApiKey(provider);
+      
+      // If not in env vars, check credentials table if user is authenticated
+      if (!hasApiKey && req.user) {
+        try {
+          const credential = await credentialService.getCredentialByService(
+            req.user.id,
+            provider
+          );
+          hasApiKey = !!credential;
+        } catch (credError) {
+          console.error("Error checking credential:", credError);
+        }
+      }
+      
       res.json({ hasApiKey });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -1496,11 +1527,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Add hasApiKey flag
-      const hasApiKey = checkRequiredApiKey(provider.provider);
+      // Add hasApiKey flag - set to true immediately if we just stored an API key
+      const environmentKeyExists = checkRequiredApiKey(provider.provider);
+      // If we've just stored an API key via credentials, we know it exists
+      const hasApiKey = environmentKeyExists || (apiKey ? true : false);
+      
       res.status(201).json({
         ...provider,
-        hasApiKey: hasApiKey || (apiKey ? true : false)
+        hasApiKey
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -1550,11 +1584,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Add hasApiKey flag
-      const hasApiKey = checkRequiredApiKey(updatedProvider.provider);
+      // Add hasApiKey flag - set to true immediately if we just stored an API key
+      const environmentKeyExists = checkRequiredApiKey(updatedProvider.provider);
+      // If we've just stored an API key via credentials, we know it exists
+      const hasApiKey = environmentKeyExists || (apiKey ? true : false);
+      
       res.json({
         ...updatedProvider,
-        hasApiKey: hasApiKey || (apiKey ? true : false)
+        hasApiKey
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
