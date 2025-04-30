@@ -8,7 +8,8 @@ import { eq, count, and } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { processAgentTask } from "./services/ai-service";
+// Import AI services
+import aiService from "./services/ai-service";
 
 // Configure multer for file uploads
 const storage_engine = multer.diskStorage({
@@ -62,12 +63,6 @@ import {
 } from "@shared/schema";
 import { encrypt, decrypt } from "../shared/crypto";
 import { paymentService } from "./services/payment-service";
-import {
-  translateText,
-  translateTranslations,
-  generateContent,
-  analyzeContent,
-} from "./services/openai-service";
 import {
   getOrCreateSessionId,
   getOrCreateGameProgress,
@@ -2405,7 +2400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const translatedText = await translateText(
+      const translatedText = await aiService.translateText(
         text,
         sourceLanguage,
         targetLanguage,
@@ -2433,7 +2428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const translatedTranslationsObj = await translateTranslations(
+      const translatedTranslationsObj = await aiService.translateTranslations(
         translations,
         sourceLanguage,
         targetLanguage,
