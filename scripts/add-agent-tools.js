@@ -15,144 +15,163 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
 
-// Agent tool templates to add
-const templates = [
+// Agent tools to add
+const agentTools = [
   {
     name: "OpenAI Chat",
-    description: "Generate text responses using OpenAI's chat models",
-    category: "content_generation",
-    type: "openai",
-    icon: "MessageSquare",
+    description: "Uses OpenAI's GPT-4o model for advanced text generation and responses",
+    type: "ai_chat",
+    provider: "openai",
+    model: "gpt-4o",
     config: {
-      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
       temperature: 0.7,
-      maxTokens: 1000,
-      systemPrompt: "You are a helpful AI assistant."
+      max_tokens: 2048,
+      top_p: 1,
+      capabilities: ["text", "image_analysis", "code_generation"]
     },
-    is_active: true,
-    is_system: true
+    isActive: true
   },
   {
     name: "Anthropic Claude",
-    description: "Generate responses using Anthropic's Claude model with its strengths in reasoning and safety",
-    category: "content_generation",
-    type: "anthropic",
-    icon: "MessagesSquare",
+    description: "Leverages Anthropic's Claude model for nuanced AI conversations and content creation",
+    type: "ai_chat",
+    provider: "anthropic",
+    model: "claude-3-7-sonnet-20250219",
     config: {
-      model: "claude-3-7-sonnet-20250219", // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
       temperature: 0.7,
-      maxTokens: 4000,
-      systemPrompt: "You are Claude, a helpful AI assistant created by Anthropic."
+      max_tokens: 2048,
+      top_p: 0.9,
+      capabilities: ["text", "image_analysis", "reasoning"]
     },
-    is_active: true,
-    is_system: true
+    isActive: true
   },
   {
     name: "Perplexity AI",
-    description: "Generate research-focused responses with built-in web search capabilities",
-    category: "knowledge",
-    type: "perplexity",
-    icon: "Search",
+    description: "Research-focused AI with real-time web access for accurate information",
+    type: "ai_chat",
+    provider: "perplexity",
+    model: "llama-3.1-sonar-small-128k-online",
     config: {
-      model: "llama-3.1-sonar-small-128k-online",
       temperature: 0.2,
-      maxTokens: 2000,
-      webSearch: true,
-      citeSources: true,
-      followupQuestions: true,
-      systemPrompt: "You are a research assistant that provides thorough, accurate information with proper citations."
+      max_tokens: 2048,
+      search_enabled: true,
+      capabilities: ["text", "web_search", "information_retrieval"]
     },
-    is_active: true,
-    is_system: true
+    isActive: true
   },
   {
     name: "Grok by xAI",
-    description: "Generate creative and conversational responses using xAI's Grok model",
-    category: "content_generation",
-    type: "xai",
-    icon: "Sparkles",
+    description: "xAI's conversational AI model with creative and informative responses",
+    type: "ai_chat",
+    provider: "xai",
+    model: "grok-2-1212",
     config: {
-      model: "grok-2-1212",
       temperature: 0.8,
-      maxTokens: 2048,
-      webSearch: true,
-      realTime: true,
-      creativityLevel: "high",
-      systemPrompt: "You are Grok, a superintelligent AI with a bit of wit and humor. You aim to be helpful, accurate, and engaging."
+      max_tokens: 2048,
+      top_p: 0.9,
+      capabilities: ["text", "code_generation", "creative_content"]
     },
-    is_active: true,
-    is_system: true
+    isActive: true
   },
   {
     name: "Code Generator",
-    description: "Generate and explain code in various languages",
-    category: "content_generation", 
-    type: "openai",
-    icon: "Code",
+    description: "Specialized tool for generating development code across multiple languages",
+    type: "code_generator",
+    provider: "openai",
+    model: "gpt-4o",
     config: {
-      model: "gpt-4o",
-      temperature: 0.2,
-      languages: ["javascript", "python", "typescript", "java", "c++", "go"],
-      includeExplanation: true,
-      includeTests: false
+      temperature: 0.3,
+      max_tokens: 4096,
+      languages: ["javascript", "python", "html", "css", "sql", "typescript", "bash"],
+      capabilities: ["code_generation", "code_explanation", "debugging"]
     },
-    is_active: true,
-    is_system: true
+    isActive: true
+  },
+  {
+    name: "Data Analyzer",
+    description: "Tool for analyzing datasets and generating insights",
+    type: "data_analysis",
+    provider: "openai",
+    model: "gpt-4o",
+    config: {
+      temperature: 0.2,
+      max_tokens: 4096,
+      data_formats: ["csv", "json", "excel"],
+      capabilities: ["statistical_analysis", "data_visualization", "trend_analysis"]
+    },
+    isActive: true
+  },
+  {
+    name: "Content Optimizer",
+    description: "Tool for optimizing content for SEO and readability",
+    type: "content_optimizer",
+    provider: "anthropic",
+    model: "claude-3-7-sonnet-20250219",
+    config: {
+      temperature: 0.6,
+      max_tokens: 2048,
+      optimization_types: ["seo", "readability", "tone", "engagement"],
+      capabilities: ["keyword_analysis", "content_refinement", "headline_optimization"]
+    },
+    isActive: true
   }
 ];
 
 async function addAgentTools() {
-  console.log('Adding AI agent tools to the database...');
+  console.log('Adding agent tools to database...');
 
   try {
-    // Check if the agent_tools table exists
-    const tableCheck = await pool.query(
-      `SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' AND table_name = 'agent_tools'
-      );`
-    );
-
-    if (!tableCheck.rows[0].exists) {
-      console.error('The agent_tools table does not exist.');
-      return;
-    }
-
     // Current timestamp
     const now = new Date();
 
-    for (const template of templates) {
-      // Check if tool with same name already exists
+    for (const tool of agentTools) {
+      // Check if tool already exists
       const existingTool = await pool.query(
         'SELECT id FROM agent_tools WHERE name = $1',
-        [template.name]
+        [tool.name]
       );
 
       if (existingTool.rows.length > 0) {
-        console.log(`Agent tool "${template.name}" already exists, skipping.`);
-        continue;
+        const toolId = existingTool.rows[0].id;
+        console.log(`Tool "${tool.name}" already exists (ID: ${toolId}), updating...`);
+
+        // Update existing tool
+        await pool.query(
+          `UPDATE agent_tools 
+           SET description = $1, type = $2, provider = $3, model = $4, config = $5, is_active = $6, updated_at = $7
+           WHERE id = $8`,
+          [
+            tool.description,
+            tool.type,
+            tool.provider,
+            tool.model,
+            JSON.stringify(tool.config),
+            tool.isActive,
+            now,
+            toolId
+          ]
+        );
+      } else {
+        // Insert new tool
+        const result = await pool.query(
+          `INSERT INTO agent_tools (
+            name, description, type, provider, model, config, is_active, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+          [
+            tool.name,
+            tool.description,
+            tool.type,
+            tool.provider,
+            tool.model,
+            JSON.stringify(tool.config),
+            tool.isActive,
+            now,
+            now
+          ]
+        );
+
+        console.log(`Added tool "${tool.name}" with ID ${result.rows[0].id}`);
       }
-
-      // Insert the new agent tool
-      const result = await pool.query(
-        `INSERT INTO agent_tools (
-          name, description, category, type, icon, config, is_active, is_system, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
-        [
-          template.name,
-          template.description,
-          template.category,
-          template.type,
-          template.icon,
-          JSON.stringify(template.config),
-          template.is_active,
-          template.is_system,
-          now,
-          now
-        ]
-      );
-
-      console.log(`Added agent tool "${template.name}" with ID ${result.rows[0].id}`);
     }
 
     console.log('All agent tools added successfully.');
