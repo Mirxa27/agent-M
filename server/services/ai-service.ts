@@ -1,10 +1,9 @@
-import { AgentTask } from "@shared/schema";
-import { AIMessage, AgentResponse } from "./openai-service";
-import openaiService from "./openai-service";
+import { AgentTool, Task } from "@shared/schema"; // Import Task, AgentTool
 import anthropicService from "./anthropic-service";
+import openaiService, { AIMessage, AgentResponse } from "./openai-service";
+import openrouterService from "./openrouter-service";
 import perplexityService from "./perplexity-service";
 import xaiService from "./xai-service";
-import openrouterService from "./openrouter-service";
 
 // Provider types
 export type AIProvider = "openai" | "anthropic" | "perplexity" | "xai" | "openrouter";
@@ -13,28 +12,33 @@ interface AgentConfig {
   provider: AIProvider;
   model?: string;
   systemInstructions?: string;
+  tools?: AgentTool[]; // Added support for tools
 }
 
 /**
  * Main service to process AI tasks across multiple providers
  */
 export async function processTask(
-  task: AgentTask,
+  task: Task, // Use Task type
   config: AgentConfig,
   previousMessages: AIMessage[] = []
 ): Promise<AgentResponse> {
-  const { provider, model, systemInstructions } = config;
-  
+  const { provider, model, systemInstructions, tools } = config; // Destructure tools
+
   try {
     switch (provider) {
       case "openai":
         return await openaiService.processTask(
           task,
-          model || "gpt-4o",
-          systemInstructions,
-          previousMessages
+          {
+            provider,
+            model: model || "gpt-4o",
+            systemInstructions
+          },
+          previousMessages,
+          tools || [] // Pass tools to OpenAI service
         );
-        
+
       case "anthropic":
         return await anthropicService.processTask(
           task,
@@ -42,7 +46,7 @@ export async function processTask(
           systemInstructions,
           previousMessages
         );
-        
+
       case "perplexity":
         return await perplexityService.processTask(
           task,
@@ -50,7 +54,7 @@ export async function processTask(
           systemInstructions,
           previousMessages
         );
-        
+
       case "xai":
         return await xaiService.processTask(
           task,
@@ -58,7 +62,7 @@ export async function processTask(
           systemInstructions,
           previousMessages
         );
-        
+
       case "openrouter":
         return await openrouterService.processAgentTask(
           task,
@@ -69,13 +73,14 @@ export async function processTask(
           },
           previousMessages
         );
-        
+
       default:
         throw new Error(`Unsupported AI provider: ${provider}`);
     }
   } catch (error) {
-    console.error(`Error processing task with ${provider}:`, error);
-    throw new Error(`AI processing error: ${error.message}`);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`Error processing task with ${provider}:`, msg);
+    throw new Error(`AI processing error: ${msg}`);
   }
 }
 
@@ -96,7 +101,7 @@ export async function analyzeImage(
           prompt,
           model || "gpt-4o"
         );
-        
+
       case "anthropic": {
         // For Anthropic, we need to convert URL to base64 first
         const imageResponse = await fetch(imageUrl);
@@ -108,17 +113,17 @@ export async function analyzeImage(
           model || "claude-3-7-sonnet-20250219"
         );
       }
-      
+
       case "xai":
         return await xaiService.analyzeImage(
           imageUrl,
           prompt,
           model || "grok-2-vision-1212"
         );
-        
+
       case "perplexity":
         throw new Error("Image analysis not supported with Perplexity");
-        
+
       case "openrouter":
         return await openrouterService.analyzeImage(
           imageUrl,
@@ -126,13 +131,14 @@ export async function analyzeImage(
           "openrouter",
           model || "openai/gpt-4-vision"
         );
-        
+
       default:
         throw new Error(`Unsupported AI provider for image analysis: ${provider}`);
     }
   } catch (error) {
-    console.error(`Error analyzing image with ${provider}:`, error);
-    throw new Error(`Image analysis error: ${error.message}`);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`Error analyzing image with ${provider}:`, msg);
+    throw new Error(`Image analysis error: ${msg}`);
   }
 }
 
@@ -152,30 +158,31 @@ export async function generateImage(
       return await openaiService.generateImage(prompt, size);
     }
   } catch (error) {
-    console.error(`Error generating image with ${provider}:`, error);
-    
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`Error generating image with ${provider}:`, msg);
+
     // If OpenAI fails, try OpenRouter as fallback
     if (provider === "openai" && process.env.OPENROUTER_API_KEY) {
       try {
         console.log("Falling back to OpenRouter for image generation");
         return await openrouterService.generateImage(prompt, size);
       } catch (fallbackError) {
-        console.error("Fallback to OpenRouter also failed:", fallbackError);
-        throw new Error(`Image generation error: ${error.message}`);
+        const fallbackMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+        console.error("Fallback to OpenRouter also failed:", fallbackMsg);
+        throw new Error(`Image generation error: ${msg}`);
       }
     }
-    
-    throw new Error(`Image generation error: ${error.message}`);
+
+    throw new Error(`Image generation error: ${msg}`);
   }
 }
 
 // Translation related functions (used in routes.ts)
 export async function translateText(text: string, sourceLanguage: string, targetLanguage: string): Promise<string> {
-  const task: AgentTask = {
+  const task: Task = {
     id: 0,
-    title: "Translation",
-    description: "Translate text",
-    content: `Translate the following text from ${sourceLanguage} to ${targetLanguage}:\n\n${text}`,
+    title: `Translate from ${sourceLanguage} to ${targetLanguage}`,
+    description: text,
     status: "in_progress",
     userId: 0,
     createdAt: new Date(),
@@ -183,13 +190,13 @@ export async function translateText(text: string, sourceLanguage: string, target
     completedAt: null,
     result: null
   };
-  
+
   const config: AgentConfig = {
     provider: "openai",
     model: "gpt-4o",
     systemInstructions: `You are a professional translator. Translate text from ${sourceLanguage} to ${targetLanguage} accurately and naturally. Preserve meaning and tone.`
   };
-  
+
   const response = await processTask(task, config);
   return response.content;
 }
@@ -202,12 +209,11 @@ export async function translateTranslations(
   // Create a string with all keys and values to translate in one go
   const keysToTranslate = Object.keys(translations);
   const textsToTranslate = keysToTranslate.map(key => translations[key]);
-  
-  const task: AgentTask = {
+
+  const task: Task = {
     id: 0,
-    title: "Bulk Translation",
-    description: "Translate multiple texts",
-    content: `Translate the following JSON object from ${sourceLanguage} to ${targetLanguage}. Keep the same keys but translate all values:\n\n${JSON.stringify(translations, null, 2)}\n\nRespond with the translated JSON object only.`,
+    title: `Bulk Translation from ${sourceLanguage} to ${targetLanguage}`,
+    description: JSON.stringify(translations),
     status: "in_progress",
     userId: 0,
     createdAt: new Date(),
@@ -215,21 +221,21 @@ export async function translateTranslations(
     completedAt: null,
     result: null
   };
-  
+
   const config: AgentConfig = {
     provider: "openai",
     model: "gpt-4o",
     systemInstructions: `You are a professional translator specializing in JSON localization files. Translate the values from ${sourceLanguage} to ${targetLanguage} accurately and naturally. Preserve meaning and tone. Return a valid JSON object with the same keys.`
   };
-  
+
   const response = await processTask(task, config);
-  
+
   try {
     // Extract JSON from the response
     const responseText = response.content;
     const jsonStartIndex = responseText.indexOf('{');
     const jsonEndIndex = responseText.lastIndexOf('}') + 1;
-    
+
     if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
       const jsonStr = responseText.substring(jsonStartIndex, jsonEndIndex);
       return JSON.parse(jsonStr);
@@ -245,11 +251,10 @@ export async function translateTranslations(
 
 // Content generation function used in routes.ts
 export async function generateContent(prompt: string, contentType: string, tone: string): Promise<string> {
-  const task: AgentTask = {
+  const task: Task = {
     id: 0,
-    title: "Content Generation",
-    description: `Generate ${contentType} content with ${tone} tone`,
-    content: prompt,
+    title: `Content Generation: ${contentType}`,
+    description: prompt,
     status: "in_progress",
     userId: 0,
     createdAt: new Date(),
@@ -257,24 +262,23 @@ export async function generateContent(prompt: string, contentType: string, tone:
     completedAt: null,
     result: null
   };
-  
+
   const config: AgentConfig = {
     provider: "openai",
     model: "gpt-4o",
     systemInstructions: `You are a professional content creator specializing in ${contentType}. Create content with a ${tone} tone. Be creative, engaging, and authentic.`
   };
-  
+
   const response = await processTask(task, config);
   return response.content;
 }
 
 // Content analysis function used in routes.ts
 export async function analyzeContent(text: string): Promise<any> {
-  const task: AgentTask = {
+  const task: Task = {
     id: 0,
     title: "Content Analysis",
-    description: "Analyze content for sentiment, readability, and key themes",
-    content: `Analyze the following content and provide a detailed report on sentiment, readability score, key themes, and suggestions for improvement:\n\n${text}`,
+    description: text,
     status: "in_progress",
     userId: 0,
     createdAt: new Date(),
@@ -282,21 +286,21 @@ export async function analyzeContent(text: string): Promise<any> {
     completedAt: null,
     result: null
   };
-  
+
   const config: AgentConfig = {
     provider: "openai",
     model: "gpt-4o",
     systemInstructions: `You are a professional content analyst. Analyze text for sentiment (positive, negative, neutral), readability (grade level), key themes, and provide suggestions for improvement. Return your analysis in JSON format.`
   };
-  
+
   const response = await processTask(task, config);
-  
+
   try {
     // Extract JSON from the response
     const responseText = response.content;
     const jsonStartIndex = responseText.indexOf('{');
     const jsonEndIndex = responseText.lastIndexOf('}') + 1;
-    
+
     if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
       const jsonStr = responseText.substring(jsonStartIndex, jsonEndIndex);
       return JSON.parse(jsonStr);
@@ -307,9 +311,9 @@ export async function analyzeContent(text: string): Promise<any> {
   } catch (error) {
     console.error("Failed to parse analysis response:", error);
     // Return text response if JSON parsing fails
-    return { 
+    return {
       analysis: response.content,
-      error: "Could not parse as JSON" 
+      error: "Could not parse as JSON"
     };
   }
 }

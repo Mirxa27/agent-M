@@ -1,7 +1,7 @@
-import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import express, { NextFunction, type Request, Response } from "express";
 import path from "path";
+import { registerRoutes } from "./routes";
+import { log, serveStatic, setupVite } from "./vite";
 
 const app = express();
 app.use(express.json());
@@ -13,27 +13,26 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  // Store the original function correctly
+  const originalJson = res.json;
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+  // Wrap res.json
+  res.json = (body) => {
+    // Call the original function with the correct context ('this') and arguments
+    return originalJson.call(res, body);
   };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
+      // Note: Body logging is removed in this simplified version
 
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      log(logLine); // Assuming 'log' function is defined elsewhere
     }
   });
 

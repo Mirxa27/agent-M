@@ -1,15 +1,42 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import { eq } from "drizzle-orm";
+import type { Express, NextFunction, Request, Response } from "express";
+import fs from "fs";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { setupAuth, hashPassword } from "./auth";
-import { db, checkDatabaseConnection } from "./db";
-import { checkRequiredApiKey } from "./config";
-import { eq, count, and } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
-import fs from "fs";
+import { hashPassword, setupAuth } from "./auth";
+import { checkRequiredApiKey } from "./config";
+import { checkDatabaseConnection, db } from "./db";
+import { storage } from "./storage";
 // Import AI services
 import aiService from "./services/ai-service";
+// Import the processAgentTask function
+import {
+  agentTools,
+  insertAgentSchema,
+  insertAgentToolSchema,
+  insertAiModelSchema,
+  insertCredentialSchema,
+  insertFileSchema,
+  insertMessageSchema,
+  insertTaskSchema
+} from "@shared/schema";
+import { decrypt, encrypt } from "../shared/crypto";
+import { processAgentTask } from "./agent-task-processor";
+import {
+  awardPoints,
+  completeChallenge,
+  generateResponse,
+  getAvailableChallenges,
+  getChatHistory,
+  getOrCreateGameProgress,
+  getOrCreateSessionId,
+  storeChatMessage,
+  updateStreak
+} from "./services/chatbot-service";
+import { credentialService, SERVICE_TYPES } from "./services/credential-service";
+import { gmailService } from "./services/gmail-service";
+import { paymentService } from "./services/payment-service";
 
 // Configure multer for file uploads
 const storage_engine = multer.diskStorage({
@@ -29,7 +56,7 @@ const storage_engine = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage_engine,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB max file size
@@ -39,43 +66,13 @@ const upload = multer({
     const filetypes = /jpeg|jpg|png|gif|svg/;
     const mimetype = filetypes.test(file.mimetype);
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    
+
     if (mimetype && extname) {
       return cb(null, true);
     }
     cb(new Error("Only images (jpeg, jpg, png, gif, svg) are allowed!"));
   }
 });
-import {
-  insertAgentSchema,
-  insertCredentialSchema,
-  insertFileSchema,
-  insertTaskSchema,
-  insertMessageSchema,
-  insertAiProviderSchema,
-  insertAiModelSchema,
-  insertAiPromptSchema,
-  insertPlanSchema,
-  insertAgentToolSchema,
-  aiModels,
-  aiPrompts,
-  agentTools,
-} from "@shared/schema";
-import { encrypt, decrypt } from "../shared/crypto";
-import { paymentService } from "./services/payment-service";
-import {
-  getOrCreateSessionId,
-  getOrCreateGameProgress,
-  storeChatMessage,
-  getChatHistory,
-  generateResponse,
-  awardPoints,
-  getAvailableChallenges,
-  completeChallenge,
-  updateStreak
-} from "./services/chatbot-service";
-import { credentialService, SERVICE_TYPES, AUTH_METHODS } from "./services/credential-service";
-import { gmailService } from "./services/gmail-service";
 
 // Helper function to handle errors consistently
 const handleError = (error: unknown): string => {
@@ -113,37 +110,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Get site settings (public access)
   app.get("/api/site-settings", async (req, res) => {
     try {
       // Get settings or create default if none exist
       let settings = await storage.getSiteSettings();
-      
+
       // If no settings found, create default settings
       if (!settings) {
         console.log("No site settings found, creating default settings");
         settings = await storage.createDefaultSiteSettings();
       }
-      
-      // Remove any sensitive information before sending to the client
-      const sanitizedSettings = { ...settings };
-      
-      // Remove updatedBy if it exists (contains user ID)
-      if (sanitizedSettings.updatedBy) {
-        delete sanitizedSettings.updatedBy;
-      }
-      
-      res.json(sanitizedSettings);
+
+      // Create a sanitized version without sensitive fields like updatedBy
+      const { updatedBy, ...publicSettings } = settings;
+      res.json(publicSettings);
     } catch (error) {
       console.error("Error fetching site settings:", error);
       res.status(500).json({ error: handleError(error) });
     }
   });
-  
+
   // Set up authentication routes
   setupAuth(app);
-  
+
   // Authentication middleware
   const requireAuth = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated()) {
@@ -159,94 +150,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     next();
   };
-  
+
   // Simple endpoint to check if user has admin access - for testing
   app.get("/api/admin/check", requireAdmin, (req: Request, res: Response) => {
     // We can safely assume user exists because requireAdmin middleware checks it
     const user = req.user!;
-    res.json({ 
-      success: true, 
-      message: "You have admin access", 
-      user: { 
-        id: user.id, 
+    res.json({
+      success: true,
+      message: "You have admin access",
+      user: {
+        id: user.id,
         username: user.username,
-        role: user.role 
-      } 
+        role: user.role
+      }
     });
   });
-  
+
   // Upload logo endpoint - requires admin permissions
   app.post("/api/admin/upload-logo", requireAdmin, upload.single('logo'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
-      
+
       // Generate the public URL for the file
       const fileUrl = `/uploads/${req.file.filename}`;
-      
+
       // Update site settings with the new logo URL
       const existingSettings = await storage.getSiteSettings();
-      
+
       if (existingSettings) {
         // Only update the logo URL, keep other settings the same
         await storage.updateSiteSettings({
           logo: {
-            ...existingSettings.logo,
+            ...((existingSettings.logo && typeof existingSettings.logo === 'object') ? existingSettings.logo : {}),
             url: fileUrl
           }
         });
       }
-      
+
       // Return the file URL to the client
-      res.status(200).json({ 
-        success: true, 
+      res.status(200).json({
+        success: true,
         url: fileUrl,
-        message: "Logo uploaded successfully" 
+        message: "Logo uploaded successfully"
       });
     } catch (error) {
       console.error("Error uploading logo:", error);
       res.status(500).json({
-        error: error instanceof Error ? error.message : "Unknown error occurred during upload",
+        error: handleError(error), // Use handleError
       });
     }
   });
-  
+
   // Dashboard preferences routes
   import("./services/dashboard-service").then((dashboardService) => {
     // Get user dashboard preferences
-    app.get("/api/user/dashboard/preferences", async (req, res) => {
-      if (!req.isAuthenticated()) {
-        return res.status(401).send({ error: "Not authenticated" });
-      }
-      
+    app.get("/api/user/dashboard/preferences", requireAuth, async (req, res) => { // Added requireAuth
       try {
+        // Middleware ensures req.user exists, but TS needs explicit check
+        if (!req.user) {
+          return res.status(401).send({ error: "Not authenticated" });
+        }
         let preferences = await dashboardService.getDashboardPreferences(req.user.id);
-        
+
         if (!preferences) {
           preferences = await dashboardService.createDefaultDashboardPreferences(req.user.id);
         }
-        
+
         res.json(preferences);
       } catch (error) {
         console.error("Error fetching dashboard preferences:", error);
-        res.status(500).send({ error: "Failed to fetch dashboard preferences" });
+        res.status(500).send({ error: handleError(error) }); // Use handleError
       }
     });
-    
+
     // Update user dashboard preferences
-    app.patch("/api/user/dashboard/preferences", async (req, res) => {
-      if (!req.isAuthenticated()) {
+    app.patch("/api/user/dashboard/preferences", requireAuth, async (req, res) => { // Added requireAuth
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
         return res.status(401).send({ error: "Not authenticated" });
       }
-      
+
       try {
         const updates = req.body;
         const updated = await dashboardService.updateDashboardPreferences(req.user.id, updates);
         res.json(updated);
       } catch (error) {
         console.error("Error updating dashboard preferences:", error);
-        res.status(500).send({ error: "Failed to update dashboard preferences" });
+        res.status(500).send({ error: handleError(error) }); // Use handleError
       }
     });
   });
@@ -254,21 +246,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
   // Get user profile
   app.get("/api/profile", requireAuth, (req: Request, res: Response) => {
-    // We can safely assume user exists because requireAuth middleware checks it
+    // Middleware ensures req.user exists, but TS needs explicit check
     if (!req.user) {
       return res.status(401).json({ error: "User not authenticated" });
     }
-    const { password, ...userWithoutPassword } = req.user;
+    // Explicitly copy properties instead of spreading potentially non-object type
+    const userWithoutPassword = {
+      id: req.user.id,
+      username: req.user.username,
+      email: req.user.email,
+      fullName: req.user.fullName,
+      planId: req.user.planId,
+      planExpiresAt: req.user.planExpiresAt,
+      role: req.user.role,
+      isActive: req.user.isActive,
+    };
     res.json(userWithoutPassword);
   });
 
   // Update user profile
   app.patch("/api/profile", requireAuth, async (req: Request, res: Response) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
         return res.status(401).json({ error: "User not authenticated" });
       }
-      
+
       const updates: Record<string, any> = {};
 
       // Allow updates to specific fields
@@ -296,6 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Agent routes
   app.get("/api/agents", requireAuth, async (req: Request, res: Response) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
         return res.status(401).json({ error: "User not authenticated" });
       }
@@ -305,18 +309,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: handleError(error) });
     }
   });
-  
+
   // Get agent templates for creating new agents
   app.get("/api/agent-templates", requireAuth, async (req: Request, res: Response) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
         return res.status(401).json({ error: "User not authenticated" });
       }
       const templates = await storage.getAgentTemplates();
       res.json(templates);
     } catch (error) {
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Unknown error occurred" 
+      res.status(500).json({
+        error: handleError(error) // Use handleError
       });
     }
   });
@@ -324,19 +329,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Agent status endpoint for dashboard - must come before the :id route
   app.get("/api/agents/status", requireAuth, async (req: Request, res: Response) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
         return res.status(401).json({ error: "User not authenticated" });
       }
-      
       const agents = await storage.getAgentsByUserId(req.user.id);
-      
+
       // Count agents by status
       const agentCounts = {
         total: agents.length,
         active: agents.filter(agent => agent.isActive === true).length,
         inactive: agents.filter(agent => agent.isActive === false || agent.isActive === undefined).length
       };
-      
+
       res.json(agentCounts);
     } catch (error) {
       res.status(500).json({ error: handleError(error) });
@@ -345,10 +350,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/agents/:id", requireAuth, async (req: Request, res: Response) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
         return res.status(401).json({ error: "User not authenticated" });
       }
-      
       const agent = await storage.getAgent(parseInt(req.params.id));
 
       if (!agent) {
@@ -368,10 +373,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/agents", requireAuth, async (req: Request, res: Response) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
         return res.status(401).json({ error: "User not authenticated" });
       }
-      
       // Validate request body
       const validatedData = insertAgentSchema.safeParse({
         ...req.body,
@@ -394,10 +399,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/agents/:id", requireAuth, async (req: Request, res: Response) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
         return res.status(401).json({ error: "User not authenticated" });
       }
-      
       const agentId = parseInt(req.params.id);
       const agent = await storage.getAgent(agentId);
 
@@ -410,8 +415,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Not authorized" });
       }
 
+      // Define allowed update fields to avoid spreading potentially unsafe req.body
+      const allowedUpdates = ['name', 'description', 'systemPrompt', 'config', 'isActive', 'icon', 'isPublic'];
+      const updates: Record<string, any> = {};
+      for (const key of allowedUpdates) {
+        if (req.body[key] !== undefined) {
+          updates[key] = req.body[key];
+        }
+      }
+
       // Update agent
-      const updatedAgent = await storage.updateAgent(agentId, req.body);
+      const updatedAgent = await storage.updateAgent(agentId, updates); // Use the filtered 'updates' object
       res.json(updatedAgent);
     } catch (error) {
       res.status(500).json({ error: handleError(error) });
@@ -420,10 +434,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/agents/:id", requireAuth, async (req: Request, res: Response) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
         return res.status(401).json({ error: "User not authenticated" });
       }
-      
       const agentId = parseInt(req.params.id);
       const agent = await storage.getAgent(agentId);
 
@@ -447,10 +461,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Credential routes
   app.get("/api/credentials", requireAuth, async (req: Request, res: Response) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
         return res.status(401).json({ error: "User not authenticated" });
       }
-      
       const credentials = await storage.getCredentialsByUserId(req.user.id);
       // Don't include sensitive data in the response
       const sanitizedCredentials = credentials.map((cred) => {
@@ -463,17 +477,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: handleError(error) });
     }
   });
-  
+
   // Get credentials by type (service)
   app.get("/api/credentials/service/:type", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
       const serviceType = req.params.type;
-      
+
       // Ensure valid service type
       if (!Object.values(SERVICE_TYPES).includes(serviceType)) {
         return res.status(400).json({ error: "Invalid service type" });
       }
-      
+
       const credentials = await credentialService.listCredentials(req.user.id, serviceType);
       res.json(credentials);
     } catch (error) {
@@ -481,19 +499,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: `Failed to fetch ${req.params.type} credentials` });
     }
   });
-  
+
   // Get expiring credentials
   app.get("/api/credentials/expiring", requireAuth, async (req, res) => {
     try {
-      const daysThreshold = req.query.days 
-        ? parseInt(req.query.days.toString()) 
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      const daysThreshold = req.query.days
+        ? parseInt(req.query.days.toString())
         : 7;
-        
+
       const expiringCredentials = await credentialService.getExpiringCredentials(
-        req.user.id, 
+        req.user.id,
         daysThreshold
       );
-      
+
       res.json(expiringCredentials);
     } catch (error) {
       console.error("Error fetching expiring credentials:", error);
@@ -503,6 +525,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/credentials/:id", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
       const credential = await storage.getCredential(parseInt(req.params.id));
 
       if (!credential) {
@@ -517,15 +543,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Decrypt the credential data with enhanced error handling
         const decryptedData = decrypt(credential.data);
-        
+
         // Parse the JSON data, handle potential parsing errors
         let parsedData;
         try {
           parsedData = JSON.parse(decryptedData);
         } catch (parseError) {
           console.error("Error parsing credential data:", parseError);
-          return res.status(500).json({ 
-            error: "Credential data is corrupted or invalid" 
+          return res.status(500).json({
+            error: "Credential data is corrupted or invalid"
           });
         }
 
@@ -536,8 +562,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (decryptError) {
         console.error("Error decrypting credential:", decryptError);
-        return res.status(500).json({ 
-          error: "Failed to decrypt credential data" 
+        return res.status(500).json({
+          error: "Failed to decrypt credential data"
         });
       }
     } catch (error) {
@@ -548,6 +574,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/credentials", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
       // Validate request structure
       if (!req.body.data || !req.body.name || !req.body.type) {
         return res.status(400).json({
@@ -591,8 +621,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(201).json(credentialWithoutData);
       } catch (encryptError) {
         console.error("Error encrypting credential data:", encryptError);
-        return res.status(500).json({ 
-          error: "Failed to secure credential data" 
+        return res.status(500).json({
+          error: "Failed to secure credential data"
         });
       }
     } catch (error) {
@@ -603,6 +633,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/credentials/:id", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const credentialId = parseInt(req.params.id);
       const credential = await storage.getCredential(credentialId);
 
@@ -620,7 +654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const updates: any = {};
         if (req.body.name) updates.name = req.body.name;
         if (req.body.type) updates.type = req.body.type;
-        
+
         if (req.body.data) {
           // Encrypt the updated data
           updates.data = encrypt(JSON.stringify(req.body.data));
@@ -630,6 +664,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           credentialId,
           updates,
         );
+
+        // Check if update was successful before proceeding
+        if (!updatedCredential) {
+          // This case might indicate the credential was deleted concurrently
+          return res.status(404).json({ error: "Credential not found after update attempt" });
+        }
 
         // Log the update for audit
         await storage.createUserActivity({
@@ -645,8 +685,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(credentialWithoutData);
       } catch (encryptError) {
         console.error("Error encrypting credential data:", encryptError);
-        return res.status(500).json({ 
-          error: "Failed to secure credential data" 
+        return res.status(500).json({
+          error: "Failed to secure credential data"
         });
       }
     } catch (error) {
@@ -657,6 +697,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/credentials/:id", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const credentialId = parseInt(req.params.id);
       const credential = await storage.getCredential(credentialId);
 
@@ -671,7 +715,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Delete credential
       await storage.deleteCredential(credentialId);
-      
+
       // Log the deletion for audit
       await storage.createUserActivity({
         userId: req.user.id,
@@ -680,30 +724,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resourceType: "credential",
         metadata: { name: credential.name, type: credential.type },
       });
-      
+
       res.sendStatus(204);
     } catch (error) {
       console.error("Error deleting credential:", error);
       res.status(500).json({ error: "Failed to delete credential" });
     }
   });
-  
+
   // Gmail service-specific routes
   app.post("/api/services/gmail/credentials", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const { name, email, app_password, access_token, refresh_token, expiresInDays } = req.body;
-      
+
       if (!name) {
         return res.status(400).json({ error: "Credential name is required" });
       }
-      
+
       // Validate that we have at least one auth method
       if (!app_password && !(access_token && refresh_token)) {
-        return res.status(400).json({ 
-          error: "Either app_password or both access_token and refresh_token are required" 
+        return res.status(400).json({
+          error: "Either app_password or both access_token and refresh_token are required"
         });
       }
-      
+
       const data = {
         email: email || "",
         app_password: app_password || undefined,
@@ -711,26 +759,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         refresh_token: refresh_token || undefined,
         expires_at: access_token ? Date.now() + 3600 * 1000 : undefined // Default to 1 hour for OAuth tokens
       };
-      
+
       const credential = await gmailService.saveGmailCredentials(
-        req.user.id, 
-        name, 
-        data, 
+        req.user.id,
+        name,
+        data,
         expiresInDays || 90
       );
-      
+
       // Log the creation
       await storage.createUserActivity({
         userId: req.user.id,
         activityType: "gmail_credential_created",
         resourceId: credential.id,
         resourceType: "credential",
-        metadata: { 
+        metadata: {
           name: credential.name,
           email: email
         },
       });
-      
+
       // Don't return sensitive data
       const { data: _, ...credentialWithoutData } = credential;
       res.status(201).json(credentialWithoutData);
@@ -739,38 +787,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to create Gmail credentials" });
     }
   });
-  
+
   app.get("/api/services/gmail/credentials", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const credentials = await gmailService.listGmailCredentials(req.user.id);
       res.json(credentials);
     } catch (error) {
       console.error("Error listing Gmail credentials:", error);
-      res.status(500).json({ error: "Failed to list Gmail credentials" });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
-  
+
   app.post("/api/services/gmail/send-email", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const { credentialId, to, subject, body, attachments } = req.body;
-      
+
       if (!credentialId || !to || !subject || !body) {
-        return res.status(400).json({ 
-          error: "Missing required fields: credentialId, to, subject, body" 
+        return res.status(400).json({
+          error: "Missing required fields: credentialId, to, subject, body"
         });
       }
-      
+
       // Convert credentialId to number if it's a string
-      const credentialIdNum = typeof credentialId === 'string' 
-        ? parseInt(credentialId) 
+      const credentialIdNum = typeof credentialId === 'string'
+        ? parseInt(credentialId)
         : credentialId;
-      
+
       // Validate ownership of credential
       const cred = await storage.getCredential(credentialIdNum);
       if (!cred || cred.userId !== req.user.id) {
         return res.status(403).json({ error: "Not authorized to use this credential" });
       }
-      
+
       // Send email
       const result = await gmailService.sendEmail(
         req.user.id,
@@ -782,101 +838,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
           attachments: attachments || []
         }
       );
-      
+
       // Log the email sending
       await storage.createUserActivity({
         userId: req.user.id,
         activityType: "email_sent",
         resourceId: credentialIdNum,
         resourceType: "credential",
-        metadata: { 
+        metadata: {
           subject,
           to: typeof to === 'string' ? to : to.join(',')
         },
       });
-      
+
       res.json(result);
     } catch (error) {
       console.error("Error sending email:", error);
       res.status(500).json({ error: "Failed to send email" });
     }
   });
-  
+
   app.get("/api/services/gmail/messages", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const { credentialId, maxResults, includeAttachments, labelIds, query } = req.query;
-      
+
       if (!credentialId) {
         return res.status(400).json({ error: "credentialId is required" });
       }
-      
+
       // Convert credentialId to number
       const credentialIdNum = parseInt(credentialId as string);
-      
+
       // Validate ownership of credential
       const cred = await storage.getCredential(credentialIdNum);
       if (!cred || cred.userId !== req.user.id) {
         return res.status(403).json({ error: "Not authorized to use this credential" });
       }
-      
+
       // Parse options
       const options: any = {};
-      
+
       if (maxResults) {
         options.maxResults = parseInt(maxResults as string);
       }
-      
+
       if (includeAttachments) {
         options.includeAttachments = includeAttachments === 'true';
       }
-      
+
       if (labelIds) {
-        options.labelIds = typeof labelIds === 'string' 
-          ? [labelIds] 
+        options.labelIds = typeof labelIds === 'string'
+          ? [labelIds]
           : Array.isArray(labelIds) ? labelIds : undefined;
       }
-      
+
       if (query) {
         options.query = query as string;
       }
-      
+
       // Get messages
       const messages = await gmailService.getMessages(
         req.user.id,
         credentialIdNum,
         options
       );
-      
+
       res.json(messages);
     } catch (error) {
       console.error("Error fetching Gmail messages:", error);
       res.status(500).json({ error: "Failed to fetch Gmail messages" });
     }
   });
-  
+
   // Endpoint to refresh OAuth tokens
   app.post("/api/services/gmail/refresh-token", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const { credentialId } = req.body;
-      
+
       if (!credentialId) {
         return res.status(400).json({ error: "credentialId is required" });
       }
-      
+
       // Convert credentialId to number if it's a string
-      const credentialIdNum = typeof credentialId === 'string' 
-        ? parseInt(credentialId) 
+      const credentialIdNum = typeof credentialId === 'string'
+        ? parseInt(credentialId)
         : credentialId;
-      
+
       // Validate ownership of credential
       const cred = await storage.getCredential(credentialIdNum);
       if (!cred || cred.userId !== req.user.id) {
         return res.status(403).json({ error: "Not authorized to use this credential" });
       }
-      
+
       // Refresh token
       const success = await gmailService.refreshOAuthToken(req.user.id, credentialIdNum);
-      
+
       if (success) {
         res.json({ success: true, message: "Token refreshed successfully" });
       } else {
@@ -891,35 +955,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // File/Template routes
   app.get("/api/files", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const files = await storage.getFilesByUserId(req.user.id);
       res.json(files);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
-  
+
   // Recent files endpoint for dashboard
   app.get("/api/files/recent", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const limit = req.query.limit ? parseInt(req.query.limit.toString()) : 5;
-      const files = await storage.getFilesByUserId(req.user.id, { limit, orderBy: 'createdAt', order: 'desc' });
+      const files = await storage.getFilesByUserId(req.user.id);
       res.json(files);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   app.get("/api/templates", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const templates = await storage.getTemplatesByUserId(req.user.id);
       res.json(templates);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   app.get("/api/files/:id", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const file = await storage.getFile(parseInt(req.params.id));
 
       if (!file) {
@@ -933,7 +1013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(file);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -941,6 +1021,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // For simplicity in this prototype, we're just storing file metadata
   app.post("/api/files", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       // Validate and create file record
       const validatedData = insertFileSchema.safeParse({
         ...req.body,
@@ -957,12 +1041,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const file = await storage.createFile(validatedData.data);
       res.status(201).json(file);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   app.delete("/api/files/:id", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const fileId = parseInt(req.params.id);
       const file = await storage.getFile(fileId);
 
@@ -979,23 +1067,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteFile(fileId);
       res.sendStatus(204);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // Task routes
   app.get("/api/tasks", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const limit = req.query.limit
         ? parseInt(req.query.limit as string)
         : undefined;
       const tasks = await storage.getTasksByUserId(req.user.id, limit);
       res.json(tasks);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
-  
+
   // API endpoint to register AI agent tools
   app.post("/api/admin/register-tools", requireAdmin, async (req, res) => {
     try {
@@ -1004,6 +1096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: "OpenAI Chat",
           description: "Connect with OpenAI's GPT models for natural language tasks",
           category: "ai",
+          type: "ai", // Added type
           icon: "sparkles",
           isActive: true,
           isSystem: true,
@@ -1017,6 +1110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: "Anthropic Claude",
           description: "Use Anthropic's Claude models for nuanced and safe outputs",
           category: "ai",
+          type: "ai", // Added type
           icon: "brain",
           isActive: true,
           isSystem: true,
@@ -1030,6 +1124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: "Perplexity AI",
           description: "Leverage Perplexity for real-time research and information gathering",
           category: "research",
+          type: "research", // Added type
           icon: "search",
           isActive: true,
           isSystem: true,
@@ -1043,6 +1138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: "Grok by xAI",
           description: "Utilize Grok for analytical and technical tasks",
           category: "ai",
+          type: "ai", // Added type
           icon: "zap",
           isActive: true,
           isSystem: true,
@@ -1056,9 +1152,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: "Code Generator",
           description: "Generate code in various programming languages",
           category: "code",
+          type: "code", // Added type
           icon: "code",
           isActive: true,
-          isSystem: true,
+          isSystem: true, // Added isSystem flag
           config: {
             provider: "openai",
             models: ["gpt-4o"],
@@ -1069,8 +1166,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: "Data Analyzer",
           description: "Analyze datasets and provide insights",
           category: "data",
+          type: "data", // Added type
           icon: "barChart",
-          isActive: true, 
+          isActive: true,
           isSystem: true,
           config: {
             provider: "openai",
@@ -1083,6 +1181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: "Content Optimizer",
           description: "Improve and optimize existing content",
           category: "content",
+          type: "content", // Added type
           icon: "fileText",
           isActive: true,
           isSystem: true,
@@ -1094,15 +1193,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       ];
-      
+
       const existingTools = await db.select().from(agentTools);
       const existingToolNames = existingTools.map(tool => tool.name);
-      
+
       let added = 0;
       let updated = 0;
-      
+
       // Add or update each tool
       for (const tool of tools) {
+        // Ensure 'type' exists before processing
+        if (!tool.type) {
+          console.warn(`Tool '${tool.name}' is missing 'type'. Skipping or setting default.`);
+          continue; // Skip this tool or assign a default type
+        }
+
         if (!existingToolNames.includes(tool.name)) {
           // Add required fields for database schema
           const newTool = {
@@ -1111,30 +1216,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
             createdAt: new Date(),
             updatedAt: new Date()
           };
-          
+
           await db.insert(agentTools).values(newTool);
           added++;
         } else {
           const existingTool = existingTools.find(t => t.name === tool.name);
           if (existingTool) {
+            // Ensure 'type' is included in the update set
+            const updateSet: Partial<typeof agentTools.$inferSelect> = {
+              description: tool.description,
+              category: tool.category,
+              icon: tool.icon,
+              isActive: tool.isActive,
+              isSystem: true,
+              config: tool.config,
+              updatedAt: new Date(),
+              type: tool.type // Ensure type is present
+            };
             await db
               .update(agentTools)
-              .set({
-                description: tool.description,
-                category: tool.category,
-                icon: tool.icon,
-                isActive: tool.isActive,
-                isSystem: true,
-                config: tool.config,
-                updatedAt: new Date()
-              })
+              .set(updateSet)
               .where(eq(agentTools.id, existingTool.id));
             updated++;
           }
         }
       }
-      
-      res.json({ 
+
+      res.json({
         success: true,
         message: `Successfully registered tools: ${added} added, ${updated} updated`
       });
@@ -1146,6 +1254,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/agents/:agentId/tasks", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const agentId = parseInt(req.params.agentId);
       const agent = await storage.getAgent(agentId);
 
@@ -1161,12 +1273,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tasks = await storage.getTasksByAgentId(agentId);
       res.json(tasks);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   app.get("/api/tasks/:id", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const task = await storage.getTask(parseInt(req.params.id));
 
       if (!task) {
@@ -1180,12 +1296,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(task);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   app.post("/api/tasks", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       // Validate agent ownership
       const agent = await storage.getAgent(req.body.agentId);
       if (!agent || agent.userId !== req.user.id) {
@@ -1208,14 +1328,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const task = await storage.createTask(validatedData.data);
+
+      // Log task creation activity (Pass single object argument)
+      await storage.createUserActivity({
+        userId: req.user.id,
+        activityType: "task_created",
+        resourceId: task.id,
+        resourceType: "task",
+        metadata: { agentId: task.agentId, status: task.status },
+      });
+
       res.status(201).json(task);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   app.patch("/api/tasks/:id", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const taskId = parseInt(req.params.id);
       const task = await storage.getTask(taskId);
 
@@ -1232,13 +1366,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedTask = await storage.updateTask(taskId, req.body);
       res.json(updatedTask);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // Message routes
   app.get("/api/tasks/:taskId/messages", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const taskId = parseInt(req.params.taskId);
       const task = await storage.getTask(taskId);
 
@@ -1254,12 +1392,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messages = await storage.getMessagesByTaskId(taskId);
       res.json(messages);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   app.post("/api/tasks/:taskId/messages", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const taskId = parseInt(req.params.taskId);
       const task = await storage.getTask(taskId);
 
@@ -1267,8 +1409,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Task not found" });
       }
 
-      // Check ownership
-      if (task.userId !== req.user!.id) {
+      // Check ownership - req.user is guaranteed here by the initial check
+      if (task.userId !== req.user.id) {
         return res.status(403).json({ error: "Not authorized" });
       }
 
@@ -1286,30 +1428,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const message = await storage.createMessage(validatedData.data);
-      
+
       // If the message is from the user, process it with the AI agent
       if (validatedData.data.role === 'user') {
         // Update task status to pending if it was completed or failed
         if (task.status === 'completed' || task.status === 'failed') {
           await storage.updateTask(taskId, { status: "pending" });
         }
-        
+
         // Process the task in the background
         setTimeout(async () => {
           try {
             await processAgentTask(taskId, storage);
           } catch (error) {
-            console.error('Error processing agent task:', error instanceof Error ? error.message : String(error));
+            console.error('Error processing agent task:', handleError(error)); // Use handleError
             // Update task status to failed if there was an error
-            await storage.updateTask(taskId, { 
+            await storage.updateTask(taskId, {
               status: "failed",
-              result: JSON.stringify({ 
-                error: error instanceof Error ? error.message : "Unknown error occurred"
-              })
+              result: JSON.stringify({ error: handleError(error) }) // Use handleError
             });
           }
         }, 0);
-        
+
         res.status(201).json({
           message,
           taskStatus: "pending",
@@ -1319,15 +1459,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(201).json(message);
       }
     } catch (error) {
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Unknown error occurred" 
-      });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
-  
+
   // Endpoint to explicitly execute a task with an agent
   app.post("/api/tasks/:taskId/execute", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const taskId = parseInt(req.params.taskId);
       const task = await storage.getTask(taskId);
 
@@ -1335,30 +1477,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Task not found" });
       }
 
-      // Check ownership
-      if (task.userId !== req.user!.id) {
+      // Check ownership - req.user is guaranteed here
+      if (task.userId !== req.user.id) {
         return res.status(403).json({ error: "Not authorized" });
       }
-      
+
       // Update task status to pending
       await storage.updateTask(taskId, { status: "pending" });
-      
+
       // Process in the background
       setTimeout(async () => {
         try {
           await processAgentTask(taskId, storage);
         } catch (error) {
-          console.error('Error executing agent task:', error instanceof Error ? error.message : String(error));
-          await storage.updateTask(taskId, { 
+          console.error('Error executing agent task:', handleError(error)); // Use handleError
+          await storage.updateTask(taskId, {
             status: "failed",
-            result: JSON.stringify({ 
-              error: error instanceof Error ? error.message : "Unknown error occurred"
-            })
+            result: JSON.stringify({ error: handleError(error) }) // Use handleError
           });
         }
       }, 0);
-      
-      res.json({ 
+
+      res.json({
         message: "Task execution initiated",
         task: {
           id: task.id,
@@ -1366,15 +1506,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error) {
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Unknown error occurred"
-      });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // Task-File relationship routes
   app.get("/api/tasks/:taskId/files", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const taskId = parseInt(req.params.taskId);
       const task = await storage.getTask(taskId);
 
@@ -1390,7 +1532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const files = await storage.getFilesByTaskId(taskId);
       res.json(files);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1400,6 +1542,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requireAuth,
     async (req, res) => {
       try {
+        // Middleware ensures req.user exists, but TS needs explicit check
+        if (!req.user) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
         const taskId = parseInt(req.params.taskId);
         const fileId = parseInt(req.params.fileId);
 
@@ -1431,7 +1577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const taskFile = await storage.linkFileToTask(taskId, fileId);
         res.status(201).json({ success: true, taskFile });
       } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: handleError(error) }); // Use handleError
       }
     },
   );
@@ -1442,6 +1588,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requireAuth,
     async (req, res) => {
       try {
+        // Middleware ensures req.user exists, but TS needs explicit check
+        if (!req.user) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
         const taskId = parseInt(req.params.taskId);
         const fileId = parseInt(req.params.fileId);
 
@@ -1466,44 +1616,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({ success: true });
       } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: handleError(error) }); // Use handleError
       }
     },
   );
 
   // Admin routes
-  
+
   // Site Settings Admin Route
   app.patch("/api/admin/site-settings", requireAdmin, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       console.log("Updating site settings with payload:", req.body);
       const updates = req.body;
-      
+
       // Add the user ID who made the update if available
-      if (req.user && req.user.id) {
-        updates.updatedBy = req.user.id;
-      }
-      
+      // req.user is guaranteed here by middleware and check above
+      updates.updatedBy = req.user.id;
+
       // Check if settings exist, create default if not
       let settings = await storage.getSiteSettings();
-      
+
       if (!settings) {
         console.log("No site settings found for admin update, creating default first");
         settings = await storage.createDefaultSiteSettings();
       }
-      
+
       // Now update the settings
       const updatedSettings = await storage.updateSiteSettings(updates);
-      
+
       if (!updatedSettings) {
         return res.status(500).json({ error: "Failed to update site settings" });
       }
-      
+
       console.log("Site settings updated successfully");
       res.json(updatedSettings);
     } catch (error) {
       console.error("Error updating site settings:", error);
-      res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1513,7 +1666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tools = await storage.getAllAgentTools();
       res.json(tools);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1528,7 +1681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(tool);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1547,7 +1700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tool = await storage.createAgentTool(validatedData.data);
       res.status(201).json(tool);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1564,7 +1717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedTool = await storage.updateAgentTool(toolId, req.body);
       res.json(updatedTool);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1586,7 +1739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteAgentTool(toolId);
       res.sendStatus(204);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1598,7 +1751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const activeTools = tools.filter((tool) => tool.isActive);
       res.json(activeTools);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1613,7 +1766,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const activeTools = tools.filter((tool) => tool.isActive);
         res.json(activeTools);
       } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: handleError(error) }); // Use handleError
       }
     },
   );
@@ -1624,7 +1777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plans = await storage.getActivePlans();
       res.json(plans);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1633,7 +1786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plans = await storage.getAllPlans();
       res.json(plans);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1642,7 +1795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plan = await storage.createPlan(req.body);
       res.status(201).json(plan);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1657,7 +1810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(updatedPlan);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1666,7 +1819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get active providers
       const activeProviders = await storage.getActiveAiProviders();
-      
+
       // Transform data for the widget display
       const providerStatus = activeProviders.map(provider => ({
         id: provider.provider,
@@ -1676,24 +1829,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         quotaLimit: 100, // This would be based on the user's plan
         quotaUnit: 'USD'
       }));
-      
+
       res.json(providerStatus);
     } catch (error) {
       console.error("Error fetching AI provider status:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // AI Providers Admin Endpoints
   app.get("/api/admin/ai-providers", requireAdmin, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const providers = await storage.getAllAiProviders();
-      
+
       // Enhance each provider with API key availability
       const enhancedProviders = await Promise.all(providers.map(async provider => {
         // Check env var first
         let hasApiKey = checkRequiredApiKey(provider.provider);
-        
+
         // If not in env vars, check credentials table if user is authenticated
         if (!hasApiKey && req.user) {
           try {
@@ -1706,27 +1863,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error("Error checking credential:", credError);
           }
         }
-        
+
         return {
           ...provider,
           hasApiKey
         };
       }));
-      
+
       res.json(enhancedProviders);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
-  
+
   // Check if API key is available for provider
   app.get("/api/admin/ai-providers/check-key/:provider", requireAdmin, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const { provider } = req.params;
-      
+
       // Check env var first
       let hasApiKey = checkRequiredApiKey(provider);
-      
+
       // If not in env vars, check credentials table if user is authenticated
       if (!hasApiKey && req.user) {
         try {
@@ -1739,21 +1900,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("Error checking credential:", credError);
         }
       }
-      
+
       res.json({ hasApiKey });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   app.post("/api/admin/ai-providers", requireAdmin, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       // Extract apiKey from the request if present
       const { apiKey, ...providerData } = req.body;
-      
+
       // Store provider in database
       const provider = await storage.createAiProvider(providerData);
-      
+
       // If API key was provided, create a credential record
       if (apiKey && req.user) {
         // Create credential using the credential service
@@ -1766,28 +1931,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           service: provider.provider // Associate with the provider
         });
       }
-      
+
       // Add hasApiKey flag - set to true immediately if we just stored an API key
       const environmentKeyExists = checkRequiredApiKey(provider.provider);
       // If we've just stored an API key via credentials, we know it exists
       const hasApiKey = environmentKeyExists || (apiKey ? true : false);
-      
+
       res.status(201).json({
         ...provider,
         hasApiKey
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   app.patch("/api/admin/ai-providers/:id", requireAdmin, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const providerId = parseInt(req.params.id);
-      
+
       // Extract apiKey from the request if present
       const { apiKey, ...providerData } = req.body;
-      
+
       // Update provider in database
       const updatedProvider = await storage.updateAiProvider(
         providerId,
@@ -1797,7 +1966,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!updatedProvider) {
         return res.status(404).json({ error: "AI Provider not found" });
       }
-      
+
       // If API key was provided, update or create a credential record
       if (apiKey && req.user) {
         // Get existing credential for this provider
@@ -1805,7 +1974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.user.id,
           updatedProvider.provider
         );
-        
+
         if (existingCredential) {
           // Update existing credential
           await credentialService.updateCredential(existingCredential.id, {
@@ -1823,18 +1992,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
+
       // Add hasApiKey flag - set to true immediately if we just stored an API key
       const environmentKeyExists = checkRequiredApiKey(updatedProvider.provider);
       // If we've just stored an API key via credentials, we know it exists
       const hasApiKey = environmentKeyExists || (apiKey ? true : false);
-      
+
       res.json({
         ...updatedProvider,
         hasApiKey
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1844,10 +2013,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const models = await storage.getAllAiModels();
       res.json(models);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
-  
+
   // Get OpenRouter models endpoint
   app.get("/api/admin/openrouter/models", requireAdmin, async (req, res) => {
     try {
@@ -1857,19 +2026,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           details: "OpenRouter API key is missing",
         });
       }
-      
+
       // Import when needed to avoid startup errors if OpenRouter isn't configured
       const { default: openrouterService } = await import("./services/openrouter-service");
-      
+
       // Get detailed model information
       const modelData = await openrouterService.getDetailedModels();
-      
+
       return res.json(modelData);
     } catch (error: any) {
       console.error("Error fetching OpenRouter models:", error);
       return res.status(500).json({
         error: "Failed to fetch OpenRouter models",
-        details: error.message,
+        details: handleError(error), // Use handleError
       });
     }
   });
@@ -1885,7 +2054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(model);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1911,7 +2080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newModel = await storage.createAiModel(validatedData.data);
       res.status(201).json(newModel);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1936,7 +2105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedModel = await storage.updateAiModel(modelId, req.body);
       res.json(updatedModel);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -1962,100 +2131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(404).json({ error: "AI Model not found" });
       }
     } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // AI Prompts Admin Routes
-  app.get("/api/admin/ai-prompts", requireAdmin, async (req, res) => {
-    try {
-      const prompts = await storage.getAllAiPrompts();
-      res.json(prompts);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.get("/api/admin/ai-prompts/:id", requireAdmin, async (req, res) => {
-    try {
-      const promptId = parseInt(req.params.id);
-      const prompt = await storage.getAiPrompt(promptId);
-
-      if (!prompt) {
-        return res.status(404).json({ error: "AI Prompt not found" });
-      }
-
-      res.json(prompt);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post("/api/admin/ai-prompts", requireAdmin, async (req, res) => {
-    try {
-      // Verify the model exists
-      const model = await storage.getAiModel(req.body.modelId);
-      if (!model) {
-        return res.status(400).json({ error: "AI Model not found" });
-      }
-
-      // Validate and create prompt
-      const validatedData = insertAiPromptSchema.safeParse(req.body);
-
-      if (!validatedData.success) {
-        return res.status(400).json({
-          error: "Validation failed",
-          details: validatedData.error.format(),
-        });
-      }
-
-      // Create the prompt
-      const newPrompt = await storage.createAiPrompt(validatedData.data);
-      res.status(201).json(newPrompt);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.patch("/api/admin/ai-prompts/:id", requireAdmin, async (req, res) => {
-    try {
-      const promptId = parseInt(req.params.id);
-      const prompt = await storage.getAiPrompt(promptId);
-
-      if (!prompt) {
-        return res.status(404).json({ error: "AI Prompt not found" });
-      }
-
-      // If model is being updated, verify it exists
-      if (req.body.modelId) {
-        const model = await storage.getAiModel(req.body.modelId);
-        if (!model) {
-          return res.status(400).json({ error: "AI Model not found" });
-        }
-      }
-
-      // Update prompt
-      const updatedPrompt = await storage.updateAiPrompt(promptId, req.body);
-      res.json(updatedPrompt);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.delete("/api/admin/ai-prompts/:id", requireAdmin, async (req, res) => {
-    try {
-      const promptId = parseInt(req.params.id);
-
-      // Delete prompt
-      const success = await storage.deleteAiPrompt(promptId);
-
-      if (success) {
-        res.sendStatus(204);
-      } else {
-        res.status(404).json({ error: "AI Prompt not found" });
-      }
-    } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -2063,6 +2139,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a payment session for a subscription
   app.post("/api/payments/create-session", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const { planId } = req.body;
 
       if (!planId) {
@@ -2086,7 +2166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Payment session creation error:", error);
       res
         .status(500)
-        .json({ error: error.message || "Failed to create payment session" });
+        .json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -2117,7 +2197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Payment callback error:", error);
       res.redirect(
-        `/payment-failed?reason=${encodeURIComponent(error.message || "Unknown error")}`,
+        `/payment-failed?reason=${encodeURIComponent(handleError(error))}`, // Use handleError
       );
     }
   });
@@ -2183,13 +2263,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Payment webhook error:", error);
       res
         .status(500)
-        .json({ error: error.message || "Webhook processing failed" });
+        .json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // Check subscription status
   app.get("/api/subscription", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const user = await storage.getUser(req.user.id);
 
       if (!user) {
@@ -2197,19 +2281,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get the plan details if the user has one
-      let plan = null;
-      if (user.plan) {
-        plan = await storage.getPlanByName(user.plan);
+      let planDetails = null;
+      if (user.planId) { // Check planId instead of user.plan
+        planDetails = await storage.getPlan(user.planId); // Fetch plan by ID
       }
 
+      // Determine plan name based on details or default to 'free'
+      const planName = planDetails ? planDetails.name : "free";
+
       res.json({
-        plan: user.plan || "free",
+        plan: planName, // Use derived plan name
         planExpiresAt: user.planExpiresAt,
-        planDetails: plan,
+        planDetails: planDetails, // Return full plan details
       });
     } catch (error: any) {
       res.status(500).json({
-        error: error.message || "Failed to retrieve subscription information",
+        error: handleError(error), // Use handleError
       });
     }
   });
@@ -2228,7 +2315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(sanitizedUsers);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -2245,12 +2332,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   app.post("/api/admin/users", requireAdmin, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       // Validate required fields
       const { username, email, password, fullName } = req.body;
       if (!username || !email || !password || !fullName) {
@@ -2285,34 +2376,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Save user to database
       const createdUser = await storage.createUser(newUser);
 
-      // Create user activity log entry
-      if (req.user && req.user.id) {
-        await storage.createUserActivity({
-          userId: req.user.id,
-          activityType: "user_created",
-          resourceId: createdUser.id,
-          resourceType: "user",
-          metadata: {
-            username: createdUser.username,
-            role: createdUser.role,
-          },
-        });
-      }
+      // Log user update activity (Corrected argument count)
+      await storage.createUserActivity({
+        userId: req.user.id,
+        activityType: "user_created",
+        resourceId: createdUser.id,
+        resourceType: "user",
+        metadata: {
+          username: createdUser.username,
+          role: createdUser.role,
+        },
+      });
 
       // Remove sensitive data
       const { password: _, ...userWithoutPassword } = createdUser;
-      
+
       res.status(201).json(userWithoutPassword);
     } catch (error: any) {
       console.error("Error creating user:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
-  
+
 
 
   app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const userId = parseInt(req.params.id);
       const user = await storage.getUser(userId);
 
@@ -2329,7 +2422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body.fullName) updates.fullName = req.body.fullName;
       if (req.body.role) updates.role = req.body.role;
       if (req.body.isActive !== undefined) updates.isActive = req.body.isActive;
-      if (req.body.plan) updates.plan = req.body.plan;
+      // Removed user.plan update as it doesn't exist on the type
       if (req.body.planId) updates.planId = req.body.planId;
       if (req.body.planExpiresAt)
         updates.planExpiresAt = new Date(req.body.planExpiresAt);
@@ -2345,72 +2438,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Log user update activity
-      if (req.user && req.user.id) {
-        await storage.createUserActivity({
-          userId: req.user.id,
-          activityType: "user_updated",
-          resourceId: userId,
-          resourceType: "user",
-          metadata: {
-            fields: Object.keys(updates),
-          },
-        });
-      }
+      // Log user update activity (Corrected argument count)
+      await storage.createUserActivity({
+        userId: req.user.id,
+        activityType: "user_updated",
+        resourceId: userId,
+        resourceType: "user",
+        metadata: {
+          fields: Object.keys(updates),
+        },
+      });
 
       // Remove sensitive data
       const { password, ...userWithoutPassword } = updatedUser;
       res.json(userWithoutPassword);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   app.delete("/api/admin/users/:id", requireAdmin, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const userId = parseInt(req.params.id);
-      
+
       // Don't allow deletion of the current user
-      if (req.user && req.user.id === userId) {
+      if (req.user.id === userId) {
         return res.status(400).json({ error: "Cannot delete your own account" });
       }
-      
+
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      
+
       // Delete the user
       const result = await storage.deleteUser(userId);
-      
+
       if (!result) {
         return res.status(500).json({ error: "Failed to delete user" });
       }
-      
-      // Log user deletion activity
-      if (req.user && req.user.id) {
-        await storage.createUserActivity({
-          userId: req.user.id,
-          activityType: "user_deleted",
-          resourceId: userId,
-          resourceType: "user",
-          metadata: {
-            username: user.username,
-          },
-        });
-      }
-      
+
+      // Log user deletion activity (Pass single object argument)
+      await storage.createUserActivity({
+        userId: req.user.id,
+        activityType: "user_deleted",
+        resourceId: userId,
+        resourceType: "user",
+        metadata: {
+          username: user.username,
+        },
+      });
+
       res.json({ success: true, message: "User deleted successfully" });
     } catch (error: any) {
       console.error("Error deleting user:", error);
-      
+
       // Handle the specific error for last admin user
-      if (error.message === "Cannot delete the last admin user") {
+      if (error instanceof Error && error.message === "Cannot delete the last admin user") {
         return res.status(400).json({ error: error.message });
       }
-      
-      res.status(500).json({ error: error.message });
+
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -2436,7 +2529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Translation error:", error);
       return res.status(500).json({
         error: "Translation failed",
-        details: error.message,
+        details: handleError(error), // Use handleError
       });
     }
   });
@@ -2465,7 +2558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Bulk translation error:", error);
       return res.status(500).json({
         error: "Bulk translation failed",
-        details: error.message,
+        details: handleError(error), // Use handleError
       });
     }
   });
@@ -2488,7 +2581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Content generation error:", error);
       return res.status(500).json({
         error: "Content generation failed",
-        details: error.message,
+        details: handleError(error), // Use handleError
       });
     }
   });
@@ -2511,7 +2604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Content analysis error:", error);
       return res.status(500).json({
         error: "Content analysis failed",
-        details: error.message,
+        details: handleError(error), // Use handleError
       });
     }
   });
@@ -2521,6 +2614,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user activity feed
   app.get("/api/user/activity", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const { limit } = req.query;
 
       const activities = await storage.getUserActivitiesByUserId(
@@ -2532,8 +2629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error retrieving user activities:", error);
       res.status(500).json({
-        error: "Failed to retrieve user activities",
-        details: error.message,
+        error: handleError(error), // Use handleError
       });
     }
   });
@@ -2541,13 +2637,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user analytics summary
   app.get("/api/user/analytics", requireAuth, async (req, res) => {
     try {
-      const analytics = await storage.getUserAnalytics(req.user.id);
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const analytics = await storage.getUserAnalytics(req.user.id, "all");
       res.json(analytics || { message: "No analytics data available yet" });
     } catch (error: any) {
       console.error("Error retrieving user analytics:", error);
       res.status(500).json({
-        error: "Failed to retrieve analytics data",
-        details: error.message,
+        error: handleError(error), // Use handleError
       });
     }
   });
@@ -2555,6 +2654,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user dashboard preferences
   app.get("/api/user/dashboard/preferences", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const preferences = await storage.getDashboardPreference(req.user.id);
 
       if (!preferences) {
@@ -2589,7 +2692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error retrieving dashboard preferences:", error);
       res.status(500).json({
         error: "Failed to retrieve dashboard preferences",
-        details: error.message,
+        details: handleError(error), // Use handleError
       });
     }
   });
@@ -2597,6 +2700,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update dashboard preferences
   app.put("/api/user/dashboard/preferences", requireAuth, async (req, res) => {
     try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
       const { layout, widgets, theme, favoriteAgents, recentTasks } = req.body;
 
       // Get existing preferences
@@ -2606,21 +2713,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create default preferences if none exist
         const defaultPreferences = {
           userId: req.user.id,
-          layout: layout || {
+          layout: {
             columns: 2,
             showWelcome: true,
             compactView: false,
           },
           favoriteAgents: favoriteAgents || [],
           recentTasks: recentTasks || [],
-          widgets: widgets || [
+          widgets: [
             { id: "activity", position: 0, enabled: true },
             { id: "stats", position: 1, enabled: true },
             { id: "quickActions", position: 2, enabled: true },
             { id: "recentFiles", position: 3, enabled: true },
             { id: "agentStatus", position: 4, enabled: true },
           ],
-          theme: theme || "system",
+          theme: "system",
           updatedAt: new Date(),
         };
 
@@ -2650,7 +2757,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error updating dashboard preferences:", error);
       res.status(500).json({
         error: "Failed to update dashboard preferences",
-        details: error.message,
+        details: handleError(error), // Use handleError
       });
     }
   });
@@ -2661,6 +2768,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requireAuth,
     async (req, res) => {
       try {
+        // Middleware ensures req.user exists, but TS needs explicit check
+        if (!req.user) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
         const { agentId } = req.params;
 
         if (!agentId) {
@@ -2735,7 +2846,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error adding agent to favorites:", error);
         res.status(500).json({
           error: "Failed to add agent to favorites",
-          details: error.message,
+          details: handleError(error), // Use handleError
         });
       }
     },
@@ -2747,6 +2858,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requireAuth,
     async (req, res) => {
       try {
+        // Middleware ensures req.user exists, but TS needs explicit check
+        if (!req.user) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
         const { agentId } = req.params;
 
         if (!agentId) {
@@ -2779,7 +2894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error removing agent from favorites:", error);
         res.status(500).json({
           error: "Failed to remove agent from favorites",
-          details: error.message,
+          details: handleError(error), // Use handleError
         });
       }
     },
@@ -2791,16 +2906,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.isAuthenticated() ? req.user!.id : null;
       const sessionId = req.query.sessionId as string;
-      
+
       if (!sessionId) {
         return res.status(400).json({ error: "Session ID is required" });
       }
-      
+
       const history = await getChatHistory(userId, sessionId);
       res.json(history);
     } catch (error) {
       console.error("Error fetching chat history:", error);
-      res.status(500).json({ error: "Failed to fetch chat history" });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -2810,17 +2925,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.body.content) {
         return res.status(400).json({ error: "Message content is required" });
       }
-      
+
       const content = req.body.content;
       const providedSessionId = req.body.sessionId;
       const userId = req.isAuthenticated() ? req.user!.id : null;
-      
+
       // Get or create session ID
       const sessionId = await getOrCreateSessionId(providedSessionId);
-      
+
       // Get current timestamp for consistent usage throughout the transaction
       const timestamp = new Date();
-      
+
       // Store user message with timestamp
       await storeChatMessage({
         userId: userId || undefined,
@@ -2829,19 +2944,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isBot: false,
         timestamp
       });
-      
+
       // Get or create game progress
       const gameInfo = await getOrCreateGameProgress(userId, sessionId);
-      
+
       // Award points for activity (1 point per message)
       await awardPoints(userId, sessionId, 1);
-      
+
       // Update user streak and check if it was incremented
       const streakIncremented = await updateStreak(userId, sessionId);
-      
+
       // Generate dynamic response based on user message and game progress
       const botResponse = await generateResponse(userId, sessionId, content, gameInfo);
-      
+
       // Enhance the response if streak was just incremented
       let responseContent = botResponse.content;
       if (streakIncremented) {
@@ -2850,7 +2965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           responseContent += ` 🔥 Great job on your ${gameInfo.streak + 1}-day streak! Keep coming back daily for more points and rewards.`;
         }
       }
-      
+
       // Store bot response with the enhanced content
       await storeChatMessage({
         userId: userId || undefined,
@@ -2860,34 +2975,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: botResponse.metadata,
         timestamp
       });
-      
+
       // Check for challenge completion based on message content
       // For example, if the user asks about a specific feature, we might complete a discovery challenge
       const userMessageLower = content.toLowerCase();
-      
+
       // Feature discovery logic through natural conversation
       if (gameInfo.completedChallenges.length < 3) {
         if (
-          (userMessageLower.includes('agent') || userMessageLower.includes('automation')) && 
+          (userMessageLower.includes('agent') || userMessageLower.includes('automation')) &&
           !gameInfo.completedChallenges.includes('1')
         ) {
           await completeChallenge(userId, sessionId, 1); // Complete "Discover Agents" challenge
         } else if (
-          (userMessageLower.includes('credential') || userMessageLower.includes('api key')) && 
+          (userMessageLower.includes('credential') || userMessageLower.includes('api key')) &&
           !gameInfo.completedChallenges.includes('2')
         ) {
           await completeChallenge(userId, sessionId, 2); // Complete "Learn about Credentials" challenge
         } else if (
-          (userMessageLower.includes('browser') || userMessageLower.includes('automate')) && 
+          (userMessageLower.includes('browser') || userMessageLower.includes('automate')) &&
           !gameInfo.completedChallenges.includes('3')
         ) {
           await completeChallenge(userId, sessionId, 3); // Complete "Explore Browser Automation" challenge
         }
       }
-      
+
       // Get updated game progress after all operations
       const updatedGameInfo = await getOrCreateGameProgress(userId, sessionId);
-      
+
       // Return enhanced response with game info and session
       res.json({
         content: responseContent,
@@ -2911,11 +3026,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/chatbot/challenges", async (req, res) => {
     try {
       const difficulty = req.query.difficulty as string | undefined;
+      // Correct: getAvailableChallenges only takes optional difficulty
       const challenges = await getAvailableChallenges(difficulty);
       res.json(challenges);
     } catch (error) {
       console.error("Error fetching challenges:", error);
-      res.status(500).json({ error: "Failed to fetch challenges" });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -2925,23 +3041,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.body.challengeId || !req.body.sessionId) {
         return res.status(400).json({ error: "Challenge ID and Session ID are required" });
       }
-      
+
       const challengeId = parseInt(req.body.challengeId);
       const userId = req.isAuthenticated() ? req.user!.id : null;
       const sessionId = req.body.sessionId;
-      
+
       await completeChallenge(userId, sessionId, challengeId);
-      
+
       // Get updated game progress
       const updatedGameInfo = await getOrCreateGameProgress(userId, sessionId);
-      
+
       res.json({
         success: true,
         gameInfo: updatedGameInfo
       });
     } catch (error) {
       console.error("Error completing challenge:", error);
-      res.status(500).json({ error: "Failed to complete challenge" });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -2950,16 +3066,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.isAuthenticated() ? req.user!.id : null;
       const sessionId = req.query.sessionId as string;
-      
+
       if (!sessionId) {
         return res.status(400).json({ error: "Session ID is required" });
       }
-      
+
       const gameInfo = await getOrCreateGameProgress(userId, sessionId);
       res.json(gameInfo);
     } catch (error) {
       console.error("Error fetching game progress:", error);
-      res.status(500).json({ error: "Failed to fetch game progress" });
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
@@ -2967,12 +3083,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   import("./routes/browser-observer-routes").then(({ browserObserverRouter }) => {
     app.use("/api/browser-observer", browserObserverRouter);
   });
-  
+
   // Import browser automation routes
   import("./routes/browser-automation-routes").then(({ browserAutomationRouter }) => {
     app.use("/api/browser-automation", browserAutomationRouter);
   });
-  
+
   // Import workflow progress routes
   import("./routes/workflow-progress-routes").then(({ workflowProgressRouter }) => {
     app.use("/api/workflow-progress", workflowProgressRouter);

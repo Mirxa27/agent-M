@@ -1,13 +1,13 @@
 // Direct database migration script to register agent tools and provider credentials
 
-import { db } from '../server/db.js';
-import { agentTools, agents, aiProviders, aiModels, tasks } from '../shared/schema.js';
 import { eq } from 'drizzle-orm';
+import { db } from '../server/db.js';
+import { agentTools, agents, aiModels, aiProviders, tasks } from '../shared/schema.js';
 
 async function registerTools() {
   try {
     console.log('Registering AI agent tools...');
-    
+
     // Define the tools
     const tools = [
       {
@@ -29,7 +29,7 @@ async function registerTools() {
         name: "Anthropic Claude",
         description: "Use Anthropic's Claude models for nuanced and safe outputs",
         category: "ai",
-        icon: "brain", 
+        icon: "brain",
         isActive: true,
         isSystem: true,
         createdAt: new Date(),
@@ -90,7 +90,7 @@ async function registerTools() {
         description: "Analyze datasets and provide insights",
         category: "data",
         icon: "barChart",
-        isActive: true, 
+        isActive: true,
         isSystem: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -118,14 +118,14 @@ async function registerTools() {
         }
       }
     ];
-    
+
     // Get existing tools
     const existingTools = await db.select().from(agentTools);
     const existingToolNames = existingTools.map(tool => tool.name);
-    
+
     let added = 0;
     let updated = 0;
-    
+
     // Add or update each tool
     for (const tool of tools) {
       if (!existingToolNames.includes(tool.name)) {
@@ -150,7 +150,7 @@ async function registerTools() {
         }
       }
     }
-    
+
     console.log(`Successfully registered tools: ${added} added, ${updated} updated`);
     return { success: true, added, updated };
   } catch (error) {
@@ -162,7 +162,7 @@ async function registerTools() {
 async function registerProviders() {
   try {
     console.log('Registering AI providers...');
-    
+
     const providers = [
       {
         name: 'OpenAI',
@@ -217,14 +217,14 @@ async function registerProviders() {
         }
       }
     ];
-    
+
     // Get existing providers
     const existingProviders = await db.select().from(aiProviders);
     const existingProviderSlugs = existingProviders.map(provider => provider.slug);
-    
+
     let added = 0;
     let updated = 0;
-    
+
     // Add or update each provider
     for (const provider of providers) {
       if (!existingProviderSlugs.includes(provider.slug)) {
@@ -247,7 +247,7 @@ async function registerProviders() {
         }
       }
     }
-    
+
     console.log(`Successfully registered providers: ${added} added, ${updated} updated`);
     return { success: true, added, updated };
   } catch (error) {
@@ -259,10 +259,10 @@ async function registerProviders() {
 async function registerAgentTemplates() {
   try {
     console.log('Registering agent templates...');
-    
+
     // Get the tools first to link them properly
     const allTools = await db.select().from(agentTools);
-    
+
     // Define agent templates
     const templates = [
       {
@@ -276,7 +276,7 @@ async function registerAgentTemplates() {
         createdAt: new Date(),
         updatedAt: new Date(),
         tools: [
-          allTools.find(t => t.name === 'OpenAI Chat')?.id, 
+          allTools.find(t => t.name === 'OpenAI Chat')?.id,
           allTools.find(t => t.name === 'Anthropic Claude')?.id,
           allTools.find(t => t.name === 'Grok by xAI')?.id,
           allTools.find(t => t.name === 'Code Generator')?.id
@@ -299,7 +299,7 @@ async function registerAgentTemplates() {
         createdAt: new Date(),
         updatedAt: new Date(),
         tools: [
-          allTools.find(t => t.name === 'OpenAI Chat')?.id, 
+          allTools.find(t => t.name === 'OpenAI Chat')?.id,
           allTools.find(t => t.name === 'Anthropic Claude')?.id
         ].filter(Boolean),
         config: {
@@ -320,7 +320,7 @@ async function registerAgentTemplates() {
         createdAt: new Date(),
         updatedAt: new Date(),
         tools: [
-          allTools.find(t => t.name === 'OpenAI Chat')?.id, 
+          allTools.find(t => t.name === 'OpenAI Chat')?.id,
           allTools.find(t => t.name === 'Anthropic Claude')?.id,
           allTools.find(t => t.name === 'Content Optimizer')?.id
         ].filter(Boolean),
@@ -342,7 +342,7 @@ async function registerAgentTemplates() {
         createdAt: new Date(),
         updatedAt: new Date(),
         tools: [
-          allTools.find(t => t.name === 'OpenAI Chat')?.id, 
+          allTools.find(t => t.name === 'OpenAI Chat')?.id,
           allTools.find(t => t.name === 'Anthropic Claude')?.id,
           allTools.find(t => t.name === 'Content Optimizer')?.id
         ].filter(Boolean),
@@ -376,17 +376,99 @@ async function registerAgentTemplates() {
           provider: 'openrouter',
           capabilities: ['data analysis', 'statistical modeling', 'trend identification', 'visualization recommendation']
         }
+      },
+      {
+        name: 'Research Assistant',
+        description: 'Conducts research, summarizes findings, and provides citations',
+        type: 'research',
+        icon: 'bookOpen',
+        isActive: true,
+        isTemplate: true,
+        userId: 2, // admin user
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        tools: [
+          allTools.find(t => t.name === 'Perplexity AI')?.id,
+          allTools.find(t => t.name === 'OpenAI Chat')?.id
+        ].filter(Boolean),
+        config: {
+          instructions: 'You are a research assistant. Find relevant information, synthesize it, and provide accurate citations.',
+          model: 'perplexity/llama-3.1-sonar-large-128k-online',
+          temperature: 0.3,
+          provider: 'perplexity',
+          capabilities: ['web search', 'summarization', 'citation generation', 'fact checking']
+        }
+      },
+      {
+        name: 'Email Responder',
+        description: 'Drafts professional email replies based on context and instructions',
+        type: 'communication',
+        icon: 'mail',
+        isActive: true,
+        isTemplate: true,
+        userId: 2, // admin user
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        tools: [
+          allTools.find(t => t.name === 'OpenAI Chat')?.id,
+          allTools.find(t => t.name === 'Anthropic Claude')?.id
+        ].filter(Boolean),
+        config: {
+          instructions: 'You are an AI assistant skilled in drafting professional emails. Respond clearly and concisely based on the provided context.',
+          model: 'gpt-4o-mini',
+          temperature: 0.6,
+          capabilities: ['email drafting', 'tone adjustment', 'professional communication']
+        }
+      },
+      {
+        name: 'Meeting Summarizer',
+        description: 'Summarizes meeting transcripts or notes into key points and action items',
+        type: 'summarization',
+        icon: 'clipboardList',
+        isActive: true,
+        isTemplate: true,
+        userId: 2, // admin user
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        tools: [
+          allTools.find(t => t.name === 'Anthropic Claude')?.id,
+          allTools.find(t => t.name === 'OpenAI Chat')?.id
+        ].filter(Boolean),
+        config: {
+          instructions: 'You are an AI assistant specialized in summarizing text. Extract key decisions, action items, and main topics from meeting notes or transcripts.',
+          model: 'claude-3-haiku', // Use a faster model for summarization
+          temperature: 0.4,
+          capabilities: ['summarization', 'action item extraction', 'key point identification']
+        }
+      },
+      {
+        name: 'Workflow Automator',
+        description: 'Connects different tools and services to automate repetitive tasks',
+        type: 'automation',
+        icon: 'zap', // Re-using zap icon, consider adding more icons
+        isActive: false, // Automation might require more setup/tools
+        isTemplate: true,
+        userId: 2, // admin user
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        tools: [], // Requires specific tool integrations (e.g., Zapier, Webhook)
+        config: {
+          instructions: 'You are an automation expert. Design and potentially execute workflows connecting various applications based on user triggers and actions.',
+          model: 'gpt-4o',
+          temperature: 0.5,
+          capabilities: ['workflow design', 'API integration concepts', 'automation logic']
+        }
       }
     ];
-    
+
     // Get existing templates
     const existingAgents = await db.select().from(agents).where(eq(agents.isTemplate, true));
     const existingAgentNames = existingAgents.map(agent => agent.name);
-    
+
     let added = 0;
     let updated = 0;
     let templateIds = [];
-    
+
     // Add or update each template
     for (const template of templates) {
       if (!existingAgentNames.includes(template.name)) {
@@ -412,7 +494,7 @@ async function registerAgentTemplates() {
         }
       }
     }
-    
+
     console.log(`Successfully registered agent templates: ${added} added, ${updated} updated`);
     return { success: true, added, updated, templateIds };
   } catch (error) {
@@ -424,10 +506,10 @@ async function registerAgentTemplates() {
 async function createExampleTasks(templateIds) {
   try {
     console.log('Creating example tasks for agent templates...');
-    
-    // Get all agent templates 
+
+    // Get all agent templates
     const agentTemplates = await db.select().from(agents).where(eq(agents.isTemplate, true));
-    
+
     // Example tasks for each template type
     const tasksByType = {
       'builder': [
@@ -501,14 +583,14 @@ async function createExampleTasks(templateIds) {
         }
       ]
     };
-    
+
     let tasksAdded = 0;
-    
+
     // For each template, add example tasks
     for (const template of agentTemplates) {
       const tasksForType = tasksByType[template.type];
       if (!tasksForType) continue;
-      
+
       for (const taskData of tasksForType) {
         const task = {
           ...taskData,
@@ -518,12 +600,12 @@ async function createExampleTasks(templateIds) {
           createdAt: new Date(),
           updatedAt: new Date()
         };
-        
+
         await db.insert(tasks).values(task);
         tasksAdded++;
       }
     }
-    
+
     console.log(`Successfully created ${tasksAdded} example tasks`);
     return { success: true, count: tasksAdded };
   } catch (error) {
@@ -535,10 +617,10 @@ async function createExampleTasks(templateIds) {
 async function registerModels() {
   try {
     console.log('Registering AI models...');
-    
+
     // Get all providers first
     const providers = await db.select().from(aiProviders);
-    
+
     // Define models
     const modelsToAdd = [
       // OpenAI models
@@ -582,7 +664,7 @@ async function registerModels() {
           }
         }
       },
-      
+
       // Anthropic models
       {
         name: 'Claude 3.7 Sonnet',
@@ -624,7 +706,7 @@ async function registerModels() {
           }
         }
       },
-      
+
       // xAI models
       {
         name: 'Grok-2',
@@ -666,7 +748,7 @@ async function registerModels() {
           }
         }
       },
-      
+
       // Perplexity models
       {
         name: 'Llama 3.1 Sonar Small',
@@ -709,17 +791,17 @@ async function registerModels() {
         }
       }
     ];
-    
+
     // Filter out any models where provider wasn't found
     const models = modelsToAdd.filter(model => model.providerId);
-    
-    // Get existing models 
+
+    // Get existing models
     const existingModels = await db.select().from(aiModels);
     const existingModelIds = existingModels.map(model => model.modelId);
-    
+
     let added = 0;
     let updated = 0;
-    
+
     // Add or update each model
     for (const model of models) {
       if (!existingModelIds.includes(model.modelId)) {
@@ -744,7 +826,7 @@ async function registerModels() {
         }
       }
     }
-    
+
     console.log(`Successfully registered models: ${added} added, ${updated} updated`);
     return { success: true, added, updated };
   } catch (error) {
@@ -758,19 +840,19 @@ async function setupSystem() {
   try {
     // Step 1: Register tools
     await registerTools();
-    
+
     // Step 2: Register providers
     await registerProviders();
-    
+
     // Step 3: Register AI models
     await registerModels();
-    
+
     // Step 4: Register agent templates
     const { templateIds } = await registerAgentTemplates();
-    
+
     // Step 5: Create example tasks
     await createExampleTasks(templateIds);
-    
+
     console.log('System setup completed successfully!');
   } catch (error) {
     console.error('System setup failed:', error);

@@ -1,7 +1,8 @@
-import { Router, Request, Response } from "express";
-import { workflowProgressService } from "../services/workflow-progress-service";
 import { insertWorkflowExecutionSchema } from "@shared/schema";
+import { Request, Response, Router } from "express";
 import { z } from "zod";
+import { workflowProgressService } from "../services/workflow-progress-service";
+import { storage } from "../storage"; // Import storage service
 
 export const workflowProgressRouter = Router();
 
@@ -18,7 +19,7 @@ workflowProgressRouter.post("/executions", checkAuth, async (req: Request, res: 
   try {
     // Set the Content-Type header explicitly to ensure JSON responses
     res.setHeader('Content-Type', 'application/json');
-    
+
     const executionData = insertWorkflowExecutionSchema.parse({
       ...req.body,
       userId: req.user!.id
@@ -40,16 +41,16 @@ workflowProgressRouter.get("/executions/:id", checkAuth, async (req: Request, re
   try {
     const id = parseInt(req.params.id);
     const execution = await workflowProgressService.getExecution(id);
-    
+
     if (!execution) {
       return res.status(404).json({ error: "Execution not found" });
     }
-    
+
     // Check ownership
     if (execution.userId !== req.user!.id) {
       return res.status(403).json({ error: "You don't have permission to access this execution" });
     }
-    
+
     res.json(execution);
   } catch (error) {
     console.error("Error getting workflow execution:", error);
@@ -74,9 +75,25 @@ workflowProgressRouter.get("/sequences/:sequenceId/executions", checkAuth, async
   try {
     const sequenceId = parseInt(req.params.sequenceId);
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-    
-    // TODO: Check if user has access to the sequence
-    
+    const userId = req.user!.id; // Get authenticated user ID
+
+    // --- Authorization Check ---
+    // Fetch the sequence details to check ownership
+    const sequence = await storage.getBrowserSequence(sequenceId); // Corrected method call
+
+    if (!sequence) {
+      return res.status(404).json({ error: "Workflow sequence not found" });
+    }
+
+    // Check if the authenticated user owns the sequence
+    if (sequence.userId !== userId) {
+      // Optional: Add logic here for shared sequences if applicable
+      return res.status(403).json({ error: "You don't have permission to access this sequence's executions" });
+    }
+    // --- End Authorization Check ---
+
+    // Removed TODO as check is implemented above
+
     const executions = await workflowProgressService.getSequenceExecutions(sequenceId, limit);
     res.json(executions);
   } catch (error) {
@@ -90,16 +107,16 @@ workflowProgressRouter.get("/executions/:id/steps", checkAuth, async (req: Reque
   try {
     const id = parseInt(req.params.id);
     const execution = await workflowProgressService.getExecution(id);
-    
+
     if (!execution) {
       return res.status(404).json({ error: "Execution not found" });
     }
-    
+
     // Check ownership
     if (execution.userId !== req.user!.id) {
       return res.status(403).json({ error: "You don't have permission to access this execution" });
     }
-    
+
     const steps = await workflowProgressService.getStepExecutions(id);
     res.json(steps);
   } catch (error) {
@@ -113,22 +130,22 @@ workflowProgressRouter.patch("/executions/:executionId/steps/:stepId", checkAuth
   try {
     const executionId = parseInt(req.params.executionId);
     const stepId = parseInt(req.params.stepId);
-    
+
     const execution = await workflowProgressService.getExecution(executionId);
-    
+
     if (!execution) {
       return res.status(404).json({ error: "Execution not found" });
     }
-    
+
     // Check ownership
     if (execution.userId !== req.user!.id) {
       return res.status(403).json({ error: "You don't have permission to access this execution" });
     }
-    
+
     const { status, result, error, screenshot } = req.body;
-    
+
     let updatedStep;
-    
+
     if (status === "running") {
       updatedStep = await workflowProgressService.startStepExecution(executionId, stepId);
     } else if (status === "completed") {
@@ -141,7 +158,7 @@ workflowProgressRouter.patch("/executions/:executionId/steps/:stepId", checkAuth
     } else {
       return res.status(400).json({ error: "Invalid status. Must be 'running', 'completed', or 'failed'" });
     }
-    
+
     res.json(updatedStep);
   } catch (error) {
     console.error("Error updating workflow step execution:", error);
@@ -154,30 +171,30 @@ workflowProgressRouter.post("/executions/:executionId/steps/:stepId/logs", check
   try {
     const executionId = parseInt(req.params.executionId);
     const stepId = parseInt(req.params.stepId);
-    
+
     const execution = await workflowProgressService.getExecution(executionId);
-    
+
     if (!execution) {
       return res.status(404).json({ error: "Execution not found" });
     }
-    
+
     // Check ownership
     if (execution.userId !== req.user!.id) {
       return res.status(403).json({ error: "You don't have permission to access this execution" });
     }
-    
+
     const { message, level } = req.body;
-    
+
     if (!message) {
       return res.status(400).json({ error: "Log message is required" });
     }
-    
+
     const logEntry = {
       message,
       level: level || "info",
       timestamp: new Date().toISOString()
     };
-    
+
     const updatedStep = await workflowProgressService.addStepLog(executionId, stepId, logEntry);
     res.json(updatedStep);
   } catch (error) {

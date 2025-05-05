@@ -1,8 +1,8 @@
-import { createAIService, AIServiceResponse } from "./ai-service";
-import { storage } from "../storage";
-import { Agent, Credential, Task, InsertTask, File } from "@shared/schema";
 import { decrypt } from "@shared/crypto";
-import { loadAndProcessFile, getFilesByTaskId } from "./file-service";
+import { Agent, Credential, File, Task } from "@shared/schema";
+import { storage } from "../storage";
+import aiService from "./ai-service";
+import { getFilesByTaskId, loadAndProcessFile } from "./file-service";
 
 // Types for agent execution
 export interface AgentTaskContext {
@@ -47,9 +47,10 @@ export class AgentExecutionService {
       // Set up execution context
       const context: AgentTaskContext = {
         agent,
+        // Map credentials and decrypt the 'data' field
         credentials: credentials.map((cred) => ({
           ...cred,
-          value: decrypt(cred.value),
+          decryptedData: decrypt(cred.data), // Use cred.data and rename for clarity
         })),
         task,
         files,
@@ -137,30 +138,34 @@ export class AgentExecutionService {
         throw new Error(`AI Model with ID ${config.modelId} not found`);
       }
 
-      // Create AI service client
-      const aiService = createAIService(provider, model);
-
       // Generate response from AI service
       const prompt = task.description || task.title;
-      const response = await aiService.generateText(prompt, {
-        temperature: config.temperature || 0.7,
-        maxTokens: config.maxTokens || undefined,
-      });
+      // Correct processTask call signature (task, config, messages)
+      // Assuming no previous messages needed for this specific agent type execution
+      const response = await aiService.processTask(
+        task,
+        {
+          provider: provider.provider as any, // Use provider.provider
+          model: model.modelId, // Use model.modelId
+          systemInstructions: config.systemInstructions // Pass system instructions if available
+        },
+        [{ role: 'user', content: prompt }] // Pass the prompt as the initial user message
+      );
 
-      // Record assistant message
+      // Record assistant message using response.content
       await storage.createMessage({
         taskId: task.id,
         role: "assistant",
-        content: response.text,
+        content: response.content, // Use response.content
         timestamp: new Date(),
       });
 
       return {
         success: true,
         result: {
-          text: response.text,
+          content: response.content, // Use response.content
           usage: response.usage,
-          model: response.model,
+          // model is not directly available in AgentResponse, remove it
         },
       };
     } catch (error: any) {
@@ -221,9 +226,6 @@ export class AgentExecutionService {
         throw new Error(`AI Model with ID ${config.modelId} not found`);
       }
 
-      // Create AI service client
-      const aiService = createAIService(provider, model);
-
       // Process each file
       const results = [];
 
@@ -235,22 +237,28 @@ export class AgentExecutionService {
         const prompt = `Analyze the following ${file.type} file named ${file.name}:\n\n${fileData.textContent}\n\nProvide a detailed analysis.`;
 
         // Generate response from AI service
-        const response = await aiService.generateText(prompt, {
-          temperature: config.temperature || 0.7,
-          maxTokens: config.maxTokens || undefined,
-        });
+        // Correct processTask call signature (task, config, messages)
+        const response = await aiService.processTask(
+          task,
+          {
+            provider: provider.provider as any, // Use provider.provider
+            model: model.modelId, // Use model.modelId
+            systemInstructions: config.systemInstructions // Pass system instructions if available
+          },
+          [{ role: 'user', content: prompt }] // Pass the prompt as the initial user message
+        );
 
         results.push({
           fileName: file.name,
           fileType: file.type,
-          analysis: response.text,
+          analysis: response.content, // Use response.content
         });
 
-        // Record assistant message
+        // Record assistant message using response.content
         await storage.createMessage({
           taskId: task.id,
           role: "assistant",
-          content: `Analysis of ${file.name}: ${response.text}`,
+          content: `Analysis of ${file.name}: ${response.content}`, // Use response.content
           timestamp: new Date(),
         });
       }
@@ -290,10 +298,7 @@ export async function createAgentTask(
     agentId,
     title,
     description,
-    status: "pending",
-    result: null,
-    createdAt: new Date(),
-    completedAt: null,
+    // Remove fields not in InsertTask schema (status, result, createdAt, completedAt)
   });
 
   // Record initial message

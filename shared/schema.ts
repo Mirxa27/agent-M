@@ -1,12 +1,12 @@
 import {
-  pgTable,
-  text,
-  serial,
-  integer,
   boolean,
-  jsonb,
-  timestamp,
   decimal,
+  integer,
+  jsonb,
+  pgTable,
+  serial,
+  text,
+  timestamp,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -173,6 +173,7 @@ export const messages = pgTable("messages", {
   role: text("role").notNull(), // 'user', 'assistant', or 'system'
   content: text("content").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}).notNull(), // Added for tool call info and extensibility
 });
 
 export const insertMessageSchema = createInsertSchema(messages).pick({
@@ -180,6 +181,7 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   role: true,
   content: true,
   timestamp: true,
+  metadata: true, // Added
 });
 
 // Task-File relationship schema
@@ -561,7 +563,7 @@ export const browserSettings = pgTable("browser_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Workflow Executions - for tracking sequence execution progress 
+// Workflow Executions - for tracking sequence execution progress
 export const workflowExecutions = pgTable("workflow_executions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -580,7 +582,7 @@ export const workflowExecutions = pgTable("workflow_executions", {
 export const workflowStepExecutions = pgTable("workflow_step_executions", {
   id: serial("id").primaryKey(),
   executionId: integer("execution_id").notNull(), // FK to workflowExecutions.id
-  stepId: integer("step_id").notNull(), // FK to browserSequenceSteps.id 
+  stepId: integer("step_id").notNull(), // FK to browserSequenceSteps.id
   status: text("status").default("pending").notNull(), // pending, running, completed, skipped, failed
   order: integer("order").notNull(), // Order of execution
   startedAt: timestamp("started_at"),
