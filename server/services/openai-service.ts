@@ -1,208 +1,424 @@
+import { AgentTool, Task } from "@shared/schema";
 import OpenAI from "openai";
-import config from "../config";
-import { checkRequiredApiKey } from "../config";
+import { agentToolsService } from "./agent-tools-service";
 
-// Initialize OpenAI client with API key from config
-const openai = new OpenAI({ 
-  apiKey: config.ai.openai.apiKey 
-});
+// Create OpenAI client
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const DEFAULT_MODEL = config.ai.openai.defaultModel;
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Helper function to check if OpenAI API is configured
-export function isOpenAIConfigured(): boolean {
-  return checkRequiredApiKey('openai');
+export interface AIMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+  tool_calls?: any[];
+  tool_call_id?: string;
+  name?: string;
+}
+
+export interface AgentResponse {
+  content: string;
+  rawResponse?: any;
+  usage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+  };
+  metadata?: {
+    toolCalls?: any[];
+    toolResults?: any[];
+  };
+}
+
+// Tool definition format for OpenAI
+export interface ToolDefinition {
+  type: string;
+  function: {
+    name: string;
+    description: string;
+    parameters: any;
+  };
 }
 
 /**
- * Translates text to a target language using OpenAI
- * @param text Text to translate
- * @param sourceLanguage Source language code (e.g., 'en', 'ar')
- * @param targetLanguage Target language code
- * @returns Translated text
+ * Convert AgentTool to OpenAI function format
  */
-export async function translateText(
-  text: string,
-  sourceLanguage: string,
-  targetLanguage: string,
-): Promise<string> {
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are a professional translator. Translate the given text from ${sourceLanguage} to ${targetLanguage}. 
-                    Maintain the original tone, style, and format. Preserve any special characters, HTML tags, or markup.
-                    Return only the translated text without explanations.`,
+function convertToolToFunction(tool: AgentTool): any {
+  // Start with basic properties that all tools have
+  const functionDef = {
+    name: tool.name.replace(/\s+/g, '_').toLowerCase(),
+    description: tool.description || `Use the ${tool.name} tool`,
+    parameters: {
+      type: "object",
+      properties: {},
+      required: [] as string[],
+    } as any,
+  };
+
+  // Add input schema based on tool type
+  switch (tool.type) {
+    case 'database':
+      functionDef.parameters.properties = {
+        operation: {
+          type: "string",
+          enum: ["query", "select", "insert", "update", "delete"],
+          description: "The database operation to perform"
         },
-        { role: "user", content: text },
-      ],
-      temperature: 0.3, // Lower temperature for more consistent translations
-    });
+        query: {
+          type: "string",
+          description: "The SQL query to execute (for 'query' operation)"
+        },
+        tableName: {
+          type: "string",
+          description: "The name of the table to operate on"
+        },
+        columns: {
+          type: "array",
+          items: { type: "string" },
+          description: "Columns to select (for 'select' operation)"
+        },
+        conditions: {
+          type: "object",
+          description: "Key-value pairs representing WHERE conditions"
+        },
+        values: {
+          type: "object",
+          description: "Key-value pairs of data to insert or update"
+        }
+      };
+      functionDef.parameters.required = ["operation"];
+      break;
 
-    return response.choices[0].message.content?.trim() || "";
-  } catch (error: any) {
-    console.error("OpenAI translation error:", error.message);
-    throw new Error(`Translation failed: ${error.message}`);
+    case 'file_system':
+      functionDef.parameters.properties = {
+        operation: {
+          type: "string",
+          enum: ["read", "write", "append", "delete", "list", "exists", "mkdir", "rmdir", "move", "copy"],
+          description: "The file system operation to perform"
+        },
+        path: {
+          type: "string",
+          description: "File or directory path relative to the sandbox directory"
+        },
+        content: {
+          type: "string",
+          description: "Content to write or append to a file"
+        },
+        source: {
+          type: "string",
+          description: "Source path for move/copy operations"
+        },
+        destination: {
+          type: "string",
+          description: "Destination path for move/copy operations"
+        },
+        recursive: {
+          type: "boolean",
+          description: "Whether to perform operation recursively (for rmdir)"
+        }
+      };
+      functionDef.parameters.required = ["operation"];
+      break;
+
+    case 'email':
+      functionDef.parameters.properties = {
+        to: {
+          type: "string",
+          description: "Recipient email address"
+        },
+        subject: {
+          type: "string",
+          description: "Email subject line"
+        },
+        body: {
+          type: "string",
+          description: "Email body content"
+        }
+      };
+      functionDef.parameters.required = ["to", "subject", "body"];
+      break;
+
+    case 'sms':
+      functionDef.parameters.properties = {
+        to: {
+          type: "string",
+          description: "Recipient phone number"
+        },
+        message: {
+          type: "string",
+          description: "SMS message content"
+        }
+      };
+      functionDef.parameters.required = ["to", "message"];
+      break;
+
+    case 'search':
+      functionDef.parameters.properties = {
+        query: {
+          type: "string",
+          description: "Search query string"
+        }
+      };
+      functionDef.parameters.required = ["query"];
+      break;
+
+    default:
+      // For custom tools, use generic input parameter
+      functionDef.parameters.properties = {
+        input: {
+          type: "string",
+          description: "Input for the tool"
+        }
+      };
+      functionDef.parameters.required = ["input"];
+      break;
   }
+
+  return functionDef;
 }
 
 /**
- * Translates a key-value object of translations to a target language
- * @param translations Object with translation keys and values
- * @param sourceLanguage Source language code
- * @param targetLanguage Target language code
- * @returns Object with translated values
+ * Process a task using OpenAI with tool calling support
  */
-export async function translateTranslations(
-  translations: Record<string, Record<string, string>>,
-  sourceLanguage: string,
-  targetLanguage: string,
-): Promise<Record<string, Record<string, string>>> {
-  const result: Record<string, Record<string, string>> = {};
-
-  // Prepare a more efficient batch translation
-  const allTranslations: { section: string; key: string; value: string }[] = [];
-
-  // Collect all translations that need to be translated
-  Object.entries(translations).forEach(([section, sectionTranslations]) => {
-    Object.entries(sectionTranslations).forEach(([key, value]) => {
-      if (typeof value === "string") {
-        allTranslations.push({ section, key, value });
-      }
-    });
-  });
-
-  // Convert to a format that's easier to translate in one go
-  const allTexts = allTranslations.map((item) => item.value);
-  const batchSize = 20; // Process in batches to avoid token limits
-
+export async function processWithOpenAI(
+  task: Task,
+  config: {
+    provider: string;
+    model: string;
+    systemInstructions?: string;
+  },
+  previousMessages: AIMessage[] = [],
+  tools: AgentTool[] = []
+): Promise<AgentResponse> {
   try {
-    // Process in batches
-    for (let i = 0; i < allTexts.length; i += batchSize) {
-      const batch = allTexts.slice(i, i + batchSize);
+    // Use specified model or default to gpt-4o
+    const model = config.model || "gpt-4o";
 
-      // Generate structured prompt for batch translation
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are a professional translator. Translate the following texts from ${sourceLanguage} to ${targetLanguage}. 
-                      Maintain the original tone and meaning. Return a valid JSON array with only the translations in the same order.`,
-          },
-          {
-            role: "user",
-            content: JSON.stringify(batch),
-          },
-        ],
-        temperature: 0.3,
-        response_format: { type: "json_object" },
+    // Build the message array
+    const messages: AIMessage[] = [];
+
+    // Add system instructions if provided
+    if (config.systemInstructions) {
+      messages.push({
+        role: "system",
+        content: config.systemInstructions,
       });
-
-      // Parse the JSON response
-      const translatedBatch =
-        JSON.parse(response.choices[0].message.content || "{}").translations ||
-        [];
-
-      // Reconstruct the translations object with the translated values
-      for (let j = 0; j < translatedBatch.length; j++) {
-        const index = i + j;
-        if (index < allTranslations.length) {
-          const { section, key } = allTranslations[index];
-
-          if (!result[section]) {
-            result[section] = {};
-          }
-
-          result[section][key] = translatedBatch[j];
-        }
-      }
     }
 
-    return result;
-  } catch (error: any) {
-    console.error("OpenAI batch translation error:", error.message);
-    throw new Error(`Batch translation failed: ${error.message}`);
+    // Add previous conversation history if any
+    if (previousMessages.length > 0) {
+      messages.push(...previousMessages);
+    }
+
+    // Add the current task as the user message if it's not already in previous messages
+    const userMessageExists = previousMessages.some(
+      (msg) => msg.role === "user" && (msg.content === (task.description || task.title))
+    );
+
+    if (!userMessageExists) {
+      messages.push({
+        role: "user",
+        content: task.description || task.title,
+      });
+    }
+
+    // Convert tools to OpenAI function format if any tools are provided
+    const openaiTools = tools.length > 0
+      ? tools.map(tool => ({
+        type: "function" as const,
+        function: convertToolToFunction(tool)
+      }))
+      : undefined;
+
+    // Initialize metadata to collect tool calls and results
+    const metadata: any = {
+      toolCalls: [],
+      toolResults: []
+    };
+
+    // Maximum number of tool calling iterations to prevent infinite loops
+    const MAX_TOOL_ITERATIONS = 10;
+    let iterations = 0;
+
+    // Start with the original messages
+    let currentMessages = [...messages];
+    let finalContent = "";
+    let finalResponse: any = null;
+
+    // Continue conversation until the model provides a final answer or max iterations reached
+    while (iterations < MAX_TOOL_ITERATIONS) {
+      // Make the API call
+      console.log(`Making OpenAI API call (iteration ${iterations + 1})...`);
+
+      const response = await openai.chat.completions.create({
+        model: model,
+        messages: currentMessages as any,
+        temperature: 0.7,
+        max_tokens: 4096,
+        tools: openaiTools,
+        tool_choice: openaiTools && openaiTools.length > 0 ? "auto" : "none",
+      });
+
+      // Store the response for returning later
+      finalResponse = response;
+
+      const responseMessage = response.choices[0].message;
+
+      // Check if the model wants to use tools
+      if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+        // Add the assistant's response with tool calls to the conversation
+        currentMessages.push({
+          role: "assistant",
+          content: responseMessage.content || "",
+          tool_calls: responseMessage.tool_calls
+        });
+
+        // Store tool calls in metadata
+        metadata.toolCalls.push(...responseMessage.tool_calls);
+
+        // Process each tool call
+        for (const toolCall of responseMessage.tool_calls) {
+          const functionName = toolCall.function.name;
+          let functionArgs;
+
+          try {
+            functionArgs = JSON.parse(toolCall.function.arguments);
+          } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            console.error(`Error parsing function arguments: ${msg}`);
+            functionArgs = { error: "Failed to parse arguments" };
+          }
+
+          console.log(`Tool call: ${functionName}, Arguments:`, functionArgs);
+
+          // Find the corresponding tool
+          const tool = tools.find(t => t.name.replace(/\s+/g, '_').toLowerCase() === functionName);
+
+          let toolResult;
+          if (tool) {
+            // Execute the tool using the tool's ID
+            try {
+              toolResult = await agentToolsService.executeTool(tool.id, functionArgs);
+              console.log(`Tool execution result:`, toolResult);
+            } catch (error) {
+              const msg = error instanceof Error ? error.message : String(error);
+              console.error(`Error executing tool ${functionName}: ${msg}`);
+              toolResult = {
+                success: false,
+                error: `Tool execution error: ${msg}`
+              };
+            }
+          } else {
+            toolResult = {
+              success: false,
+              error: `Tool '${functionName}' not found`
+            };
+          }
+
+          // Store tool result in metadata
+          metadata.toolResults.push({
+            toolCall: toolCall,
+            result: toolResult
+          });
+
+          // Add the tool result to messages
+          currentMessages.push({
+            role: "assistant", // OpenAI expects only 'assistant', 'user', or 'system'
+            content: JSON.stringify({ tool_call_id: toolCall.id, name: functionName, result: toolResult })
+          });
+        }
+
+        // Continue to the next iteration
+        iterations++;
+        continue;
+      }
+
+      // If no tool calls, we have our final answer
+      finalContent = responseMessage.content || "";
+      break;
+    }
+
+    // If we reached max iterations without a final answer, use the last response
+    if (iterations >= MAX_TOOL_ITERATIONS) {
+      console.warn(`Reached maximum tool iterations (${MAX_TOOL_ITERATIONS}). Returning last response.`);
+    }
+
+    return {
+      content: finalContent,
+      rawResponse: finalResponse,
+      metadata,
+      usage: {
+        promptTokens: finalResponse.usage?.prompt_tokens,
+        completionTokens: finalResponse.usage?.completion_tokens,
+        totalTokens: finalResponse.usage?.total_tokens,
+      },
+    };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error processing task with OpenAI:", msg);
+    throw new Error(`OpenAI API error: ${msg}`);
   }
 }
 
 /**
- * Generates content based on a prompt
- * @param prompt The content generation prompt
- * @param contentType Type of content to generate (e.g., 'blog', 'headline', 'product description')
- * @param tone Tone of the content (e.g., 'professional', 'casual', 'friendly')
- * @returns Generated content
+ * Generate an image using DALL-E 3
  */
-export async function generateContent(
+export async function generateImageWithOpenAI(
   prompt: string,
-  contentType: string,
-  tone: string,
+  size: "1024x1024" | "1792x1024" | "1024x1792" = "1024x1024",
+  quality: "standard" | "hd" = "standard"
+): Promise<string> {
+  try {
+    const response = await openai.images.generate({
+      model: "dall-e-3",
+      prompt,
+      n: 1,
+      size,
+      quality,
+    });
+
+    return response.data?.[0]?.url || "";
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error generating image with OpenAI:", msg);
+    throw new Error(`OpenAI image generation error: ${msg}`);
+  }
+}
+
+/**
+ * Analyze an image using Vision API
+ */
+export async function analyzeImageWithOpenAI(
+  imageUrl: string,
+  prompt: string,
+  model: string = "gpt-4o"
 ): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: model,
       messages: [
         {
-          role: "system",
-          content: `You are an expert content creator specializing in ${contentType} content.
-                    You create content that is ${tone} in tone.
-                    Generate high-quality content based on the user's prompt.
-                    Focus on being clear, engaging, and properly formatted.
-                    Return only the generated content without additional explanations.`,
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            {
+              type: "image_url",
+              image_url: { url: imageUrl }
+            }
+          ],
         },
-        { role: "user", content: prompt },
       ],
-      temperature: 0.7,
+      max_tokens: 1000,
     });
 
-    return response.choices[0].message.content?.trim() || "";
-  } catch (error: any) {
-    console.error("OpenAI content generation error:", error.message);
-    throw new Error(`Content generation failed: ${error.message}`);
+    return response.choices[0].message.content || "";
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error analyzing image with OpenAI:", msg);
+    throw new Error(`OpenAI vision API error: ${msg}`);
   }
 }
 
-/**
- * Analyzes text for sentiment, keywords, and readability metrics
- * @param text Text to analyze
- * @returns Analysis results object
- */
-export async function analyzeContent(text: string): Promise<{
-  sentiment: string;
-  keyTerms: string[];
-  readabilityScore: number;
-  suggestions: string[];
-}> {
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `Analyze the given text and provide:
-                    1. Overall sentiment (positive, negative, or neutral)
-                    2. Key terms or phrases (max 5)
-                    3. Readability score (1-10, where 10 is easiest to read)
-                    4. Improvement suggestions (max 3)
-                    Return the results in JSON format.`,
-        },
-        { role: "user", content: text },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.3,
-    });
-
-    const result = JSON.parse(response.choices[0].message.content || "{}");
-    return {
-      sentiment: result.sentiment || "neutral",
-      keyTerms: result.keyTerms || [],
-      readabilityScore: result.readabilityScore || 5,
-      suggestions: result.suggestions || [],
-    };
-  } catch (error: any) {
-    console.error("OpenAI analysis error:", error.message);
-    throw new Error(`Content analysis failed: ${error.message}`);
-  }
-}
+export default {
+  processTask: processWithOpenAI,
+  generateImage: generateImageWithOpenAI,
+  analyzeImage: analyzeImageWithOpenAI,
+};

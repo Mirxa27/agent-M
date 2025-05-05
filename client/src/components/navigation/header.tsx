@@ -15,6 +15,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import {
+  ArrowLeft,
   Home,
   Bot,
   Key,
@@ -25,6 +26,15 @@ import {
   LogOut,
   Menu,
   X,
+  Globe,
+  PanelLeft,
+  Users,
+  Database,
+  Tag,
+  Wrench,
+  Sparkles,
+  Languages,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -37,7 +47,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-export function Header() {
+interface HeaderProps {
+  customLayout?: boolean;
+}
+
+export function Header({ customLayout = false }: HeaderProps) {
   const { t } = useTranslation();
   const { user, logoutMutation } = useAuth();
   const [location] = useLocation();
@@ -69,6 +83,11 @@ export function Header() {
       icon: <Bot className="w-4 h-4 mr-2" />,
     },
     {
+      href: "/ai-browser",
+      label: "AI Browser",
+      icon: <Globe className="w-4 h-4 mr-2" />,
+    },
+    {
       href: "/credentials",
       label: "Credentials",
       icon: <Key className="w-4 h-4 mr-2" />,
@@ -82,6 +101,44 @@ export function Header() {
       href: "/task-history",
       label: "Tasks",
       icon: <Clock1 className="w-4 h-4 mr-2" />,
+    },
+  ];
+  
+  const adminNavItems = [
+    {
+      href: "/admin/dashboard",
+      label: "Dashboard",
+      icon: <PanelLeft className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/admin/users",
+      label: "Users",
+      icon: <Users className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/admin/providers",
+      label: "AI Providers",
+      icon: <Database className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/admin/models",
+      label: "AI Models",
+      icon: <Bot className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/admin/prompts",
+      label: "AI Prompts",
+      icon: <Tag className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/admin/agent-tools",
+      label: "Agent Tools",
+      icon: <Wrench className="w-5 h-5 mr-3" />,
+    },
+    {
+      href: "/admin/plans",
+      label: "Plans",
+      icon: <Settings className="w-5 h-5 mr-3" />,
     },
   ];
 
@@ -102,6 +159,12 @@ export function Header() {
     return user.username?.substring(0, 2).toUpperCase() || "";
   };
 
+  // Check if current page is the AI Browser page
+  const isAiBrowserPage = location === "/ai-browser";
+  
+  // Determine if we should show a simplified header for custom layouts
+  const showSimplifiedHeader = customLayout && isAiBrowserPage;
+  
   return (
     <>
       <header
@@ -113,21 +176,35 @@ export function Header() {
         )}
       >
         <div className="container flex h-16 items-center justify-between px-4">
-          {/* Logo */}
-          <div className="flex items-center">
-            <div
-              onClick={() => (window.location.href = user ? "/dashboard" : "/")}
-              className="flex items-center space-x-2 cursor-pointer"
-            >
-              <AnimatedLogo size="sm" />
-              <span className="font-heading text-lg font-bold hidden md:block text-primary">
-                {t("app.name")}
-              </span>
+          {/* Left Side: Logo or Back Button */}
+          {isAiBrowserPage ? (
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => (window.location.href = "/dashboard")}
+                className="flex items-center space-x-2 text-primary hover:bg-primary/10"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                <span>Back to Dashboard</span>
+              </Button>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center">
+              <div
+                onClick={() => (window.location.href = user ? "/dashboard" : "/")}
+                className="flex items-center space-x-2 cursor-pointer"
+              >
+                <AnimatedLogo size="sm" />
+                <span className="font-heading text-lg font-bold hidden md:block text-primary">
+                  {t("app.name")}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Desktop Navigation */}
-          {user && (
+          {user && !isAiBrowserPage && (
             <div className="hidden md:flex">
               <NavigationMenu>
                 <NavigationMenuList>
@@ -151,29 +228,17 @@ export function Header() {
 
                   {user && user.role === "admin" && (
                     <NavigationMenuItem>
-                      <NavigationMenuTrigger>Admin</NavigationMenuTrigger>
-                      <NavigationMenuContent>
-                        <ul className="grid w-[200px] p-2 gap-2">
-                          <li>
-                            <div
-                              onClick={() =>
-                                (window.location.href = "/admin/dashboard")
-                              }
-                              className={cn(
-                                "flex items-center select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer",
-                                location === "/admin/dashboard"
-                                  ? "bg-primary/10 text-primary"
-                                  : "",
-                              )}
-                            >
-                              <div className="flex items-center">
-                                <User className="w-4 h-4 mr-2" />
-                                <span>Dashboard</span>
-                              </div>
-                            </div>
-                          </li>
-                        </ul>
-                      </NavigationMenuContent>
+                      <div
+                        onClick={() => (window.location.href = "/admin/dashboard")}
+                        className={cn(
+                          navigationMenuTriggerStyle(),
+                          "cursor-pointer",
+                          location.startsWith("/admin/") ? "bg-primary/10 text-primary" : "",
+                        )}
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Admin
+                      </div>
                     </NavigationMenuItem>
                   )}
                 </NavigationMenuList>
@@ -181,90 +246,150 @@ export function Header() {
             </div>
           )}
 
-          {/* Right Section (User Actions, Language) */}
-          <div className="flex items-center space-x-2">
-            <LanguageSwitcher />
+          {/* Right Section: User Actions & Language */}
+          {/* Show minimal header for AI browser */}
+          {showSimplifiedHeader ? (
+            <div className="flex items-center space-x-2">
+              {user && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Avatar className="h-8 w-8 cursor-pointer">
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {user ? getUserInitials() : ""}
+                      </AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">
+                          {user?.fullName || user?.username}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {user?.email}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => (window.location.href = "/dashboard")}
+                    >
+                      <div className="flex items-center cursor-pointer">
+                        <Home className="mr-2 h-4 w-4" />
+                        <span>{t("nav.dashboard")}</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      disabled={logoutMutation.isPending}
+                      className="text-red-600 cursor-pointer"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>
+                        {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                      </span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          ) : (
+            /* Regular header for non-browser pages */
+            !isAiBrowserPage && (
+              <div className="flex items-center space-x-2">
+                <LanguageSwitcher />
 
-            {!user ? (
-              <Button
-                size="sm"
-                className="hidden md:flex btn-glass btn-glass-primary shadow-glow bg-opacity-50 text-white/90 text-shadow-sm"
-                onClick={() => (window.location.href = "/auth")}
-              >
-                {t("auth.login")}
-              </Button>
-            ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Avatar className="h-8 w-8 cursor-pointer">
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {user ? getUserInitials() : ""}
-                    </AvatarFallback>
-                  </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">
-                        {user?.fullName || user?.username}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {user?.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => (window.location.href = "/dashboard")}
+                {!user ? (
+                  <Button
+                    size="sm"
+                    className="hidden md:flex btn-glass btn-glass-primary shadow-glow bg-opacity-50 text-white/90 text-shadow-sm"
+                    onClick={() => (window.location.href = "/auth")}
                   >
-                    <div className="flex items-center cursor-pointer">
-                      <Home className="mr-2 h-4 w-4" />
-                      <span>{t("nav.dashboard")}</span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => (window.location.href = "/agents")}
-                  >
-                    <div className="flex items-center cursor-pointer">
-                      <Bot className="mr-2 h-4 w-4" />
-                      <span>{t("nav.agents")}</span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => (window.location.href = "/subscription")}
-                  >
-                    <div className="flex items-center cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>{t("nav.subscription")}</span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    disabled={logoutMutation.isPending}
-                    className="text-red-600 cursor-pointer"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>
-                      {logoutMutation.isPending ? "Logging out..." : "Logout"}
-                    </span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                    {t("auth.login")}
+                  </Button>
+                ) : (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Avatar className="h-8 w-8 cursor-pointer">
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {user ? getUserInitials() : ""}
+                        </AvatarFallback>
+                      </Avatar>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium">
+                            {user?.fullName || user?.username}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {user?.email}
+                          </p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => (window.location.href = "/dashboard")}
+                      >
+                        <div className="flex items-center cursor-pointer">
+                          <Home className="mr-2 h-4 w-4" />
+                          <span>{t("nav.dashboard")}</span>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => (window.location.href = "/agents")}
+                      >
+                        <div className="flex items-center cursor-pointer">
+                          <Bot className="mr-2 h-4 w-4" />
+                          <span>{t("nav.agents")}</span>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => (window.location.href = "/ai-browser")}
+                      >
+                        <div className="flex items-center cursor-pointer">
+                          <Globe className="mr-2 h-4 w-4" />
+                          <span>AI Browser</span>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => (window.location.href = "/subscription")}
+                      >
+                        <div className="flex items-center cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>{t("nav.subscription")}</span>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={handleLogout}
+                        disabled={logoutMutation.isPending}
+                        className="text-red-600 cursor-pointer"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>
+                          {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                        </span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
 
-            {/* Mobile Menu Button */}
-            {user && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            )}
-          </div>
+                {/* Mobile Menu Button */}
+                {user && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden"
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                )}
+              </div>
+            )
+          )}
         </div>
       </header>
 
@@ -320,21 +445,24 @@ export function Header() {
                         Admin
                       </div>
                     </div>
-                    <div
-                      onClick={() => {
-                        window.location.href = "/admin/dashboard";
-                        setMobileMenuOpen(false);
-                      }}
-                      className={cn(
-                        "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
-                        location === "/admin/dashboard"
-                          ? "bg-primary/10 text-primary"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-                      )}
-                    >
-                      <User className="h-5 w-5 mr-3" />
-                      Dashboard
-                    </div>
+                    {adminNavItems.map((item) => (
+                      <div
+                        key={item.href}
+                        onClick={() => {
+                          window.location.href = item.href;
+                          setMobileMenuOpen(false);
+                        }}
+                        className={cn(
+                          "flex items-center px-3 py-2 rounded-md transition-colors cursor-pointer",
+                          location === item.href
+                            ? "bg-primary/10 text-primary"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
+                        )}
+                      >
+                        {React.cloneElement(item.icon, { className: "h-5 w-5 mr-3" })}
+                        {item.label}
+                      </div>
+                    ))}
                   </>
                 )}
               </div>

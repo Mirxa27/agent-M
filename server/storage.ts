@@ -26,6 +26,12 @@ import {
   aiProviders,
   AiProvider,
   InsertAiProvider,
+  browserSequences,
+  browserSequenceSteps,
+  BrowserSequence,
+  BrowserSequenceStep,
+  InsertBrowserSequence,
+  InsertBrowserSequenceStep,
   aiModels,
   AiModel,
   InsertAiModel,
@@ -44,6 +50,9 @@ import {
   analytics,
   Analytics,
   InsertAnalytics,
+  siteSettings,
+  SiteSettings,
+  InsertSiteSettings,
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -59,6 +68,31 @@ const MemoryStore = createMemoryStore(session);
 const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
+  // Site Settings operations
+  getSiteSettings(): Promise<SiteSettings | undefined>;
+  createSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings>;
+  updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined>;
+  
+  // Browser Sequence operations
+  getBrowserSequence(id: number): Promise<BrowserSequence | undefined>;
+  getBrowserSequencesByUserId(userId: number): Promise<BrowserSequence[]>;
+  createBrowserSequence(sequence: InsertBrowserSequence): Promise<BrowserSequence>;
+  updateBrowserSequence(
+    id: number,
+    updates: Partial<Omit<BrowserSequence, "id">>,
+  ): Promise<BrowserSequence | undefined>;
+  deleteBrowserSequence(id: number): Promise<boolean>;
+
+  // Browser Sequence Step operations
+  getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined>;
+  getBrowserSequenceStepsBySequenceId(sequenceId: number): Promise<BrowserSequenceStep[]>;
+  createBrowserSequenceStep(step: InsertBrowserSequenceStep): Promise<BrowserSequenceStep>;
+  updateBrowserSequenceStep(
+    id: number,
+    updates: Partial<Omit<BrowserSequenceStep, "id">>,
+  ): Promise<BrowserSequenceStep | undefined>;
+  deleteBrowserSequenceStep(id: number): Promise<boolean>;
+  
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -69,6 +103,7 @@ export interface IStorage {
     id: number,
     updates: Partial<Omit<User, "id">>,
   ): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
 
   // Agent tools operations
   getAgentTool(id: number): Promise<AgentTool | undefined>;
@@ -212,6 +247,26 @@ export interface IStorage {
     updates: Partial<Omit<Analytics, "id">>,
   ): Promise<Analytics | undefined>;
 
+  // Browser Sequence operations
+  getBrowserSequence(id: number): Promise<BrowserSequence | undefined>;
+  getBrowserSequencesByUserId(userId: number): Promise<BrowserSequence[]>;
+  createBrowserSequence(sequence: InsertBrowserSequence): Promise<BrowserSequence>;
+  updateBrowserSequence(
+    id: number,
+    updates: Partial<Omit<BrowserSequence, "id">>,
+  ): Promise<BrowserSequence | undefined>;
+  deleteBrowserSequence(id: number): Promise<boolean>;
+  
+  // Browser Sequence Step operations
+  getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined>;
+  getBrowserSequenceStepsBySequenceId(sequenceId: number): Promise<BrowserSequenceStep[]>;
+  createBrowserSequenceStep(step: InsertBrowserSequenceStep): Promise<BrowserSequenceStep>;
+  updateBrowserSequenceStep(
+    id: number,
+    updates: Partial<Omit<BrowserSequenceStep, "id">>,
+  ): Promise<BrowserSequenceStep | undefined>;
+  deleteBrowserSequenceStep(id: number): Promise<boolean>;
+
   // Session store
   sessionStore: any; // Using any for compatibility
 }
@@ -232,6 +287,8 @@ export class MemStorage implements IStorage {
   private userActivities: Map<number, UserActivity>;
   private dashboardPreferences: Map<number, DashboardPreference>;
   private analyticsEntries: Map<number, Analytics>;
+  private browserSequences: Map<number, BrowserSequence>;
+  private browserSequenceSteps: Map<number, BrowserSequenceStep>;
 
   sessionStore: SessionStore;
 
@@ -250,7 +307,11 @@ export class MemStorage implements IStorage {
   private userActivityIdCounter: number;
   private dashboardPreferenceIdCounter: number;
   private analyticsIdCounter: number;
+  private browserSequenceIdCounter: number;
+  private browserSequenceStepIdCounter: number;
 
+  private siteSettingsObj: SiteSettings | undefined;
+  
   constructor() {
     this.users = new Map();
     this.agentTools = new Map();
@@ -267,6 +328,8 @@ export class MemStorage implements IStorage {
     this.userActivities = new Map();
     this.dashboardPreferences = new Map();
     this.analyticsEntries = new Map();
+    this.browserSequences = new Map();
+    this.browserSequenceSteps = new Map();
 
     this.userIdCounter = 1;
     this.agentToolIdCounter = 1;
@@ -283,6 +346,8 @@ export class MemStorage implements IStorage {
     this.userActivityIdCounter = 1;
     this.dashboardPreferenceIdCounter = 1;
     this.analyticsIdCounter = 1;
+    this.browserSequenceIdCounter = 1;
+    this.browserSequenceStepIdCounter = 1;
 
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
@@ -290,6 +355,9 @@ export class MemStorage implements IStorage {
 
     // Initialize with some default plans
     this.initializePlans();
+    
+    // Initialize default site settings
+    this.initializeSiteSettings();
   }
 
   private initializePlans(): void {
@@ -345,6 +413,176 @@ export class MemStorage implements IStorage {
     ];
 
     plans.forEach((plan) => this.createPlan(plan));
+  }
+  
+  private initializeSiteSettings(): void {
+    // Create default site settings if none exist
+    const now = new Date();
+    this.siteSettingsObj = {
+      id: 1,
+      logo: {
+        url: "/assets/images/mirxa-logo.svg",
+        showText: true,
+        text: "Mirxa.io",
+        animated: true,
+      },
+      colors: {
+        primary: "#6366f1",
+        secondary: "#0ea5e9",
+        accent: "#f97316",
+        background: "#ffffff",
+        text: "#1e293b",
+      },
+      header: {
+        sticky: true,
+        transparent: false,
+        showLogo: true,
+        showNavigation: true,
+      },
+      footer: {
+        showCopyright: true,
+        copyrightText: "© 2025 Mirxa.io. All rights reserved.",
+        showSocial: true,
+      },
+      chatbot: {
+        enabled: true,
+        position: "bottom-right",
+        welcomeMessage: "Hi! How can I assist you today?",
+        color: "#6366f1",
+      },
+      widgets: [
+        { id: 'header-widget', label: 'Header' },
+        { id: 'hero-widget', label: 'Hero Section' },
+        { id: 'features-widget', label: 'Features' },
+        { id: 'testimonials-widget', label: 'Testimonials' },
+        { id: 'cta-widget', label: 'Call to Action' },
+        { id: 'footer-widget', label: 'Footer' },
+      ],
+      version: 1,
+      lastUpdated: now,
+      updatedBy: null,
+    };
+  }
+  
+  // Site Settings operations
+  async getSiteSettings(): Promise<SiteSettings | undefined> {
+    try {
+      // Always fetch site settings with ID 1 (singleton)
+      const [settings] = await db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.id, 1));
+      
+      return settings;
+    } catch (error) {
+      console.error("Error fetching site settings:", error);
+      // If settings don't exist, create default settings
+      const existingSettings = await this.getSiteSettings();
+      if (!existingSettings) {
+        return this.createDefaultSiteSettings();
+      }
+      return undefined;
+    }
+  }
+
+  async createDefaultSiteSettings(): Promise<SiteSettings> {
+    const now = new Date();
+    const defaultSettings = {
+      logo: {
+        url: "/assets/images/mirxa-logo.svg",
+        showText: true,
+        text: "Mirxa.io",
+        animated: true,
+      },
+      colors: {
+        primary: "#6366f1",
+        secondary: "#0ea5e9",
+        accent: "#f97316",
+        background: "#ffffff",
+        text: "#1e293b",
+      },
+      header: {
+        sticky: true,
+        transparent: false,
+        showLogo: true,
+        showNavigation: true,
+      },
+      footer: {
+        showCopyright: true,
+        copyrightText: "© 2025 Mirxa.io. All rights reserved.",
+        showSocial: true,
+      },
+      chatbot: {
+        enabled: true,
+        position: "bottom-right",
+        welcomeMessage: "Hi! How can I assist you today?",
+        color: "#6366f1",
+      },
+      widgets: [
+        { id: 'header-widget', label: 'Header' },
+        { id: 'hero-widget', label: 'Hero Section' },
+        { id: 'features-widget', label: 'Features' },
+        { id: 'testimonials-widget', label: 'Testimonials' },
+        { id: 'cta-widget', label: 'Call to Action' },
+        { id: 'footer-widget', label: 'Footer' },
+      ],
+      version: 1,
+      lastUpdated: now,
+      updatedBy: null,
+    };
+    
+    return this.createSiteSettings(defaultSettings);
+  }
+
+  async createSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings> {
+    try {
+      const [newSettings] = await db
+        .insert(siteSettings)
+        .values({
+          ...settings,
+          version: 1,
+          lastUpdated: new Date(),
+        })
+        .returning();
+      
+      return newSettings;
+    } catch (error) {
+      console.error("Error creating site settings:", error);
+      throw new Error("Failed to create site settings");
+    }
+  }
+
+  async updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined> {
+    try {
+      // First check if settings exist
+      const existingSettings = await this.getSiteSettings();
+      
+      if (!existingSettings) {
+        // If no settings exist, create default settings with updates applied
+        const defaultSettings = await this.createDefaultSiteSettings();
+        // Apply the updates on top of default settings
+        return this.updateSiteSettings(updates);
+      }
+      
+      // Prepare updates with version increment and updated timestamp
+      const updatesWithMeta = {
+        ...updates,
+        version: existingSettings.version + 1,
+        lastUpdated: new Date(),
+      };
+      
+      // Update the settings in the database
+      const [updatedSettings] = await db
+        .update(siteSettings)
+        .set(updatesWithMeta)
+        .where(eq(siteSettings.id, 1))
+        .returning();
+      
+      return updatedSettings;
+    } catch (error) {
+      console.error("Error updating site settings:", error);
+      throw new Error("Failed to update site settings");
+    }
   }
 
   // User operations
@@ -408,6 +646,24 @@ export class MemStorage implements IStorage {
     const updatedUser = { ...user, ...updates };
     this.users.set(id, updatedUser);
     return updatedUser;
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    // Check if user exists
+    const user = await this.getUser(id);
+    if (!user) {
+      return false;
+    }
+    
+    // Don't delete admin users if they're the only admin left
+    if (user.role === "admin") {
+      const admins = Array.from(this.users.values()).filter(u => u.role === "admin");
+      if (admins.length <= 1) {
+        throw new Error("Cannot delete the last admin user");
+      }
+    }
+    
+    return this.users.delete(id);
   }
 
   // Agent Tool operations
@@ -480,7 +736,13 @@ export class MemStorage implements IStorage {
 
   async getAgentsByUserId(userId: number): Promise<Agent[]> {
     return Array.from(this.agents.values()).filter(
-      (agent) => agent.userId === userId,
+      (agent) => agent.userId === userId && !(agent.isTemplate === true),
+    );
+  }
+  
+  async getAgentTemplates(): Promise<Agent[]> {
+    return Array.from(this.agents.values()).filter(
+      (agent) => agent.isTemplate === true
     );
   }
 
@@ -1133,6 +1395,109 @@ export class MemStorage implements IStorage {
     this.analyticsEntries.set(id, updatedAnalytics);
     return updatedAnalytics;
   }
+  
+  // Browser Sequence operations
+  async getBrowserSequence(id: number): Promise<BrowserSequence | undefined> {
+    return this.browserSequences.get(id);
+  }
+
+  async getBrowserSequencesByUserId(userId: number): Promise<BrowserSequence[]> {
+    return Array.from(this.browserSequences.values()).filter(
+      (sequence) => sequence.userId === userId
+    );
+  }
+
+  async createBrowserSequence(sequence: InsertBrowserSequence): Promise<BrowserSequence> {
+    const id = this.browserSequenceIdCounter++;
+    const now = new Date();
+    const newSequence: BrowserSequence = {
+      id,
+      ...sequence,
+      isAutomated: sequence.isAutomated !== undefined ? sequence.isAutomated : false,
+      triggerCondition: sequence.triggerCondition || {},
+      createdAt: now,
+      updatedAt: now,
+      lastExecutedAt: null,
+      executionCount: 0,
+      isActive: sequence.isActive !== undefined ? sequence.isActive : true,
+    };
+    
+    this.browserSequences.set(id, newSequence);
+    return newSequence;
+  }
+
+  async updateBrowserSequence(
+    id: number,
+    updates: Partial<Omit<BrowserSequence, "id">>,
+  ): Promise<BrowserSequence | undefined> {
+    const sequence = await this.getBrowserSequence(id);
+    if (!sequence) return undefined;
+    
+    const updatedSequence: BrowserSequence = {
+      ...sequence,
+      ...updates,
+      updatedAt: new Date(),
+    };
+    
+    this.browserSequences.set(id, updatedSequence);
+    return updatedSequence;
+  }
+
+  async deleteBrowserSequence(id: number): Promise<boolean> {
+    // Also delete all steps associated with this sequence
+    const steps = await this.getBrowserSequenceStepsBySequenceId(id);
+    steps.forEach(step => this.deleteBrowserSequenceStep(step.id));
+    
+    return this.browserSequences.delete(id);
+  }
+  
+  // Browser Sequence Step operations
+  async getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined> {
+    return this.browserSequenceSteps.get(id);
+  }
+  
+  async getBrowserSequenceStepsBySequenceId(sequenceId: number): Promise<BrowserSequenceStep[]> {
+    return Array.from(this.browserSequenceSteps.values())
+      .filter(step => step.sequenceId === sequenceId)
+      .sort((a, b) => a.stepOrder - b.stepOrder);
+  }
+  
+  async createBrowserSequenceStep(step: InsertBrowserSequenceStep): Promise<BrowserSequenceStep> {
+    const id = this.browserSequenceStepIdCounter++;
+    
+    const newStep: BrowserSequenceStep = {
+      id,
+      ...step,
+      waitBeforeMs: step.waitBeforeMs || 0,
+      waitAfterMs: step.waitAfterMs || 0,
+      isConditional: step.isConditional || false,
+      condition: step.condition || {},
+      metadata: step.metadata || {},
+    };
+    
+    this.browserSequenceSteps.set(id, newStep);
+    return newStep;
+  }
+  
+  async updateBrowserSequenceStep(
+    id: number,
+    updates: Partial<Omit<BrowserSequenceStep, "id">>,
+  ): Promise<BrowserSequenceStep | undefined> {
+    const step = await this.getBrowserSequenceStep(id);
+    if (!step) return undefined;
+    
+    const updatedStep: BrowserSequenceStep = {
+      ...step,
+      ...updates,
+    };
+    
+    this.browserSequenceSteps.set(id, updatedStep);
+    return updatedStep;
+  }
+  
+  async deleteBrowserSequenceStep(id: number): Promise<boolean> {
+    return this.browserSequenceSteps.delete(id);
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1142,6 +1507,10 @@ export class DatabaseStorage implements IStorage {
     this.sessionStore = new PostgresSessionStore({
       pool,
       createTableIfMissing: true,
+      tableName: 'session', // Explicitly name the session table
+      schemaName: 'public', // Specify the schema
+      ttl: 86400 * 30, // 30 days (in seconds)
+      pruneSessionInterval: 60 * 60, // 1 hour (in seconds)
     });
 
     // Initialize default plans if they don't exist
@@ -1277,6 +1646,39 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedUser;
   }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    try {
+      // Check if user exists first
+      const user = await this.getUser(id);
+      if (!user) {
+        return false;
+      }
+      
+      // Don't delete admin users if they're the only admin left
+      if (user.role === "admin") {
+        const admins = await db
+          .select()
+          .from(users)
+          .where(eq(users.role, "admin"));
+          
+        if (admins.length <= 1) {
+          throw new Error("Cannot delete the last admin user");
+        }
+      }
+      
+      // Perform deletion
+      const result = await db
+        .delete(users)
+        .where(eq(users.id, id))
+        .returning({ id: users.id });
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error(`Error deleting user with ID ${id}:`, error);
+      return false;
+    }
+  }
 
   // Helper method to get AI model by name
   async getAiModelByName(modelId: string): Promise<AiModel | undefined> {
@@ -1374,7 +1776,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAgentsByUserId(userId: number): Promise<Agent[]> {
-    return await db.select().from(agents).where(eq(agents.userId, userId));
+    return await db
+      .select()
+      .from(agents)
+      .where(and(
+        eq(agents.userId, userId),
+        eq(agents.isTemplate, false)
+      ));
+  }
+  
+  async getAgentTemplates(): Promise<Agent[]> {
+    return await db
+      .select()
+      .from(agents)
+      .where(eq(agents.isTemplate, true));
   }
 
   async createAgent(agent: InsertAgent): Promise<Agent> {
@@ -1385,6 +1800,7 @@ export class DatabaseStorage implements IStorage {
         ...agent,
         taskCount: 0,
         createdAt: now,
+        updatedAt: now,
       })
       .returning();
     return newAgent;
@@ -1675,7 +2091,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(messages)
       .where(eq(messages.taskId, taskId))
-      .orderBy(asc(messages.createdAt));
+      .orderBy(asc(messages.timestamp));
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
@@ -1684,7 +2100,7 @@ export class DatabaseStorage implements IStorage {
       .insert(messages)
       .values({
         ...message,
-        createdAt: now,
+        timestamp: message.timestamp || now,
       })
       .returning();
     return newMessage;
@@ -2038,6 +2454,248 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     return result[0];
+  }
+  
+  // Browser Sequence operations
+  async getBrowserSequence(id: number): Promise<BrowserSequence | undefined> {
+    const [sequence] = await db
+      .select()
+      .from(browserSequences)
+      .where(eq(browserSequences.id, id));
+    return sequence;
+  }
+
+  async getBrowserSequencesByUserId(userId: number): Promise<BrowserSequence[]> {
+    const sequences = await db
+      .select()
+      .from(browserSequences)
+      .where(eq(browserSequences.userId, userId))
+      .orderBy(desc(browserSequences.updatedAt));
+    return sequences;
+  }
+
+  async createBrowserSequence(sequence: InsertBrowserSequence): Promise<BrowserSequence> {
+    const now = new Date();
+    const [newSequence] = await db
+      .insert(browserSequences)
+      .values({
+        ...sequence,
+        createdAt: now,
+        updatedAt: now,
+        lastExecutedAt: null,
+        executionCount: 0,
+        isActive: sequence.isActive !== undefined ? sequence.isActive : true,
+      })
+      .returning();
+    return newSequence;
+  }
+
+  async updateBrowserSequence(
+    id: number,
+    updates: Partial<Omit<BrowserSequence, "id">>,
+  ): Promise<BrowserSequence | undefined> {
+    const updatesWithTimestamp = {
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    const [updatedSequence] = await db
+      .update(browserSequences)
+      .set(updatesWithTimestamp)
+      .where(eq(browserSequences.id, id))
+      .returning();
+    
+    return updatedSequence;
+  }
+
+  async deleteBrowserSequence(id: number): Promise<boolean> {
+    // First delete all steps associated with this sequence
+    try {
+      await db
+        .delete(browserSequenceSteps)
+        .where(eq(browserSequenceSteps.sequenceId, id));
+      
+      // Then delete the sequence itself
+      const result = await db
+        .delete(browserSequences)
+        .where(eq(browserSequences.id, id));
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error(`Error deleting browser sequence ${id}:`, error);
+      return false;
+    }
+  }
+  
+  // Browser Sequence Step operations
+  async getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined> {
+    const [step] = await db
+      .select()
+      .from(browserSequenceSteps)
+      .where(eq(browserSequenceSteps.id, id));
+    return step;
+  }
+  
+  async getBrowserSequenceStepsBySequenceId(sequenceId: number): Promise<BrowserSequenceStep[]> {
+    const steps = await db
+      .select()
+      .from(browserSequenceSteps)
+      .where(eq(browserSequenceSteps.sequenceId, sequenceId))
+      .orderBy(asc(browserSequenceSteps.stepOrder));
+    return steps;
+  }
+  
+  async createBrowserSequenceStep(step: InsertBrowserSequenceStep): Promise<BrowserSequenceStep> {
+    const [newStep] = await db
+      .insert(browserSequenceSteps)
+      .values({
+        ...step,
+        waitBeforeMs: step.waitBeforeMs || 0,
+        waitAfterMs: step.waitAfterMs || 0,
+        isConditional: step.isConditional || false,
+      })
+      .returning();
+    return newStep;
+  }
+  
+  async updateBrowserSequenceStep(
+    id: number,
+    updates: Partial<Omit<BrowserSequenceStep, "id">>,
+  ): Promise<BrowserSequenceStep | undefined> {
+    const [updatedStep] = await db
+      .update(browserSequenceSteps)
+      .set(updates)
+      .where(eq(browserSequenceSteps.id, id))
+      .returning();
+    return updatedStep;
+  }
+  
+  async deleteBrowserSequenceStep(id: number): Promise<boolean> {
+    const result = await db
+      .delete(browserSequenceSteps)
+      .where(eq(browserSequenceSteps.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Site Settings operations
+  async getSiteSettings(): Promise<SiteSettings | undefined> {
+    try {
+      console.log("Getting site settings from database");
+      const [settings] = await db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.id, 1));
+      
+      console.log("Site settings found:", settings ? "yes" : "no");
+      return settings;
+    } catch (error) {
+      console.error("Error getting site settings:", error);
+      return undefined;
+    }
+  }
+
+  async createDefaultSiteSettings(): Promise<SiteSettings> {
+    const now = new Date();
+    const defaultSettings = {
+      logo: {
+        url: "/assets/images/mirxa-logo.svg",
+        showText: true,
+        text: "Mirxa.io",
+        animated: true,
+      },
+      colors: {
+        primary: "#6366f1",
+        secondary: "#0ea5e9",
+        accent: "#f97316",
+        background: "#ffffff",
+        text: "#1e293b",
+      },
+      header: {
+        sticky: true,
+        transparent: false,
+        showLogo: true,
+        showNavigation: true,
+      },
+      footer: {
+        showCopyright: true,
+        copyrightText: "© 2025 Mirxa.io. All rights reserved.",
+        showSocial: true,
+      },
+      chatbot: {
+        enabled: true,
+        position: "bottom-right",
+        welcomeMessage: "Hi! How can I assist you today?",
+        autoOpen: false,
+      },
+      version: 1,
+      createdAt: now,
+      lastUpdated: now,
+    };
+
+    console.log("Creating default site settings");
+    return this.createSiteSettings(defaultSettings);
+  }
+
+  async createSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings> {
+    try {
+      // Always use ID 1 for site settings
+      const settingsWithId = {
+        ...settings,
+        id: 1
+      };
+      
+      console.log("Inserting site settings into database");
+      const [newSettings] = await db
+        .insert(siteSettings)
+        .values(settingsWithId)
+        .onConflictDoUpdate({
+          target: siteSettings.id,
+          set: settingsWithId
+        })
+        .returning();
+      
+      console.log("Site settings created successfully");
+      return newSettings;
+    } catch (error) {
+      console.error("Error creating site settings:", error);
+      throw new Error("Failed to create site settings");
+    }
+  }
+
+  async updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined> {
+    try {
+      // Check if settings exist
+      const existingSettings = await this.getSiteSettings();
+      
+      // If no settings, create default then apply updates
+      if (!existingSettings) {
+        console.log("No existing settings found, creating defaults first");
+        const defaultSettings = await this.createDefaultSiteSettings();
+        // Apply the updates on top of default settings
+        return this.updateSiteSettings(updates);
+      }
+      
+      // Prepare updates with version increment and updated timestamp
+      const updatesWithMeta = {
+        ...updates,
+        version: existingSettings.version + 1,
+        lastUpdated: new Date(),
+      };
+      
+      console.log("Updating site settings in database");
+      // Update the settings in the database
+      const [updatedSettings] = await db
+        .update(siteSettings)
+        .set(updatesWithMeta)
+        .where(eq(siteSettings.id, 1))
+        .returning();
+      
+      console.log("Site settings updated successfully");
+      return updatedSettings;
+    } catch (error) {
+      console.error("Error updating site settings:", error);
+      throw new Error("Failed to update site settings");
+    }
   }
 }
 

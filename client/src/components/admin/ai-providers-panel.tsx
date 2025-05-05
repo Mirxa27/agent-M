@@ -57,6 +57,7 @@ const providerFormSchema = z.object({
   isActive: z.boolean().default(true),
   baseUrl: z.string().optional().nullable(),
   authType: z.string().default("apiKey"),
+  apiKey: z.string().optional(), // Optional since providers can use env vars
 });
 
 type ProviderFormValues = z.infer<typeof providerFormSchema>;
@@ -103,6 +104,7 @@ export default function AiProvidersPanel() {
         isActive: true,
         baseUrl: "",
         authType: "apiKey",
+        apiKey: "",
       });
     },
     onError: (error) => {
@@ -179,6 +181,7 @@ export default function AiProvidersPanel() {
       isActive: true,
       baseUrl: "",
       authType: "apiKey",
+      apiKey: "",
     },
   });
 
@@ -192,6 +195,7 @@ export default function AiProvidersPanel() {
       isActive: true,
       baseUrl: "",
       authType: "apiKey",
+      apiKey: "",
     },
   });
 
@@ -227,6 +231,7 @@ export default function AiProvidersPanel() {
       isActive: provider.isActive,
       baseUrl: provider.baseUrl,
       authType: provider.authType,
+      apiKey: "", // Always reset API key field for security
     });
     setIsEditDialogOpen(true);
   };
@@ -304,6 +309,7 @@ export default function AiProvidersPanel() {
                     <TableHead>Description</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Auth Type</TableHead>
+                    <TableHead>API Key</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -337,6 +343,13 @@ export default function AiProvidersPanel() {
                           </Badge>
                         </TableCell>
                         <TableCell>{provider.authType || "apiKey"}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={provider.hasApiKey ? "success" : "destructive"}
+                          >
+                            {provider.hasApiKey ? "Available" : "Missing"}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-right">
                           <Button
                             variant="ghost"
@@ -478,6 +491,28 @@ export default function AiProvidersPanel() {
                   )}
                 />
               </div>
+              
+              <FormField
+                control={form.control}
+                name="apiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Key</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Enter API key if not using environment variables"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Leave empty if using environment variables or add securely in credentials.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
@@ -636,6 +671,28 @@ export default function AiProvidersPanel() {
                   )}
                 />
               </div>
+              
+              <FormField
+                control={editForm.control}
+                name="apiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Key (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Enter new API key or leave empty to keep current"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Leave empty to keep existing key or use environment variables.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={editForm.control}

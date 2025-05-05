@@ -123,14 +123,18 @@ export default function LandingPage() {
     queryKey: ["/api/plans"],
     queryFn: async () => {
       try {
-        const res = await apiRequest("GET", "/api/plans");
+        const res = await fetch("/api/plans", {
+          credentials: "include",
+        });
         if (!res.ok) throw new Error("Failed to fetch plans");
         return await res.json();
       } catch (error) {
-        console.error("Error fetching plans:", error);
+        // Silent fail - we'll use fallback plans
         return [];
       }
     },
+    // Don't retry on error, use fallback plans instead
+    retry: false,
   });
 
   // Fallback pricing plans if API call fails or is loading
@@ -181,14 +185,24 @@ export default function LandingPage() {
     },
   ];
 
+  // Define the Plan type
+  type Plan = {
+    id: number;
+    name: string;
+    price: number;
+    interval: string;
+    features: Record<string, any>;
+    isActive: boolean;
+  };
+
   // Transform DB plans into displayable plans
-  const transformDbPlansToDisplayable = (plans) => {
+  const transformDbPlansToDisplayable = (plans: Plan[]) => {
     if (!plans || plans.length === 0) return fallbackPlans;
     
     return plans
       .filter(plan => plan.isActive)
-      .sort((a, b) => a.price - b.price)
-      .map(plan => {
+      .sort((a: Plan, b: Plan) => a.price - b.price)
+      .map((plan: Plan) => {
         // Set popularity: make the middle plan popular if there are 3+ plans
         const isMiddlePlan = plans.length >= 3 && 
           plans.indexOf(plan) === Math.floor(plans.length / 2) - (plans.length % 2 === 0 ? 1 : 0);
@@ -227,7 +241,7 @@ export default function LandingPage() {
         className={`sticky top-0 z-40 w-full transition-all duration-200 ${
           isScrolled
             ? "card-glass border-b shadow-md backdrop-blur-md"
-            : "bg-transparent/30 backdrop-blur-sm"
+            : "bg-gray-800/80 backdrop-blur-sm"
         }`}
       >
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -288,105 +302,131 @@ export default function LandingPage() {
             {/* Mobile menu button */}
             <div className="md:hidden flex items-center">
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-md btn-glass"
+                onClick={() => {
+                  console.log("Menu button clicked, current state:", mobileMenuOpen);
+                  setMobileMenuOpen(true); // Force it open on every click for testing
+                }}
+                className="p-2 rounded-md btn-glass bg-primary shadow-glow flex items-center justify-center"
                 aria-expanded={mobileMenuOpen}
                 aria-label="Toggle menu"
+                style={{ width: '45px', height: '45px' }}
               >
                 {mobileMenuOpen ? (
                   <X className="h-6 w-6 text-white" />
                 ) : (
-                  <Menu className="h-6 w-6 text-white" />
+                  <Menu className="h-6 w-6 text-white font-bold" />
                 )}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile menu */}
-        <div
-          ref={mobileMenuRef}
-          className={cn(
-            "md:hidden fixed inset-y-0 right-0 z-50 w-full sm:max-w-sm card-glass shadow-xl transform transition-transform duration-300 ease-in-out overflow-auto",
-            mobileMenuOpen ? "translate-x-0" : "translate-x-full",
-          )}
-        >
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-8 border-b border-white/20 pb-4">
-              <Link href="/" className="flex items-center space-x-2">
-                <Bot className="h-7 w-7 text-primary" />
-                <span className="font-bold text-xl bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
-                  Mirxa.io
-                </span>
-              </Link>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-md btn-glass"
-              >
-                <X className="h-5 w-5 text-white" />
-              </button>
-            </div>
-
-            <nav className="space-y-6">
-              <div className="space-y-3">
-                <h3 className="text-xs uppercase tracking-wider text-primary text-shadow-sm font-semibold">
-                  Menu
-                </h3>
-                <div className="space-y-2 pl-2">
-                  <Link
-                    href="#features"
-                    className="flex items-center py-2 text-base font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
+        {/* Mobile menu - new implementation */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex justify-end z-50">
+            <div 
+              className="bg-black/90 backdrop-blur-sm border-l border-primary/40 shadow-xl w-full sm:w-96 h-full glass-container"
+              ref={mobileMenuRef}
+              style={{
+                backgroundImage: "linear-gradient(to bottom right, rgba(15, 15, 20, 0.95), rgba(0, 0, 0, 0.98))"
+              }}
+            >
+              <div className="p-6 text-white glass-text-container bg-black/30">
+                <div className="flex items-center justify-between mb-8 border-b border-primary/50 pb-4">
+                  <Link href="/" className="flex items-center space-x-2">
+                    <Bot className="h-7 w-7 text-primary" />
+                    <span className="font-bold text-xl bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
+                      Mirxa.io
+                    </span>
+                  </Link>
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2 rounded-md btn-glass shadow-glow bg-red-600/70 hover:bg-red-600 backdrop-blur-sm"
+                  >
+                    <X className="h-6 w-6 text-white" />
+                  </button>
+                </div>
+                
+                <div className="menu-items space-y-4 mb-8">
+                  <a 
+                    href="#features" 
+                    className="block py-3 px-4 bg-black/70 backdrop-blur-sm rounded-lg text-white hover:bg-gray-900/80 transition-all shadow-md border border-primary/10 hover:border-primary/30"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Features
-                  </Link>
-                  <Link
-                    href="#pricing"
-                    className="flex items-center py-2 text-base font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
+                    <div className="flex items-center">
+                      <div className="bg-gray-900 p-2 rounded-full mr-3 border border-primary/20">
+                        <Zap className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="text-shadow-sm font-medium">Features</span>
+                    </div>
+                  </a>
+                  
+                  <a 
+                    href="#pricing" 
+                    className="block py-3 px-4 bg-black/70 backdrop-blur-sm rounded-lg text-white hover:bg-gray-900/80 transition-all shadow-md border border-primary/10 hover:border-primary/30"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Pricing
-                  </Link>
-                  <Link
-                    href="#testimonials"
-                    className="flex items-center py-2 text-base font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
+                    <div className="flex items-center">
+                      <div className="bg-gray-900 p-2 rounded-full mr-3 border border-primary/20">
+                        <CreditCard className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="text-shadow-sm font-medium">Pricing</span>
+                    </div>
+                  </a>
+                  
+                  <a 
+                    href="#testimonials" 
+                    className="block py-3 px-4 bg-black/70 backdrop-blur-sm rounded-lg text-white hover:bg-gray-900/80 transition-all shadow-md border border-primary/10 hover:border-primary/30"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Testimonials
-                  </Link>
-                  <Link
-                    href="#faq"
-                    className="flex items-center py-2 text-base font-medium text-white/90 hover:text-primary text-shadow-sm transition-colors"
+                    <div className="flex items-center">
+                      <div className="bg-gray-900 p-2 rounded-full mr-3 border border-primary/20">
+                        <Star className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="text-shadow-sm font-medium">Testimonials</span>
+                    </div>
+                  </a>
+                  
+                  <a 
+                    href="#faq" 
+                    className="block py-3 px-4 bg-black/70 backdrop-blur-sm rounded-lg text-white hover:bg-gray-900/80 transition-all shadow-md border border-primary/10 hover:border-primary/30"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    FAQ
-                  </Link>
+                    <div className="flex items-center">
+                      <div className="bg-gray-900 p-2 rounded-full mr-3 border border-primary/20">
+                        <MessageSquare className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="text-shadow-sm font-medium">FAQ</span>
+                    </div>
+                  </a>
+                </div>
+                
+                <div className="pt-6 border-t border-primary/30">
+                  <div className="text-xl font-bold mb-5 text-white text-shadow-sm">Ready to get started?</div>
+                  <button 
+                    className="w-full mb-4 py-4 shadow-glow font-medium rounded-lg bg-primary/80 hover:bg-primary text-white border border-primary/50 transition-all"
+                    onClick={() => { setMobileMenuOpen(false); location.href = "/auth"; }}
+                  >
+                    <div className="flex items-center justify-center">
+                      <RocketIcon className="h-5 w-5 mr-2" />
+                      Get Started Free
+                    </div>
+                  </button>
+                  
+                  <button 
+                    className="w-full py-4 font-medium rounded-lg bg-black/70 hover:bg-black/90 text-white border border-primary/20 transition-all backdrop-blur-sm"
+                    onClick={() => { setMobileMenuOpen(false); location.href = "/auth"; }}
+                  >
+                    <div className="flex items-center justify-center">
+                      <User className="h-5 w-5 mr-2" />
+                      Sign In
+                    </div>
+                  </button>
                 </div>
               </div>
-
-              <div className="pt-6 border-t border-white/20">
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    location.href = "/auth";
-                  }}
-                  className="btn-glass btn-glass-primary w-full mb-3 py-3 shadow-glow"
-                >
-                  Get Started
-                </button>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    location.href = "/auth";
-                  }}
-                  className="btn-glass w-full py-3"
-                >
-                  Sign In
-                </button>
-              </div>
-            </nav>
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       <main>
@@ -488,7 +528,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {plans.map((plan, index) => (
+              {plans.map((plan: any, index: number) => (
                 <div
                   key={index}
                   className={`
@@ -515,7 +555,7 @@ export default function LandingPage() {
                       </span>
                     </div>
                     <ul className="space-y-3 mb-8">
-                      {plan.features.map((feature, i) => (
+                      {plan.features.map((feature: string, i: number) => (
                         <li key={i} className="flex items-center">
                           <Check className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
                           <span className="text-white/90 text-shadow-sm">{feature}</span>

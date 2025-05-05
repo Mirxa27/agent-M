@@ -1,0 +1,42 @@
+FROM node:20-slim
+
+# Install Puppeteer dependencies and Chromium
+RUN apt-get update \
+    && apt-get install -y wget gnupg \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
+      --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install xvfb for headless browser support
+RUN apt-get update && apt-get install -y xvfb x11vnc x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps
+
+# Add user so we don't run as root
+RUN groupadd -r browseruser && useradd -r -g browseruser -G audio,video browseruser \
+    && mkdir -p /home/browseruser/Downloads \
+    && chown -R browseruser:browseruser /home/browseruser
+
+# Working directory
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy application files
+COPY . .
+
+# Set DISPLAY for xvfb
+ENV DISPLAY=:99
+
+# Script to start xvfb and the browser service
+COPY browser-startup.sh /app/browser-startup.sh
+RUN chmod +x /app/browser-startup.sh
+
+# Switch to non-root user
+USER browseruser
+
+# Start command
+CMD ["/app/browser-startup.sh"]

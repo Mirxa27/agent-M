@@ -36,7 +36,7 @@ export class CredentialService {
   /**
    * Creates or updates a credential with secure encryption and expiration settings
    */
-  async createCredential(
+  async createCredentialWithOptions(
     userId: number,
     name: string,
     type: string,
@@ -116,7 +116,7 @@ export class CredentialService {
   /**
    * Updates a credential with new data and/or settings
    */
-  async updateCredential(
+  async updateCredentialWithOptions(
     id: number,
     userId: number,
     updates: {
@@ -165,10 +165,11 @@ export class CredentialService {
         credentialUpdates
       );
 
-      return updatedCredential;
+      return updatedCredential || null;
     } catch (error) {
       console.error("Error updating credential:", error);
-      throw new Error(`Failed to update credential: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to update credential: ${errorMessage}`);
     }
   }
 
@@ -198,10 +199,11 @@ export class CredentialService {
         lastRefreshedAt: new Date(),
       });
 
-      return updatedCredential;
+      return updatedCredential || null;
     } catch (error) {
       console.error("Error refreshing credential:", error);
-      throw new Error(`Failed to refresh credential: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to refresh credential: ${errorMessage}`);
     }
   }
 
@@ -224,7 +226,8 @@ export class CredentialService {
       return credentials.map(({ data, ...rest }) => rest);
     } catch (error) {
       console.error("Error listing credentials:", error);
-      throw new Error(`Failed to list credentials: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to list credentials: ${errorMessage}`);
     }
   }
 
@@ -252,7 +255,8 @@ export class CredentialService {
       return expiringCredentials.map(({ data, ...rest }) => rest);
     } catch (error) {
       console.error("Error getting expiring credentials:", error);
-      throw new Error(`Failed to get expiring credentials: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get expiring credentials: ${errorMessage}`);
     }
   }
 
@@ -270,7 +274,90 @@ export class CredentialService {
       return await storage.deleteCredential(id);
     } catch (error) {
       console.error("Error deleting credential:", error);
-      throw new Error(`Failed to delete credential: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to delete credential: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Get a credential by service name or type
+   */
+  async getCredentialByService(
+    userId: number,
+    serviceName: string
+  ): Promise<Credential | null> {
+    try {
+      const credentials = await storage.getCredentialsByUserId(userId);
+      
+      // Find credentials for this service
+      const credential = credentials.find(
+        (cred) => cred.type === serviceName || 
+                  (cred.service !== null && cred.service === serviceName)
+      );
+      
+      return credential || null;
+    } catch (error) {
+      console.error("Error getting credential by service:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get credential by service: ${errorMessage}`);
+    }
+  }
+  
+  /**
+   * Create a new credential from a simple object
+   */
+  async createCredential(data: {
+    userId: number;
+    name: string;
+    type: string;
+    data: any;
+    authMethod?: string;
+    expiresAt?: Date | null;
+    lastRefreshedAt?: Date | null;
+    service?: string;
+  }): Promise<Credential> {
+    try {
+      // Encrypt data if it's not already encrypted
+      let encryptedData = typeof data.data === 'string' ? 
+        data.data : encrypt(JSON.stringify(data.data));
+        
+      // Create credential record
+      const credential = await storage.createCredential({
+        userId: data.userId,
+        name: data.name,
+        type: data.type,
+        data: encryptedData,
+        authMethod: data.authMethod || AUTH_METHODS.API_KEY,
+        expiresAt: data.expiresAt || null,
+        lastRefreshedAt: data.lastRefreshedAt || new Date(),
+        service: data.service
+      });
+      
+      return credential;
+    } catch (error) {
+      console.error("Error creating credential:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to create credential: ${errorMessage}`);
+    }
+  }
+  
+  /**
+   * Update a credential by ID
+   */
+  async updateCredential(id: number, updates: Partial<Credential>): Promise<Credential | null> {
+    try {
+      // If data is being updated and it's not a string, encrypt it
+      if (updates.data && typeof updates.data !== 'string') {
+        updates.data = encrypt(JSON.stringify(updates.data));
+      }
+      
+      // Update the credential
+      const updatedCredential = await storage.updateCredential(id, updates);
+      return updatedCredential || null;
+    } catch (error) {
+      console.error("Error updating credential:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to update credential: ${errorMessage}`);
     }
   }
 }

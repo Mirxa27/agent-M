@@ -37,13 +37,17 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
+    name: 'mirxa.sid', // Custom name to avoid default connect.sid
     cookie: {
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
+      path: '/',
+      httpOnly: true,
     },
   };
   
+  app.set('trust proxy', 1); // trust first proxy
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
@@ -115,7 +119,18 @@ export function setupAuth(app: Express) {
       // Log the user in
       req.login(user, (err) => {
         if (err) return next(err);
-        res.status(201).json(userWithoutPassword);
+        
+        // Ensure session is saved immediately
+        req.session.save((err) => {
+          if (err) return next(err);
+          
+          // Set max age on cookie directly
+          if (req.session.cookie) {
+            req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+          }
+          
+          res.status(201).json(userWithoutPassword);
+        });
       });
     } catch (error) {
       next(error);
@@ -133,9 +148,20 @@ export function setupAuth(app: Express) {
       req.login(user, (err) => {
         if (err) return next(err);
 
-        // Remove password from response
-        const { password, ...userWithoutPassword } = user;
-        res.status(200).json(userWithoutPassword);
+        // Ensure session is saved immediately
+        req.session.save((err) => {
+          if (err) return next(err);
+          
+          // Remove password from response
+          const { password, ...userWithoutPassword } = user;
+          
+          // Set max age on cookie directly
+          if (req.session.cookie) {
+            req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+          }
+          
+          res.status(200).json(userWithoutPassword);
+        });
       });
     })(req, res, next);
   });
@@ -144,18 +170,47 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
-      res.sendStatus(200);
+      
+      // Destroy the session to fully log out
+      req.session.destroy((err) => {
+        if (err) return next(err);
+        res.clearCookie('mirxa.sid');
+        res.sendStatus(200);
+      });
     });
   });
 
-  // Current user endpoint
+  // Current user endpoint with detailed logging for debugging
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) {
+    console.log("GET /api/user session ID:", req.sessionID);
+    console.log("Is authenticated:", req.isAuthenticated());
+    
+    if (!req.isAuthenticated() || !req.user) {
+      console.log("User not authenticated or req.user is null");
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    // Remove password from response
-    const { password, ...userWithoutPassword } = req.user;
-    res.json(userWithoutPassword);
+    try {
+      // Remove password from response
+      const { password, ...userWithoutPassword } = req.user;
+      console.log("User authenticated:", userWithoutPassword.username);
+      
+      // Extend the session duration on successful requests
+      if (req.session.cookie) {
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+      }
+      
+      // Save session after updating the expiry
+      req.session.save((err) => {
+        if (err) {
+          console.error("Error saving session:", err);
+        }
+      });
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error in /api/user endpoint:", error);
+      res.status(500).json({ error: "Server error" });
+    }
   });
 }

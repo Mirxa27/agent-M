@@ -1,260 +1,329 @@
-import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
-import crypto from "crypto";
-import { AiProvider, AiModel } from "@shared/schema";
+import { AgentTool, Task } from "@shared/schema"; // Import Task, AgentTool
+import anthropicService from "./anthropic-service";
+import openaiService, { AIMessage, AgentResponse } from "./openai-service";
+import openrouterService from "./openrouter-service";
+import perplexityService from "./perplexity-service";
+import xaiService from "./xai-service";
 
-// AI Provider Types
-export type AIProviderType = "openai" | "anthropic" | "perplexity" | "xai";
+// Provider types
+export type AIProvider = "openai" | "anthropic" | "perplexity" | "xai" | "openrouter";
 
-// Base interface for AI service responses
-export interface AIServiceResponse {
-  text: string;
-  usage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
+interface AgentConfig {
+  provider: AIProvider;
+  model?: string;
+  systemInstructions?: string;
+  tools?: AgentTool[]; // Added support for tools
+}
+
+/**
+ * Main service to process AI tasks across multiple providers
+ */
+export async function processTask(
+  task: Task, // Use Task type
+  config: AgentConfig,
+  previousMessages: AIMessage[] = []
+): Promise<AgentResponse> {
+  const { provider, model, systemInstructions, tools } = config; // Destructure tools
+
+  try {
+    switch (provider) {
+      case "openai":
+        return await openaiService.processTask(
+          task,
+          {
+            provider,
+            model: model || "gpt-4o",
+            systemInstructions
+          },
+          previousMessages,
+          tools || [] // Pass tools to OpenAI service
+        );
+
+      case "anthropic":
+        return await anthropicService.processTask(
+          task,
+          model || "claude-3-7-sonnet-20250219",
+          systemInstructions,
+          previousMessages
+        );
+
+      case "perplexity":
+        return await perplexityService.processTask(
+          task,
+          model || "llama-3.1-sonar-small-128k-online",
+          systemInstructions,
+          previousMessages
+        );
+
+      case "xai":
+        return await xaiService.processTask(
+          task,
+          model || "grok-2-1212",
+          systemInstructions,
+          previousMessages
+        );
+
+      case "openrouter":
+        return await openrouterService.processAgentTask(
+          task,
+          {
+            provider: "openrouter",
+            model: model || "openai/gpt-4o",
+            systemPrompt: systemInstructions
+          },
+          previousMessages
+        );
+
+      default:
+        throw new Error(`Unsupported AI provider: ${provider}`);
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`Error processing task with ${provider}:`, msg);
+    throw new Error(`AI processing error: ${msg}`);
+  }
+}
+
+/**
+ * Process an image analysis task using the appropriate provider
+ */
+export async function analyzeImage(
+  imageUrl: string,
+  prompt: string,
+  provider: AIProvider,
+  model?: string
+): Promise<string> {
+  try {
+    switch (provider) {
+      case "openai":
+        return await openaiService.analyzeImage(
+          imageUrl,
+          prompt,
+          model || "gpt-4o"
+        );
+
+      case "anthropic": {
+        // For Anthropic, we need to convert URL to base64 first
+        const imageResponse = await fetch(imageUrl);
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const base64Image = Buffer.from(imageBuffer).toString("base64");
+        return await anthropicService.analyzeImage(
+          base64Image,
+          prompt,
+          model || "claude-3-7-sonnet-20250219"
+        );
+      }
+
+      case "xai":
+        return await xaiService.analyzeImage(
+          imageUrl,
+          prompt,
+          model || "grok-2-vision-1212"
+        );
+
+      case "perplexity":
+        throw new Error("Image analysis not supported with Perplexity");
+
+      case "openrouter":
+        return await openrouterService.analyzeImage(
+          imageUrl,
+          prompt,
+          "openrouter",
+          model || "openai/gpt-4-vision"
+        );
+
+      default:
+        throw new Error(`Unsupported AI provider for image analysis: ${provider}`);
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`Error analyzing image with ${provider}:`, msg);
+    throw new Error(`Image analysis error: ${msg}`);
+  }
+}
+
+/**
+ * Generate an image using DALL-E (OpenAI only)
+ */
+export async function generateImage(
+  prompt: string,
+  size: "1024x1024" | "1792x1024" | "1024x1792" = "1024x1024",
+  provider: AIProvider = "openai"
+): Promise<string> {
+  try {
+    if (provider === "openrouter") {
+      return await openrouterService.generateImage(prompt, size);
+    } else {
+      // Default to OpenAI's DALL-E
+      return await openaiService.generateImage(prompt, size);
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`Error generating image with ${provider}:`, msg);
+
+    // If OpenAI fails, try OpenRouter as fallback
+    if (provider === "openai" && process.env.OPENROUTER_API_KEY) {
+      try {
+        console.log("Falling back to OpenRouter for image generation");
+        return await openrouterService.generateImage(prompt, size);
+      } catch (fallbackError) {
+        const fallbackMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+        console.error("Fallback to OpenRouter also failed:", fallbackMsg);
+        throw new Error(`Image generation error: ${msg}`);
+      }
+    }
+
+    throw new Error(`Image generation error: ${msg}`);
+  }
+}
+
+// Translation related functions (used in routes.ts)
+export async function translateText(text: string, sourceLanguage: string, targetLanguage: string): Promise<string> {
+  const task: Task = {
+    id: 0,
+    title: `Translate from ${sourceLanguage} to ${targetLanguage}`,
+    description: text,
+    status: "in_progress",
+    userId: 0,
+    createdAt: new Date(),
+    agentId: 0,
+    completedAt: null,
+    result: null
   };
-  model: string;
-  id: string;
-  provider: AIProviderType;
+
+  const config: AgentConfig = {
+    provider: "openai",
+    model: "gpt-4o",
+    systemInstructions: `You are a professional translator. Translate text from ${sourceLanguage} to ${targetLanguage} accurately and naturally. Preserve meaning and tone.`
+  };
+
+  const response = await processTask(task, config);
+  return response.content;
 }
 
-// Base class for all AI services
-export abstract class AIService {
-  protected provider: AiProvider;
-  protected model: AiModel;
+export async function translateTranslations(
+  translations: Record<string, string>,
+  sourceLanguage: string,
+  targetLanguage: string
+): Promise<Record<string, string>> {
+  // Create a string with all keys and values to translate in one go
+  const keysToTranslate = Object.keys(translations);
+  const textsToTranslate = keysToTranslate.map(key => translations[key]);
 
-  constructor(provider: AiProvider, model: AiModel) {
-    this.provider = provider;
-    this.model = model;
-  }
+  const task: Task = {
+    id: 0,
+    title: `Bulk Translation from ${sourceLanguage} to ${targetLanguage}`,
+    description: JSON.stringify(translations),
+    status: "in_progress",
+    userId: 0,
+    createdAt: new Date(),
+    agentId: 0,
+    completedAt: null,
+    result: null
+  };
 
-  abstract generateText(
-    prompt: string,
-    options?: any,
-  ): Promise<AIServiceResponse>;
-  abstract generateImage?(prompt: string, options?: any): Promise<string>;
-  abstract processFile?(
-    fileData: Buffer,
-    options?: any,
-  ): Promise<AIServiceResponse>;
-}
+  const config: AgentConfig = {
+    provider: "openai",
+    model: "gpt-4o",
+    systemInstructions: `You are a professional translator specializing in JSON localization files. Translate the values from ${sourceLanguage} to ${targetLanguage} accurately and naturally. Preserve meaning and tone. Return a valid JSON object with the same keys.`
+  };
 
-// OpenAI Service Implementation
-export class OpenAIService extends AIService {
-  private client: OpenAI;
+  const response = await processTask(task, config);
 
-  constructor(provider: AiProvider, model: AiModel) {
-    super(provider, model);
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY is required for OpenAI service");
+  try {
+    // Extract JSON from the response
+    const responseText = response.content;
+    const jsonStartIndex = responseText.indexOf('{');
+    const jsonEndIndex = responseText.lastIndexOf('}') + 1;
+
+    if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
+      const jsonStr = responseText.substring(jsonStartIndex, jsonEndIndex);
+      return JSON.parse(jsonStr);
+    } else {
+      // Fallback to simple parsing
+      return JSON.parse(responseText);
     }
-    this.client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      baseURL: provider.baseUrl || undefined,
-    });
-  }
-
-  async generateText(
-    prompt: string,
-    options?: any,
-  ): Promise<AIServiceResponse> {
-    try {
-      const response = await this.client.chat.completions.create({
-        model: this.model.modelId,
-        messages: [{ role: "user", content: prompt }],
-        temperature: options?.temperature || 0.7,
-        max_tokens:
-          options?.maxTokens || this.model.maxOutputTokens || undefined,
-      });
-
-      return {
-        text: response.choices[0].message.content || "",
-        usage: {
-          promptTokens: response.usage?.prompt_tokens || 0,
-          completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0,
-        },
-        model: this.model.name,
-        id: response.id,
-        provider: "openai",
-      };
-    } catch (error: any) {
-      console.error("OpenAI error:", error);
-      throw new Error(`OpenAI error: ${error.message}`);
-    }
-  }
-
-  async generateImage(prompt: string, options?: any): Promise<string> {
-    try {
-      const response = await this.client.images.generate({
-        model: "dall-e-3",
-        prompt,
-        n: 1,
-        size: options?.size || "1024x1024",
-        quality: options?.quality || "standard",
-      });
-
-      return response.data[0].url || "";
-    } catch (error: any) {
-      console.error("OpenAI image generation error:", error);
-      throw new Error(`OpenAI image generation error: ${error.message}`);
-    }
+  } catch (error) {
+    console.error("Failed to parse translation response:", error);
+    throw new Error("Failed to parse translated content");
   }
 }
 
-// Anthropic Service Implementation
-export class AnthropicService extends AIService {
-  private client: Anthropic;
+// Content generation function used in routes.ts
+export async function generateContent(prompt: string, contentType: string, tone: string): Promise<string> {
+  const task: Task = {
+    id: 0,
+    title: `Content Generation: ${contentType}`,
+    description: prompt,
+    status: "in_progress",
+    userId: 0,
+    createdAt: new Date(),
+    agentId: 0,
+    completedAt: null,
+    result: null
+  };
 
-  constructor(provider: AiProvider, model: AiModel) {
-    super(provider, model);
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY is required for Anthropic service");
+  const config: AgentConfig = {
+    provider: "openai",
+    model: "gpt-4o",
+    systemInstructions: `You are a professional content creator specializing in ${contentType}. Create content with a ${tone} tone. Be creative, engaging, and authentic.`
+  };
+
+  const response = await processTask(task, config);
+  return response.content;
+}
+
+// Content analysis function used in routes.ts
+export async function analyzeContent(text: string): Promise<any> {
+  const task: Task = {
+    id: 0,
+    title: "Content Analysis",
+    description: text,
+    status: "in_progress",
+    userId: 0,
+    createdAt: new Date(),
+    agentId: 0,
+    completedAt: null,
+    result: null
+  };
+
+  const config: AgentConfig = {
+    provider: "openai",
+    model: "gpt-4o",
+    systemInstructions: `You are a professional content analyst. Analyze text for sentiment (positive, negative, neutral), readability (grade level), key themes, and provide suggestions for improvement. Return your analysis in JSON format.`
+  };
+
+  const response = await processTask(task, config);
+
+  try {
+    // Extract JSON from the response
+    const responseText = response.content;
+    const jsonStartIndex = responseText.indexOf('{');
+    const jsonEndIndex = responseText.lastIndexOf('}') + 1;
+
+    if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
+      const jsonStr = responseText.substring(jsonStartIndex, jsonEndIndex);
+      return JSON.parse(jsonStr);
+    } else {
+      // Fallback to simple parsing if possible
+      return JSON.parse(responseText);
     }
-    this.client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      baseURL: provider.baseUrl || undefined,
-    });
-  }
-
-  async generateText(
-    prompt: string,
-    options?: any,
-  ): Promise<AIServiceResponse> {
-    try {
-      const response = await this.client.messages.create({
-        model: this.model.modelId,
-        max_tokens: options?.maxTokens || this.model.maxOutputTokens || 1024,
-        messages: [{ role: "user", content: prompt }],
-        temperature: options?.temperature || 0.7,
-      });
-
-      return {
-        text: response.content[0].text,
-        usage: {
-          promptTokens: 0, // Anthropic doesn't provide token counts in the same way
-          completionTokens: 0,
-          totalTokens: 0,
-        },
-        model: this.model.name,
-        id: response.id,
-        provider: "anthropic",
-      };
-    } catch (error: any) {
-      console.error("Anthropic error:", error);
-      throw new Error(`Anthropic error: ${error.message}`);
-    }
+  } catch (error) {
+    console.error("Failed to parse analysis response:", error);
+    // Return text response if JSON parsing fails
+    return {
+      analysis: response.content,
+      error: "Could not parse as JSON"
+    };
   }
 }
 
-// Perplexity Service Implementation using OpenAI's SDK
-export class PerplexityService extends AIService {
-  private client: OpenAI;
-
-  constructor(provider: AiProvider, model: AiModel) {
-    super(provider, model);
-    if (!process.env.PERPLEXITY_API_KEY) {
-      throw new Error("PERPLEXITY_API_KEY is required for Perplexity service");
-    }
-    this.client = new OpenAI({
-      apiKey: process.env.PERPLEXITY_API_KEY,
-      baseURL: provider.baseUrl || "https://api.perplexity.ai",
-    });
-  }
-
-  async generateText(
-    prompt: string,
-    options?: any,
-  ): Promise<AIServiceResponse> {
-    try {
-      const response = await this.client.chat.completions.create({
-        model: this.model.modelId,
-        messages: [{ role: "user", content: prompt }],
-        temperature: options?.temperature || 0.7,
-        max_tokens:
-          options?.maxTokens || this.model.maxOutputTokens || undefined,
-      });
-
-      return {
-        text: response.choices[0].message.content || "",
-        usage: {
-          promptTokens: response.usage?.prompt_tokens || 0,
-          completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0,
-        },
-        model: this.model.name,
-        id: response.id,
-        provider: "perplexity",
-      };
-    } catch (error: any) {
-      console.error("Perplexity error:", error);
-      throw new Error(`Perplexity error: ${error.message}`);
-    }
-  }
-}
-
-// xAI Service Implementation using OpenAI's SDK
-export class XAIService extends AIService {
-  private client: OpenAI;
-
-  constructor(provider: AiProvider, model: AiModel) {
-    super(provider, model);
-    if (!process.env.XAI_API_KEY) {
-      throw new Error("XAI_API_KEY is required for xAI service");
-    }
-    this.client = new OpenAI({
-      apiKey: process.env.XAI_API_KEY,
-      baseURL: provider.baseUrl || "https://api.x.ai/v1",
-    });
-  }
-
-  async generateText(
-    prompt: string,
-    options?: any,
-  ): Promise<AIServiceResponse> {
-    try {
-      const response = await this.client.chat.completions.create({
-        model: this.model.modelId,
-        messages: [{ role: "user", content: prompt }],
-        temperature: options?.temperature || 0.7,
-        max_tokens:
-          options?.maxTokens || this.model.maxOutputTokens || undefined,
-      });
-
-      return {
-        text: response.choices[0].message.content || "",
-        usage: {
-          promptTokens: response.usage?.prompt_tokens || 0,
-          completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0,
-        },
-        model: this.model.name,
-        id: response.id,
-        provider: "xai",
-      };
-    } catch (error: any) {
-      console.error("xAI error:", error);
-      throw new Error(`xAI error: ${error.message}`);
-    }
-  }
-}
-
-// Factory method to create the appropriate AI service based on provider
-export function createAIService(
-  provider: AiProvider,
-  model: AiModel,
-): AIService {
-  switch (provider.provider.toLowerCase()) {
-    case "openai":
-      return new OpenAIService(provider, model);
-    case "anthropic":
-      return new AnthropicService(provider, model);
-    case "perplexity":
-      return new PerplexityService(provider, model);
-    case "xai":
-      return new XAIService(provider, model);
-    default:
-      throw new Error(`Unsupported provider: ${provider.provider}`);
-  }
-}
+export default {
+  processTask,
+  analyzeImage,
+  generateImage,
+  translateText,
+  translateTranslations,
+  generateContent,
+  analyzeContent
+};

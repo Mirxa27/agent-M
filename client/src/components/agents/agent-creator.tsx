@@ -1,33 +1,30 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Agent, AiModel, AiPrompt } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Agent, AiModel } from "@shared/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bot,
-  Sparkles,
+  BrainCircuit,
   FileText,
   Settings,
-  Timer,
-  BrainCircuit,
-  MessageSquare,
+  Sparkles,
+  Timer
 } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { useLocation } from "wouter";
+import { z } from "zod";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Form,
   FormControl,
@@ -37,7 +34,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -45,16 +44,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/use-auth"; // Assuming an auth hook exists
 
 // Define form schema for agent
 const agentFormSchema = z.object({
@@ -89,6 +83,8 @@ export default function AgentCreator() {
   const [selectedType, setSelectedType] = useState<string>("assistant");
   const [advancedMode, setAdvancedMode] = useState(false);
   const [, navigate] = useLocation();
+  const { user } = useAuth(); // Get user info, including role
+  const isAdmin = user?.role === 'admin'; // Check if user is admin
 
   const queryClient = useQueryClient();
 
@@ -101,9 +97,14 @@ export default function AgentCreator() {
         const error = await res.json();
         throw new Error(error.message || "Failed to fetch AI models");
       }
-      return res.json();
+      const fetchedModels = await res.json();
+      // Filter only active models
+      return fetchedModels.filter((model: AiModel) => model.isActive);
     },
   });
+
+  // Find a default model ID for non-admin users
+  const defaultModelIdForUser = models.length > 0 ? models[0].id : undefined;
 
   // Fetch AI prompts
   const { data: prompts = [], isLoading: isLoadingPrompts } = useQuery({
@@ -154,6 +155,7 @@ export default function AgentCreator() {
       type: "assistant",
       icon: "bot",
       isActive: true,
+      modelId: isAdmin ? undefined : defaultModelIdForUser, // Set default for non-admin
       config: {
         maxTokens: 1000,
         temperature: 0.7,
@@ -222,6 +224,10 @@ export default function AgentCreator() {
 
   // Handle form submission
   const onSubmit = (values: AgentFormValues) => {
+    // Ensure modelId is set correctly for non-admins selecting "Mirxa AI"
+    if (!isAdmin && !values.modelId && defaultModelIdForUser) {
+      values.modelId = defaultModelIdForUser;
+    }
     createAgentMutation.mutate(values);
   };
 
@@ -409,17 +415,20 @@ export default function AgentCreator() {
                         <FormLabel>AI Model</FormLabel>
                         <Select
                           onValueChange={(value) => {
-                            field.onChange(parseInt(value));
+                            const selectedModelId = value === 'mirxa-ai' ? defaultModelIdForUser : parseInt(value);
+                            field.onChange(selectedModelId);
                             resetPromptOnChange(
-                              parseInt(value),
-                              form.getValues("type"),
+                              selectedModelId,
+                              form.getValues("type")
                             );
                           }}
-                          value={field.value?.toString()}
+                          // Use defaultModelIdForUser if non-admin and field value is undefined initially
+                          value={isAdmin ? field.value?.toString() : (field.value ? 'mirxa-ai' : undefined)}
+                          disabled={!isAdmin && !defaultModelIdForUser} // Disable if non-admin and no default model found
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select an AI model" />
+                              <SelectValue placeholder={isAdmin ? "Select an AI model" : "Mirxa AI"} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -427,22 +436,28 @@ export default function AgentCreator() {
                               <div className="p-2 text-center">
                                 Loading models...
                               </div>
+                            ) : isAdmin ? (
+                              models.map((model) => (
+                                <SelectItem
+                                  key={model.id}
+                                  value={model.id.toString()}
+                                >
+                                  {model.name}
+                                </SelectItem>
+                              ))
+                            ) : defaultModelIdForUser ? (
+                              <SelectItem key="mirxa-ai" value="mirxa-ai">
+                                Mirxa AI
+                              </SelectItem>
                             ) : (
-                              models
-                                .filter((model) => model.isActive)
-                                .map((model) => (
-                                  <SelectItem
-                                    key={model.id}
-                                    value={model.id.toString()}
-                                  >
-                                    {model.name}
-                                  </SelectItem>
-                                ))
+                              <div className="p-2 text-center text-sm text-muted-foreground">
+                                No AI model available.
+                              </div>
                             )}
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          Choose the AI model that powers this agent.
+                          {isAdmin ? "Choose the AI model that powers this agent." : "Using the default configured AI model."}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -461,6 +476,7 @@ export default function AgentCreator() {
                           }
                           value={field.value?.toString()}
                           disabled={
+                            (!isAdmin && !defaultModelIdForUser) || // Disable if non-admin and no model
                             !form.watch("modelId") ||
                             filteredPrompts.length === 0
                           }
@@ -508,7 +524,7 @@ export default function AgentCreator() {
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          Select a predefined prompt or create a custom one.
+                          Select a predefined prompt or create a custom one in advanced mode.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

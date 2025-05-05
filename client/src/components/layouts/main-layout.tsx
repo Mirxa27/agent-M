@@ -5,12 +5,14 @@ import { MobileFooterNav } from "@/components/navigation/mobile-footer-nav";
 import { GamifiedChatbot } from "@/components/chatbot";
 import { SplineBackground } from "@/components/ui/spline-background";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
 interface MainLayoutProps {
   children: ReactNode;
   className?: string;
   hideNav?: boolean;
   noPadding?: boolean;
+  customLayout?: boolean;
 }
 
 export function MainLayout({
@@ -18,8 +20,13 @@ export function MainLayout({
   className,
   hideNav,
   noPadding = false,
+  customLayout = false,
 }: MainLayoutProps) {
   const { user } = useAuth();
+  const [location] = useLocation();
+  
+  // Detect if we're on the AI Browser page
+  const isAiBrowserPage = location === "/ai-browser";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -30,7 +37,7 @@ export function MainLayout({
         gradientOverlay={true}
       />
       
-      {!hideNav && <Header />}
+      {!hideNav && <Header customLayout={customLayout} />}
 
       <main
         className={cn("flex-1 w-full max-w-full overflow-x-hidden", className)}
@@ -38,7 +45,7 @@ export function MainLayout({
         <div
           className={cn(
             "min-w-0 w-full",
-            !noPadding &&
+            !noPadding && !customLayout &&
               "p-3 sm:p-4 md:p-5 lg:p-6 space-y-4 sm:space-y-5 md:space-y-6",
           )}
         >
@@ -47,7 +54,7 @@ export function MainLayout({
         </div>
       </main>
 
-      {!hideNav && user && <MobileFooterNav />}
+      {!hideNav && user && !isAiBrowserPage && <MobileFooterNav />}
       
       {/* Gamified Chatbot - Available for both logged in and guest users */}
       <GamifiedChatbot />

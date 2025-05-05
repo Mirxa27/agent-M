@@ -147,7 +147,8 @@ export class GmailService {
       };
     } catch (error) {
       console.error("Error sending Gmail email:", error);
-      throw new Error(`Failed to send email via Gmail: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to send email via Gmail: ${errorMessage}`);
     }
   }
 
@@ -184,7 +185,8 @@ export class GmailService {
       return true;
     } catch (error) {
       console.error("Error refreshing Gmail OAuth token:", error);
-      throw new Error(`Failed to refresh Gmail OAuth token: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to refresh Gmail OAuth token: ${errorMessage}`);
     }
   }
 }

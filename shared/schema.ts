@@ -1,12 +1,12 @@
 import {
-  pgTable,
-  text,
-  serial,
-  integer,
   boolean,
-  jsonb,
-  timestamp,
   decimal,
+  integer,
+  jsonb,
+  pgTable,
+  serial,
+  text,
+  timestamp,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -70,6 +70,7 @@ export const agents = pgTable("agents", {
   type: text("type").notNull(),
   icon: text("icon").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
+  isTemplate: boolean("is_template").default(false).notNull(), // Flag for agent templates
   taskCount: integer("task_count").default(0).notNull(),
   config: jsonb("config").default({}).notNull(),
   tools: jsonb("tools").default([]).notNull(), // List of attached tool IDs
@@ -84,6 +85,7 @@ export const insertAgentSchema = createInsertSchema(agents).pick({
   type: true,
   icon: true,
   isActive: true,
+  isTemplate: true,
   config: true,
   tools: true,
 });
@@ -96,6 +98,7 @@ export const credentials = pgTable("credentials", {
   type: text("type").notNull(),
   data: text("data").notNull(), // Encrypted data
   authMethod: text("auth_method").default("api_key").notNull(), // 'api_key', 'oauth', 'direct_login'
+  service: text("service"), // Service identifier (e.g., 'openai', 'anthropic', etc.)
   expiresAt: timestamp("expires_at"), // When credentials expire (null for non-expiring)
   lastRefreshedAt: timestamp("last_refreshed_at"), // For OAuth refresh tokens
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -108,6 +111,7 @@ export const insertCredentialSchema = createInsertSchema(credentials).pick({
   type: true,
   data: true,
   authMethod: true,
+  service: true,
   expiresAt: true,
   lastRefreshedAt: true,
 });
@@ -169,6 +173,7 @@ export const messages = pgTable("messages", {
   role: text("role").notNull(), // 'user', 'assistant', or 'system'
   content: text("content").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}).notNull(), // Added for tool call info and extensibility
 });
 
 export const insertMessageSchema = createInsertSchema(messages).pick({
@@ -176,6 +181,7 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   role: true,
   content: true,
   timestamp: true,
+  metadata: true, // Added
 });
 
 // Task-File relationship schema
@@ -416,6 +422,63 @@ export const insertAnalyticsSchema = createInsertSchema(analytics).pick({
   metadata: true,
 });
 
+// Site Settings schema
+export const siteSettings = pgTable("site_settings", {
+  id: serial("id").primaryKey(),
+  logo: jsonb("logo").default({
+    url: "/assets/images/mirxa-logo.svg",
+    showText: true,
+    text: "Mirxa.io",
+    animated: true,
+  }).notNull(),
+  colors: jsonb("colors").default({
+    primary: "#6366f1",
+    secondary: "#0ea5e9",
+    accent: "#f97316",
+    background: "#ffffff",
+    text: "#1e293b",
+  }).notNull(),
+  header: jsonb("header").default({
+    sticky: true,
+    transparent: false,
+    showLogo: true,
+    showNavigation: true,
+  }).notNull(),
+  footer: jsonb("footer").default({
+    showCopyright: true,
+    copyrightText: "© 2025 Mirxa.io. All rights reserved.",
+    showSocial: true,
+  }).notNull(),
+  chatbot: jsonb("chatbot").default({
+    enabled: true,
+    position: "bottom-right",
+    welcomeMessage: "Hi! How can I assist you today?",
+    color: "#6366f1",
+  }).notNull(),
+  widgets: jsonb("widgets").default([
+    { id: 'header-widget', label: 'Header' },
+    { id: 'hero-widget', label: 'Hero Section' },
+    { id: 'features-widget', label: 'Features' },
+    { id: 'testimonials-widget', label: 'Testimonials' },
+    { id: 'cta-widget', label: 'Call to Action' },
+    { id: 'footer-widget', label: 'Footer' },
+  ]).notNull(),
+  version: integer("version").default(1).notNull(),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  updatedBy: integer("updated_by"), // User ID who last updated settings
+});
+
+export const insertSiteSettingsSchema = createInsertSchema(siteSettings).pick({
+  logo: true,
+  colors: true,
+  header: true,
+  footer: true,
+  chatbot: true,
+  widgets: true,
+  version: true,
+  updatedBy: true,
+});
+
 export type Plan = typeof plans.$inferSelect;
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
 
@@ -429,6 +492,193 @@ export type InsertDashboardPreference = z.infer<
 
 export type Analytics = typeof analytics.$inferSelect;
 export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
+
+// AI Browser Observer schema
+export const browserActions = pgTable("browser_actions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  actionType: text("action_type").notNull(), // 'click', 'input', 'navigation', 'scroll', 'select', etc.
+  targetElement: text("target_element").notNull(), // CSS selector or XPath
+  url: text("url").notNull(),
+  valueOrText: text("value_or_text"), // Content of an input field or text of a clicked element
+  metadata: jsonb("metadata").default({}).notNull(), // Additional context (e.g., attributes, screen size)
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const browserSequences = pgTable("browser_sequences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isAutomated: boolean("is_automated").default(false).notNull(),
+  triggerType: text("trigger_type"), // 'manual', 'scheduled', 'event'
+  triggerCondition: jsonb("trigger_condition"), // Conditions for automatic execution
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  lastExecutedAt: timestamp("last_executed_at"),
+  executionCount: integer("execution_count").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+export const browserSequenceSteps = pgTable("browser_sequence_steps", {
+  id: serial("id").primaryKey(),
+  sequenceId: integer("sequence_id").notNull(),
+  stepOrder: integer("step_order").notNull(),
+  actionType: text("action_type").notNull(), // Same as browserActions.actionType
+  targetElement: text("target_element").notNull(),
+  targetUrl: text("target_url"),
+  valueOrText: text("value_or_text"),
+  waitBeforeMs: integer("wait_before_ms").default(0).notNull(), // Delay before this step in ms
+  waitAfterMs: integer("wait_after_ms").default(0).notNull(), // Delay after this step in ms
+  isConditional: boolean("is_conditional").default(false).notNull(),
+  condition: jsonb("condition"), // Conditions for executing this step
+  metadata: jsonb("metadata").default({}).notNull(),
+});
+
+export const browserAiSuggestions = pgTable("browser_ai_suggestions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  suggestionType: text("suggestion_type").notNull(), // 'automation', 'improvement', 'shortcut'
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  suggestedActions: jsonb("suggested_actions").notNull(), // Steps for implementation
+  status: text("status").default("pending").notNull(), // 'pending', 'accepted', 'rejected', 'implemented'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  implementedAt: timestamp("implemented_at"),
+  confidence: decimal("confidence", { precision: 3, scale: 2 }).default("0.75").notNull(),
+});
+
+export const browserSettings = pgTable("browser_settings", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().unique(),
+  isEnabled: boolean("is_enabled").default(true).notNull(),
+  privacyLevel: text("privacy_level").default("balanced").notNull(), // 'minimal', 'balanced', 'complete'
+  recordUrls: boolean("record_urls").default(true).notNull(),
+  recordInputValues: boolean("record_input_values").default(true).notNull(),
+  domainAllowList: jsonb("domain_allow_list").default([]).notNull(), // Domains to observe
+  domainBlockList: jsonb("domain_block_list").default([]).notNull(), // Domains to ignore
+  aiSuggestions: boolean("ai_suggestions").default(true).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Workflow Executions - for tracking sequence execution progress
+export const workflowExecutions = pgTable("workflow_executions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  sequenceId: integer("sequence_id").notNull(),
+  status: text("status").default("pending").notNull(), // pending, running, completed, failed, cancelled
+  progress: integer("progress").default(0).notNull(), // 0-100 percentage
+  currentStepId: integer("current_step_id"), // Currently executing step
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  error: text("error"), // Error message if failed
+  metadata: jsonb("metadata").default({}).notNull(), // Additional execution details
+  browserSessionId: text("browser_session_id"), // Associated browser session
+});
+
+// Workflow Step Executions - for tracking individual step progress
+export const workflowStepExecutions = pgTable("workflow_step_executions", {
+  id: serial("id").primaryKey(),
+  executionId: integer("execution_id").notNull(), // FK to workflowExecutions.id
+  stepId: integer("step_id").notNull(), // FK to browserSequenceSteps.id
+  status: text("status").default("pending").notNull(), // pending, running, completed, skipped, failed
+  order: integer("order").notNull(), // Order of execution
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  duration: integer("duration"), // Duration in milliseconds
+  retries: integer("retries").default(0).notNull(), // Number of retry attempts
+  error: text("error"), // Error message if failed
+  result: jsonb("result"), // Result of step execution (e.g., extracted data)
+  screenshot: text("screenshot"), // Path to step screenshot if taken
+  logs: jsonb("logs").default([]).notNull(), // Logs for this specific step
+});
+
+// Insert schemas for browser observer tables
+export const insertBrowserActionSchema = createInsertSchema(browserActions).pick({
+  userId: true,
+  sessionId: true,
+  actionType: true,
+  targetElement: true,
+  url: true,
+  valueOrText: true,
+  metadata: true,
+});
+
+export const insertBrowserSequenceSchema = createInsertSchema(browserSequences).pick({
+  userId: true,
+  name: true,
+  description: true,
+  isAutomated: true,
+  triggerType: true,
+  triggerCondition: true,
+  isActive: true,
+});
+
+export const insertBrowserSequenceStepSchema = createInsertSchema(browserSequenceSteps).pick({
+  sequenceId: true,
+  stepOrder: true,
+  actionType: true,
+  targetElement: true,
+  targetUrl: true,
+  valueOrText: true,
+  waitBeforeMs: true,
+  waitAfterMs: true,
+  isConditional: true,
+  condition: true,
+  metadata: true,
+});
+
+export const insertBrowserAiSuggestionSchema = createInsertSchema(browserAiSuggestions).pick({
+  userId: true,
+  sessionId: true,
+  suggestionType: true,
+  title: true,
+  description: true,
+  suggestedActions: true,
+  confidence: true,
+});
+
+export const insertBrowserSettingSchema = createInsertSchema(browserSettings).pick({
+  userId: true,
+  isEnabled: true,
+  privacyLevel: true,
+  recordUrls: true,
+  recordInputValues: true,
+  domainAllowList: true,
+  domainBlockList: true,
+  aiSuggestions: true,
+});
+
+// Insert schemas for workflow execution tracking
+export const insertWorkflowExecutionSchema = createInsertSchema(workflowExecutions).pick({
+  userId: true,
+  sequenceId: true,
+  status: true,
+  progress: true,
+  currentStepId: true,
+  startedAt: true,
+  completedAt: true,
+  error: true,
+  metadata: true,
+  browserSessionId: true,
+});
+
+export const insertWorkflowStepExecutionSchema = createInsertSchema(workflowStepExecutions).pick({
+  executionId: true,
+  stepId: true,
+  status: true,
+  order: true,
+  startedAt: true,
+  completedAt: true,
+  duration: true,
+  retries: true,
+  error: true,
+  result: true,
+  screenshot: true,
+  logs: true,
+});
 
 // Gamified Chatbot schemas
 export const chatbotMessages = pgTable("chatbot_messages", {
@@ -474,6 +724,7 @@ export const insertChatbotMessageSchema = createInsertSchema(chatbotMessages).pi
   content: true,
   isBot: true,
   metadata: true,
+  timestamp: true,
 });
 
 export const insertChatbotGameProgressSchema = createInsertSchema(chatbotGameProgress).pick({
@@ -507,3 +758,30 @@ export type InsertChatbotGameProgress = z.infer<typeof insertChatbotGameProgress
 
 export type ChatbotChallenge = typeof chatbotChallenges.$inferSelect;
 export type InsertChatbotChallenge = z.infer<typeof insertChatbotChallengeSchema>;
+
+// Site Settings export
+export type SiteSettings = typeof siteSettings.$inferSelect;
+export type InsertSiteSettings = z.infer<typeof insertSiteSettingsSchema>;
+
+// Browser observer type exports
+export type BrowserAction = typeof browserActions.$inferSelect;
+export type InsertBrowserAction = z.infer<typeof insertBrowserActionSchema>;
+
+export type BrowserSequence = typeof browserSequences.$inferSelect;
+export type InsertBrowserSequence = z.infer<typeof insertBrowserSequenceSchema>;
+
+export type BrowserSequenceStep = typeof browserSequenceSteps.$inferSelect;
+export type InsertBrowserSequenceStep = z.infer<typeof insertBrowserSequenceStepSchema>;
+
+export type BrowserAiSuggestion = typeof browserAiSuggestions.$inferSelect;
+export type InsertBrowserAiSuggestion = z.infer<typeof insertBrowserAiSuggestionSchema>;
+
+export type BrowserSetting = typeof browserSettings.$inferSelect;
+export type InsertBrowserSetting = z.infer<typeof insertBrowserSettingSchema>;
+
+// Workflow execution type exports
+export type WorkflowExecution = typeof workflowExecutions.$inferSelect;
+export type InsertWorkflowExecution = z.infer<typeof insertWorkflowExecutionSchema>;
+
+export type WorkflowStepExecution = typeof workflowStepExecutions.$inferSelect;
+export type InsertWorkflowStepExecution = z.infer<typeof insertWorkflowStepExecutionSchema>;

@@ -29,43 +29,28 @@ export const AIProviderWidget = ({ onRemove }: AIProviderWidgetProps) => {
     return <LoadingWidget title="AI Providers" icon={<Sparkles className="h-5 w-5" />} />;
   }
 
-  // Mock data for demonstration
-  const mockProviders = [
-    { 
-      id: 'openai', 
-      name: 'OpenAI', 
-      status: 'active',
-      quotaUsed: 75,
-      quotaLimit: 100,
-      quotaUnit: 'USD'
-    },
-    { 
-      id: 'anthropic', 
-      name: 'Anthropic', 
-      status: 'active',
-      quotaUsed: 30,
-      quotaLimit: 100,
-      quotaUnit: 'USD'
-    },
-    { 
-      id: 'xai', 
-      name: 'xAI', 
-      status: 'inactive',
-      quotaUsed: 0,
-      quotaLimit: 0,
-      quotaUnit: 'USD'
-    },
-    { 
-      id: 'perplexity', 
-      name: 'Perplexity', 
-      status: 'active',
-      quotaUsed: 5,
-      quotaLimit: 100,
-      quotaUnit: 'USD'
-    },
-  ];
+  // If no providers are available, show empty state
+  if (!providers || !Array.isArray(providers) || providers.length === 0) {
+    return (
+      <Widget 
+        id="aiProviders"
+        title="AI Providers" 
+        icon={<Sparkles className="h-5 w-5" />}
+        onRemove={onRemove}
+        onRefresh={() => refetch()}
+      >
+        <EmptyState
+          icon={<Sparkles className="h-10 w-10" />}
+          title="No AI Providers"
+          description="No AI providers are currently configured."
+          actionText="Refresh"
+          onAction={() => refetch()}
+        />
+      </Widget>
+    );
+  }
 
-  const data = providers || mockProviders;
+  const data = providers;
 
   if (error) {
     return (
@@ -112,7 +97,7 @@ export const AIProviderWidget = ({ onRemove }: AIProviderWidgetProps) => {
       onRefresh={() => refetch()}
     >
       <div className="space-y-3">
-        {data.map((provider: any) => (
+        {Array.isArray(data) && data.map((provider: any) => (
           <div key={provider.id} className="border rounded-md p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
