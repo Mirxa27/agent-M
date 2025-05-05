@@ -155,6 +155,28 @@ For a full-stack deployment with API routes, create a `vercel.json` file:
 }
 ```
 
+### Environment Variable Configuration
+
+To configure environment variables in Vercel:
+
+1. Go to your Vercel project dashboard.
+2. Navigate to the "Settings" tab.
+3. Click on "Environment Variables".
+4. Add the required environment variables:
+   - `DATABASE_URL`
+   - `SESSION_SECRET`
+   - `NODE_ENV`
+   - Any other optional variables as needed.
+
+### Setting Up Environment Variables in Vercel Project Settings
+
+1. In the Vercel project dashboard, click on the "Settings" tab.
+2. Scroll down to the "Environment Variables" section.
+3. Click on the "Add" button to add a new environment variable.
+4. Enter the name and value of the environment variable.
+5. Repeat the process for all required and optional environment variables.
+6. Save the changes.
+
 ## Deployment to Railway
 
 Railway provides PaaS deployment with built-in PostgreSQL:
