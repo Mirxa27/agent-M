@@ -127,6 +127,43 @@ The Mirxa AI Agent Platform follows a component-based architecture with clear se
    npm start
    ```
 
+## Deployment on Vercel
+
+### Prerequisites
+
+- Vercel account
+- GitHub repository connected to Vercel
+
+### Deployment Steps
+
+1. Connect your GitHub repository to Vercel.
+2. Configure environment variables in the Vercel project settings.
+3. Set the build command to `npm run build`.
+4. Set the output directory to `dist`.
+5. Deploy the project.
+
+### Environment Variable Configuration
+
+To configure environment variables in Vercel:
+
+1. Go to your Vercel project dashboard.
+2. Navigate to the "Settings" tab.
+3. Click on "Environment Variables".
+4. Add the required environment variables:
+   - `DATABASE_URL`
+   - `SESSION_SECRET`
+   - `NODE_ENV`
+   - Any other optional variables as needed.
+
+### Setting Up Environment Variables in Vercel Project Settings
+
+1. In the Vercel project dashboard, click on the "Settings" tab.
+2. Scroll down to the "Environment Variables" section.
+3. Click on the "Add" button to add a new environment variable.
+4. Enter the name and value of the environment variable.
+5. Repeat the process for all required and optional environment variables.
+6. Save the changes.
+
 ## License
 
 Copyright © 2025 Mirxa AI
