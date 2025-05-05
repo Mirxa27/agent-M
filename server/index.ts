@@ -39,6 +39,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// Add validation to ensure that the request-target is valid and does not bypass server.fs.deny
+app.use((req, res, next) => {
+  const requestTarget = req.originalUrl;
+  const denyList = ["/server/fs/deny", "/server/fs/inline", "/server/fs/raw"];
+
+  if (denyList.some((denyPath) => requestTarget.includes(denyPath))) {
+    return res.status(403).json({ message: "Access denied" });
+  }
+
+  next();
+});
+
 (async () => {
   const server = await registerRoutes(app);
 

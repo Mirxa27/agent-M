@@ -72,6 +72,61 @@ The Mirxa AI Agent Platform follows a component-based architecture with clear se
 - HTTPS is enforced in production
 - API endpoints are protected with authentication middleware
 
+## Deployment on Hostinger
+
+### Prerequisites
+
+- Hostinger account
+- SSH access to your Hostinger server
+- MySQL database credentials
+
+### Database Configuration
+
+1. Update your `.env` file with the following MySQL credentials:
+   ```
+   DB_HOST=srv1505.hstgr.io
+   DB_PORT=3306
+   DB_USER=u221943340_agent
+   DB_PASSWORD=Mirxa420$
+   DB_NAME=u221943340_agent
+   ```
+
+### SSH Access
+
+1. Connect to your Hostinger server via SSH:
+   ```
+   ssh -p 65002 u221943340@82.112.251.126
+   ```
+   Password: `Mirxa420$`
+
+### Deployment Steps
+
+1. Navigate to your web directory:
+   ```
+   cd /home/u221943340/domains/bot.mirxa.io/public_html
+   ```
+
+2. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/mirxa-ai.git
+   cd mirxa-ai
+   ```
+
+3. Install dependencies:
+   ```
+   npm install
+   ```
+
+4. Build the application:
+   ```
+   npm run build
+   ```
+
+5. Start the application:
+   ```
+   npm start
+   ```
+
 ## License
 
 Copyright © 2025 Mirxa AI
