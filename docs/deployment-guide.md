@@ -73,6 +73,15 @@ For production deployments, use your hosting provider's secrets management:
 - AWS: AWS Secrets Manager or Parameter Store
 - Docker: Docker secrets or environment variables
 
+### Setting Up Environment Variables in Vercel Project Settings
+
+1. In the Vercel project dashboard, click on the "Settings" tab.
+2. Scroll down to the "Environment Variables" section.
+3. Click on the "Add" button to add a new environment variable.
+4. Enter the name and value of the environment variable.
+5. Repeat the process for all required and optional environment variables.
+6. Save the changes.
+
 ## Building for Production
 
 To prepare the application for deployment:
@@ -168,7 +177,7 @@ To configure environment variables in Vercel:
    - `NODE_ENV`
    - Any other optional variables as needed.
 
-### Setting Up Environment Variables in Vercel Project Settings
+### Detailed Steps for Setting Up Environment Variables in Vercel Project Settings
 
 1. In the Vercel project dashboard, click on the "Settings" tab.
 2. Scroll down to the "Environment Variables" section.
