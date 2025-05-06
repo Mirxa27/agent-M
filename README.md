@@ -164,6 +164,14 @@ To configure environment variables in Vercel:
 5. Repeat the process for all required and optional environment variables.
 6. Save the changes.
 
+### Deploying the Project to Vercel
+
+1. Ensure your GitHub repository is connected to Vercel.
+2. Push your code to the main branch of your GitHub repository.
+3. Vercel will automatically detect the changes and start the deployment process.
+4. Monitor the deployment status in the Vercel dashboard.
+5. Once the deployment is complete, your project will be live on Vercel.
+
 ## License
 
 Copyright © 2025 Mirxa AI
