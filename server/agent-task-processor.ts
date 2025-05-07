@@ -64,8 +64,11 @@ export async function processAgentTask(taskId: number, storage: IStorage): Promi
             // Cast role to the expected union type
             role: msg.role as 'user' | 'assistant' | 'system',
             content: msg.content
-            // TODO: If tool call info needs to be preserved, it might need a different mechanism
-            // or schema modification. For now, just passing role and content.
+            // TODO: If tool call info (e.g., specific parameters used, raw responses, or intermediate steps)
+            // needs to be preserved for auditing, advanced debugging, or for providing more detailed
+            // feedback to the user, a more robust mechanism than just storing the final result might be necessary.
+            // This could involve creating a separate table for tool call logs or extending the existing task
+            // message schema to accommodate these details.
         }));
 
         // Determine AI provider and model from agent configuration using safer access

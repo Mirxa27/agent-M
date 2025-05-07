@@ -1,42 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
-import { useTranslation } from "react-i18next";
-import { useAuth } from "@/hooks/use-auth";
 import { AnimatedLogo } from "@/components/ui/animated-logo";
-import LanguageSwitcher from "@/components/ui/language-switcher";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import {
-  ArrowLeft,
-  Home,
-  Bot,
-  Key,
-  FileText,
-  Clock1,
-  Settings,
-  User,
-  LogOut,
-  Menu,
-  X,
-  Globe,
-  PanelLeft,
-  Users,
-  Database,
-  Tag,
-  Wrench,
-  Sparkles,
-  Languages,
-  Palette,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +9,36 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import LanguageSwitcher from "@/components/ui/language-switcher";
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuList,
+  navigationMenuTriggerStyle
+} from "@/components/ui/navigation-menu";
+import { useAuth } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
+import {
+  ArrowLeft,
+  Bot,
+  Clock1,
+  Database,
+  FileText,
+  Home,
+  Key,
+  LogOut,
+  Menu,
+  PanelLeft,
+  Settings,
+  Sparkles,
+  Tag,
+  Users,
+  Wrench,
+  X
+} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useLocation } from "wouter";
 
 interface HeaderProps {
   customLayout?: boolean;
@@ -83,9 +76,9 @@ export function Header({ customLayout = false }: HeaderProps) {
       icon: <Bot className="w-4 h-4 mr-2" />,
     },
     {
-      href: "/ai-browser",
-      label: "AI Browser",
-      icon: <Globe className="w-4 h-4 mr-2" />,
+      href: "/ai-agent-chat", // Updated from /ai-browser
+      label: "AI Agent Chat", // Updated from AI Browser
+      icon: <Sparkles className="w-4 h-4 mr-2" />, // Changed icon to Sparkles
     },
     {
       href: "/credentials",
@@ -103,7 +96,7 @@ export function Header({ customLayout = false }: HeaderProps) {
       icon: <Clock1 className="w-4 h-4 mr-2" />,
     },
   ];
-  
+
   const adminNavItems = [
     {
       href: "/admin/dashboard",
@@ -159,12 +152,12 @@ export function Header({ customLayout = false }: HeaderProps) {
     return user.username?.substring(0, 2).toUpperCase() || "";
   };
 
-  // Check if current page is the AI Browser page
-  const isAiBrowserPage = location === "/ai-browser";
-  
+  // Check if current page is the AI Agent Chat page
+  const isAiAgentChatPage = location === "/ai-agent-chat";
+
   // Determine if we should show a simplified header for custom layouts
-  const showSimplifiedHeader = customLayout && isAiBrowserPage;
-  
+  const showSimplifiedHeader = customLayout && isAiAgentChatPage;
+
   return (
     <>
       <header
@@ -177,7 +170,7 @@ export function Header({ customLayout = false }: HeaderProps) {
       >
         <div className="container flex h-16 items-center justify-between px-4">
           {/* Left Side: Logo or Back Button */}
-          {isAiBrowserPage ? (
+          {isAiAgentChatPage ? (
             <div className="flex items-center">
               <Button
                 variant="ghost"
@@ -204,7 +197,7 @@ export function Header({ customLayout = false }: HeaderProps) {
           )}
 
           {/* Desktop Navigation */}
-          {user && !isAiBrowserPage && (
+          {user && !isAiAgentChatPage && (
             <div className="hidden md:flex">
               <NavigationMenu>
                 <NavigationMenuList>
@@ -247,7 +240,7 @@ export function Header({ customLayout = false }: HeaderProps) {
           )}
 
           {/* Right Section: User Actions & Language */}
-          {/* Show minimal header for AI browser */}
+          {/* Show minimal header for AI Agent Chat */}
           {showSimplifiedHeader ? (
             <div className="flex items-center space-x-2">
               {user && (
@@ -295,8 +288,8 @@ export function Header({ customLayout = false }: HeaderProps) {
               )}
             </div>
           ) : (
-            /* Regular header for non-browser pages */
-            !isAiBrowserPage && (
+            /* Regular header for non-chat pages */
+            !isAiAgentChatPage && (
               <div className="flex items-center space-x-2">
                 <LanguageSwitcher />
 
@@ -346,11 +339,11 @@ export function Header({ customLayout = false }: HeaderProps) {
                         </div>
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => (window.location.href = "/ai-browser")}
+                        onClick={() => (window.location.href = "/ai-agent-chat")} // Updated from /ai-browser
                       >
                         <div className="flex items-center cursor-pointer">
-                          <Globe className="mr-2 h-4 w-4" />
-                          <span>AI Browser</span>
+                          <Sparkles className="mr-2 h-4 w-4" /> {/* Changed icon to Sparkles */}
+                          <span>AI Agent Chat</span> {/* Updated from AI Browser */}
                         </div>
                       </DropdownMenuItem>
                       <DropdownMenuItem

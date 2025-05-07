@@ -1,36 +1,37 @@
 import React from "react";
 
 // Pages
-import NotFound from "@/pages/not-found";
-import AuthPage from "@/pages/auth-page";
-import LandingPage from "@/pages/landing-page";
-import DashboardPage from "@/pages/dashboard-page";
-import AgentsPage from "@/pages/agents-page";
-import CreateAgentPage from "@/pages/create-agent-page";
-import CredentialsPage from "@/pages/credentials-page";
-import FilesPage from "@/pages/files-page";
-import TaskHistoryPage from "@/pages/task-history-page";
-import SubscriptionPage from "@/pages/subscription-page";
-import PaymentSuccessPage from "@/pages/payment-success";
-import PaymentFailedPage from "@/pages/payment-failed";
-import AiBrowserPage from "@/pages/ai-browser-page";
+import AdminLoginPage from "@/pages/admin/admin-login-page"; // Import the new admin login page
 import AdminDashboard from "@/pages/admin/dashboard";
 import UploadTestPage from "@/pages/admin/upload-test-page";
+import AgentsPage from "@/pages/agents-page";
+import AiAgentChatPage from "@/pages/ai-agent-chat-page"; // Changed from AiBrowserPage
+import AuthPage from "@/pages/auth-page";
+import CreateAgentPage from "@/pages/create-agent-page";
+import CredentialsPage from "@/pages/credentials-page";
+import DashboardPage from "@/pages/dashboard-page";
+import FilesPage from "@/pages/files-page";
+import LandingPage from "@/pages/landing-page";
+import PaymentFailedPage from "@/pages/payment-failed";
+import PaymentSuccessPage from "@/pages/payment-success";
+import SubscriptionPage from "@/pages/subscription-page";
+import TaskHistoryPage from "@/pages/task-history-page";
 
 // Admin Components
-import TranslationsPanel from "@/components/admin/translations-panel";
-import SiteEditorPanel from "@/components/admin/site-editor-panel";
-import UsersPanel from "@/components/admin/users-panel";
-import AiProvidersPanel from "@/components/admin/ai-providers-panel";
 import AiModelsPanel from "@/components/admin/ai-models-panel";
 import AiPromptsPanel from "@/components/admin/ai-prompts-panel";
-import PlansPanel from "@/components/admin/plans-panel";
+import AiProvidersPanel from "@/components/admin/ai-providers-panel";
 import ContentBuilder from "@/components/admin/content-builder";
+import FineTuningPanel from "@/components/admin/fine-tuning-panel"; // Import the new panel
 import { AgentToolsPanel } from "@/components/admin/fixed-agent-tools-panel";
+import PlansPanel from "@/components/admin/plans-panel";
+import SiteEditorPanel from "@/components/admin/site-editor-panel";
+import TranslationsPanel from "@/components/admin/translations-panel";
+import UsersPanel from "@/components/admin/users-panel";
 
 // Demo pages - These can be removed in production
-import LoadersDemoPage from "@/pages/loaders-demo-page";
 import LanguageDemoPage from "@/pages/language-demo-page";
+import LoadersDemoPage from "@/pages/loaders-demo-page";
 
 // Define route types
 export type RouteConfig = {
@@ -69,6 +70,14 @@ export const PUBLIC_ROUTES: RouteConfig[] = [
     layout: "main",
     exact: true,
   },
+  {
+    path: "/admin/login",
+    component: AdminLoginPage,
+    title: "Admin Login",
+    isPublic: true,
+    layout: "auth", // Or "none" if you want a completely custom layout
+    exact: true,
+  },
 ];
 
 // Private routes that require authentication
@@ -95,9 +104,9 @@ export const PRIVATE_ROUTES: RouteConfig[] = [
     exact: true,
   },
   {
-    path: "/ai-browser",
-    component: AiBrowserPage,
-    title: "AI Browser",
+    path: "/ai-agent-chat", // Changed from /ai-browser
+    component: AiAgentChatPage, // Changed from AiBrowserPage
+    title: "AI Agent Chat", // Changed from AI Browser
     layout: "main",
     exact: true,
   },
@@ -250,6 +259,14 @@ export const ADMIN_ROUTES: RouteConfig[] = [
     path: "/admin/agent-tools",
     component: AgentToolsPanel,
     title: "Agent Tools Management",
+    isAdmin: true,
+    layout: "admin",
+    exact: true,
+  },
+  {
+    path: "/admin/fine-tuning",
+    component: FineTuningPanel,
+    title: "Fine-Tuning Settings",
     isAdmin: true,
     layout: "admin",
     exact: true,

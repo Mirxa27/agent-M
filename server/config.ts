@@ -4,31 +4,35 @@ import { z } from "zod";
 const envSchema = z.object({
   // Node environment
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  
+
   // Database configuration
   DATABASE_URL: z.string({
     required_error: "DATABASE_URL is required",
   }),
-  
+
   // Session configuration
   SESSION_SECRET: z.string().default("mirxa-super-secret-session-key"),
   SESSION_MAX_AGE: z.coerce.number().default(24 * 60 * 60 * 1000), // 24 hours in ms
-  
+
   // Security
   ENCRYPTION_KEY: z.string({
     required_error: "ENCRYPTION_KEY is required for credential encryption",
   }),
-  
+
+  // Admin Credentials
+  ADMIN_USERNAME: z.string().default("admin"),
+  ADMIN_PASSWORD: z.string().min(8, { message: "Admin password must be at least 8 characters" }).default("adminpassword"),
+
   // AI Provider API keys
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
   XAI_API_KEY: z.string().optional(),
   PERPLEXITY_API_KEY: z.string().optional(),
-  
+
   // Server configuration
   PORT: z.coerce.number().default(5000),
   HOST: z.string().default("0.0.0.0"),
-  
+
   // OAuth configuration - Client IDs and Secrets
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
@@ -44,7 +48,7 @@ const envSchema = z.object({
   FACEBOOK_CLIENT_SECRET: z.string().optional(),
   INSTAGRAM_CLIENT_ID: z.string().optional(),
   INSTAGRAM_CLIENT_SECRET: z.string().optional(),
-  
+
   // OAuth redirect URIs
   BASE_URL: z.string().default("http://localhost:5000"),
 });
@@ -53,12 +57,12 @@ const envSchema = z.object({
 const envParse = () => {
   try {
     const parsed = envSchema.safeParse(process.env);
-    
+
     if (!parsed.success) {
       console.error("❌ Invalid environment variables:", parsed.error.flatten().fieldErrors);
       throw new Error("Invalid environment configuration");
     }
-    
+
     return parsed.data;
   } catch (error) {
     console.error("Failed to parse environment variables:", error);
@@ -71,17 +75,17 @@ const createConfig = () => {
   const env = envParse();
   const isDev = env.NODE_ENV === "development";
   const isProd = env.NODE_ENV === "production";
-  
+
   // Base configuration
   const config = {
     env: env.NODE_ENV,
-    
+
     // Server
     server: {
       port: env.PORT,
       host: env.HOST,
     },
-    
+
     // Database
     database: {
       url: env.DATABASE_URL,
@@ -89,20 +93,26 @@ const createConfig = () => {
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
     },
-    
+
     // Session
     session: {
       secret: env.SESSION_SECRET,
       cookieMaxAge: env.SESSION_MAX_AGE,
       secureCookies: isProd,
     },
-    
+
     // Security
     security: {
       encryptionKey: env.ENCRYPTION_KEY,
       bcryptSaltRounds: 10,
     },
-    
+
+    // Admin settings
+    admin: {
+      username: env.ADMIN_USERNAME,
+      password: env.ADMIN_PASSWORD,
+    },
+
     // OAuth URLs
     oauth: {
       baseUrl: env.BASE_URL,
@@ -146,7 +156,7 @@ const createConfig = () => {
         },
       }
     },
-    
+
     // AI Provider Configurations
     ai: {
       openai: {
@@ -167,7 +177,7 @@ const createConfig = () => {
         defaultModel: "llama-3.1-sonar-small-128k-online",
       },
     },
-    
+
     // Feature flags
     features: {
       aiAuthRequired: isProd,
@@ -176,14 +186,14 @@ const createConfig = () => {
       aiAnonalytics: isProd,
       agentTasks: true,
     },
-    
+
     // Credential settings
     credentials: {
       defaultExpirationDays: 90,
       refreshTokenBeforeDays: 7,
     },
   };
-  
+
   return config;
 };
 
@@ -213,7 +223,7 @@ export function checkOAuthConfig(service: string): boolean {
   if (!(serviceKey in config.oauth.credentials)) {
     return false;
   }
-  
+
   const creds = config.oauth.credentials[serviceKey as keyof typeof config.oauth.credentials];
   return !!(creds.clientId && creds.clientSecret);
 }

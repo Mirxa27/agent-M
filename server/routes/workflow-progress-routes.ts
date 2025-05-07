@@ -92,7 +92,7 @@ workflowProgressRouter.get("/sequences/:sequenceId/executions", checkAuth, async
     }
     // --- End Authorization Check ---
 
-    // Removed TODO as check is implemented above
+    // The check for task completion is implemented above, so this TODO is no longer necessary.
 
     const executions = await workflowProgressService.getSequenceExecutions(sequenceId, limit);
     res.json(executions);

@@ -166,6 +166,23 @@ export const insertTaskSchema = createInsertSchema(tasks).pick({
   description: true,
 });
 
+// Conversation schema
+export const conversations = pgTable("conversations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(), // User who initiated the conversation
+  agentId: integer("agent_id").notNull(), // Agent involved in the conversation
+  title: text("title"), // Optional title for the conversation
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  // Potentially add lastMessageAt for sorting, or other metadata
+});
+
+export const insertConversationSchema = createInsertSchema(conversations).pick({
+  userId: true,
+  agentId: true,
+  title: true,
+});
+
 // Message schema (for task conversations)
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
@@ -174,6 +191,7 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
   metadata: jsonb("metadata").default({}).notNull(), // Added for tool call info and extensibility
+  conversationId: integer("conversation_id"), // New: Link to conversation table
 });
 
 export const insertMessageSchema = createInsertSchema(messages).pick({
@@ -182,6 +200,7 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   content: true,
   timestamp: true,
   metadata: true, // Added
+  conversationId: true, // New
 });
 
 // Task-File relationship schema
@@ -329,6 +348,9 @@ export type InsertFile = z.infer<typeof insertFileSchema>;
 
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
+
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
 
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
@@ -785,3 +807,6 @@ export type InsertWorkflowExecution = z.infer<typeof insertWorkflowExecutionSche
 
 export type WorkflowStepExecution = typeof workflowStepExecutions.$inferSelect;
 export type InsertWorkflowStepExecution = z.infer<typeof insertWorkflowStepExecutionSchema>;
+
+// Add Conversation type export
+export type { Conversation as AiConversation }; // Alias for clarity if needed elsewhere

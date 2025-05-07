@@ -1,68 +1,70 @@
 import {
-  users,
-  User,
-  InsertUser,
-  agents,
   Agent,
-  InsertAgent,
-  agentTools,
   AgentTool,
-  InsertAgentTool,
-  credentials,
-  Credential,
-  InsertCredential,
-  files,
-  File,
-  InsertFile,
-  tasks,
-  Task,
-  InsertTask,
-  messages,
-  Message,
-  InsertMessage,
-  taskFiles,
-  TaskFile,
-  InsertTaskFile,
-  aiProviders,
-  AiProvider,
-  InsertAiProvider,
-  browserSequences,
-  browserSequenceSteps,
-  BrowserSequence,
-  BrowserSequenceStep,
-  InsertBrowserSequence,
-  InsertBrowserSequenceStep,
-  aiModels,
   AiModel,
-  InsertAiModel,
-  aiPrompts,
   AiPrompt,
-  InsertAiPrompt,
-  plans,
-  Plan,
-  InsertPlan,
-  userActivities,
-  UserActivity,
-  InsertUserActivity,
-  dashboardPreferences,
-  DashboardPreference,
-  InsertDashboardPreference,
-  analytics,
+  AiProvider,
   Analytics,
+  BrowserSequence,
+  BrowserSequenceStep, // Added by user
+  Conversation,
+  Credential,
+  DashboardPreference,
+  File,
+  InsertAgent,
+  InsertAgentTool,
+  InsertAiModel,
+  InsertAiPrompt,
+  InsertAiProvider,
   InsertAnalytics,
-  siteSettings,
-  SiteSettings,
+  InsertBrowserSequence,
+  InsertBrowserSequenceStep, // Added by user
+  InsertConversation // Added by user
+  ,
+  InsertCredential,
+  InsertDashboardPreference,
+  InsertFile,
+  InsertMessage,
+  InsertPlan,
   InsertSiteSettings,
+  InsertTask,
+  InsertUser,
+  InsertUserActivity,
+  Message,
+  Plan,
+  SiteSettings,
+  Task,
+  TaskFile,
+  User,
+  UserActivity,
+  agentTools,
+  agents,
+  aiModels,
+  aiPrompts,
+  aiProviders,
+  analytics,
+  browserSequenceSteps,
+  browserSequences,
+  conversations,
+  credentials,
+  dashboardPreferences,
+  files,
+  messages,
+  plans,
+  siteSettings,
+  taskFiles,
+  tasks,
+  userActivities,
+  users
 } from "@shared/schema";
+import connectPg from "connect-pg-simple";
+import { and, asc, desc, eq, inArray } from "drizzle-orm"; // Added or, inArray
 import session from "express-session";
 import createMemoryStore from "memorystore";
-import connectPg from "connect-pg-simple";
+import { db, pool } from "./db";
 
 // Define SessionStore type to avoid TypeScript errors
 type SessionStore = any;
-import { db } from "./db";
-import { eq, and, desc, asc } from "drizzle-orm";
-import { pool } from "./db";
 
 const MemoryStore = createMemoryStore(session);
 const PostgresSessionStore = connectPg(session);
@@ -72,7 +74,7 @@ export interface IStorage {
   getSiteSettings(): Promise<SiteSettings | undefined>;
   createSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings>;
   updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined>;
-  
+
   // Browser Sequence operations
   getBrowserSequence(id: number): Promise<BrowserSequence | undefined>;
   getBrowserSequencesByUserId(userId: number): Promise<BrowserSequence[]>;
@@ -92,7 +94,7 @@ export interface IStorage {
     updates: Partial<Omit<BrowserSequenceStep, "id">>,
   ): Promise<BrowserSequenceStep | undefined>;
   deleteBrowserSequenceStep(id: number): Promise<boolean>;
-  
+
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -119,6 +121,7 @@ export interface IStorage {
   // Agent operations
   getAgent(id: number): Promise<Agent | undefined>;
   getAgentsByUserId(userId: number): Promise<Agent[]>;
+  getAgentTemplates(): Promise<Agent[]>; // Added
   createAgent(agent: InsertAgent): Promise<Agent>;
   updateAgent(
     id: number,
@@ -168,7 +171,15 @@ export interface IStorage {
   // Message operations
   getMessage(id: number): Promise<Message | undefined>;
   getMessagesByTaskId(taskId: number): Promise<Message[]>;
+  getMessagesByConversationId(conversationId: number): Promise<Message[]>; // Added
   createMessage(message: InsertMessage): Promise<Message>;
+
+  // Conversation operations
+  getConversation(id: number): Promise<Conversation | undefined>;
+  getConversationsByUserId(userId: number, agentId?: number): Promise<Conversation[]>;
+  createConversation(conversation: InsertConversation): Promise<Conversation>;
+  updateConversation(id: number, updates: Partial<Omit<Conversation, "id">>): Promise<Conversation | undefined>;
+  deleteConversation(id: number): Promise<boolean>;
 
   // AI Provider operations (admin only)
   getAiProvider(id: number): Promise<AiProvider | undefined>;
@@ -247,30 +258,11 @@ export interface IStorage {
     updates: Partial<Omit<Analytics, "id">>,
   ): Promise<Analytics | undefined>;
 
-  // Browser Sequence operations
-  getBrowserSequence(id: number): Promise<BrowserSequence | undefined>;
-  getBrowserSequencesByUserId(userId: number): Promise<BrowserSequence[]>;
-  createBrowserSequence(sequence: InsertBrowserSequence): Promise<BrowserSequence>;
-  updateBrowserSequence(
-    id: number,
-    updates: Partial<Omit<BrowserSequence, "id">>,
-  ): Promise<BrowserSequence | undefined>;
-  deleteBrowserSequence(id: number): Promise<boolean>;
-  
-  // Browser Sequence Step operations
-  getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined>;
-  getBrowserSequenceStepsBySequenceId(sequenceId: number): Promise<BrowserSequenceStep[]>;
-  createBrowserSequenceStep(step: InsertBrowserSequenceStep): Promise<BrowserSequenceStep>;
-  updateBrowserSequenceStep(
-    id: number,
-    updates: Partial<Omit<BrowserSequenceStep, "id">>,
-  ): Promise<BrowserSequenceStep | undefined>;
-  deleteBrowserSequenceStep(id: number): Promise<boolean>;
-
   // Session store
   sessionStore: any; // Using any for compatibility
 }
 
+// MemStorage class as provided by the user, including the "Method not implemented" errors
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private agentTools: Map<number, AgentTool>;
@@ -289,6 +281,7 @@ export class MemStorage implements IStorage {
   private analyticsEntries: Map<number, Analytics>;
   private browserSequences: Map<number, BrowserSequence>;
   private browserSequenceSteps: Map<number, BrowserSequenceStep>;
+  private conversations: Map<number, Conversation>; // Added by user
 
   sessionStore: SessionStore;
 
@@ -309,9 +302,10 @@ export class MemStorage implements IStorage {
   private analyticsIdCounter: number;
   private browserSequenceIdCounter: number;
   private browserSequenceStepIdCounter: number;
+  private conversationIdCounter: number; // Added by user
 
   private siteSettingsObj: SiteSettings | undefined;
-  
+
   constructor() {
     this.users = new Map();
     this.agentTools = new Map();
@@ -330,6 +324,7 @@ export class MemStorage implements IStorage {
     this.analyticsEntries = new Map();
     this.browserSequences = new Map();
     this.browserSequenceSteps = new Map();
+    this.conversations = new Map(); // Added by user
 
     this.userIdCounter = 1;
     this.agentToolIdCounter = 1;
@@ -348,1155 +343,340 @@ export class MemStorage implements IStorage {
     this.analyticsIdCounter = 1;
     this.browserSequenceIdCounter = 1;
     this.browserSequenceStepIdCounter = 1;
+    this.conversationIdCounter = 1; // Added by user
 
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
     });
 
-    // Initialize with some default plans
     this.initializePlans();
-    
-    // Initialize default site settings
     this.initializeSiteSettings();
   }
+  // Methods from user's version of MemStorage, including "throw new Error"
+  getBrowserSequence(id: number): Promise<BrowserSequence | undefined> { throw new Error('Method not implemented.'); }
+  getBrowserSequencesByUserId(userId: number): Promise<BrowserSequence[]> { throw new Error('Method not implemented.'); }
+  createBrowserSequence(sequence: InsertBrowserSequence): Promise<BrowserSequence> { throw new Error('Method not implemented.'); }
+  updateBrowserSequence(id: number, updates: Partial<Omit<BrowserSequence, 'id'>>): Promise<BrowserSequence | undefined> { throw new Error('Method not implemented.'); }
+  deleteBrowserSequence(id: number): Promise<boolean> { throw new Error('Method not implemented.'); }
+  getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined> { throw new Error('Method not implemented.'); }
+  getBrowserSequenceStepsBySequenceId(sequenceId: number): Promise<BrowserSequenceStep[]> { throw new Error('Method not implemented.'); }
+  createBrowserSequenceStep(step: InsertBrowserSequenceStep): Promise<BrowserSequenceStep> { throw new Error('Method not implemented.'); }
+  updateBrowserSequenceStep(id: number, updates: Partial<Omit<BrowserSequenceStep, 'id'>>): Promise<BrowserSequenceStep | undefined> { throw new Error('Method not implemented.'); }
+  deleteBrowserSequenceStep(id: number): Promise<boolean> { throw new Error('Method not implemented.'); }
+  linkFileToTask(taskId: number, fileId: number): Promise<TaskFile> { throw new Error('Method not implemented.'); }
+  getTaskFilesByTaskId(taskId: number): Promise<TaskFile[]> { throw new Error('Method not implemented.'); }
+  unlinkFileFromTask(taskId: number, fileId: number): Promise<boolean> { throw new Error('Method not implemented.'); }
+  getTask(id: number): Promise<Task | undefined> { throw new Error('Method not implemented.'); }
+  getTasksByUserId(userId: number, limit?: number): Promise<Task[]> { throw new Error('Method not implemented.'); }
+  getTasksByAgentId(agentId: number): Promise<Task[]> { throw new Error('Method not implemented.'); }
+  createTask(task: InsertTask): Promise<Task> { throw new Error('Method not implemented.'); }
+  updateTask(id: number, updates: Partial<Omit<Task, 'id'>>): Promise<Task | undefined> { throw new Error('Method not implemented.'); }
+  deleteTask(id: number): Promise<boolean> { throw new Error('Method not implemented.'); }
+  getMessage(id: number): Promise<Message | undefined> { throw new Error('Method not implemented.'); }
+  getMessagesByTaskId(taskId: number): Promise<Message[]> { throw new Error('Method not implemented.'); }
+  getAiProvider(id: number): Promise<AiProvider | undefined> { throw new Error('Method not implemented.'); }
+  getAllAiProviders(): Promise<AiProvider[]> { throw new Error('Method not implemented.'); }
+  getActiveAiProviders(): Promise<AiProvider[]> { throw new Error('Method not implemented.'); }
+  createAiProvider(provider: InsertAiProvider): Promise<AiProvider> { throw new Error('Method not implemented.'); }
+  updateAiProvider(id: number, updates: Partial<Omit<AiProvider, 'id'>>): Promise<AiProvider | undefined> { throw new Error('Method not implemented.'); }
+  deleteAiProvider(id: number): Promise<boolean> { throw new Error('Method not implemented.'); }
+  getAiModel(id: number): Promise<AiModel | undefined> { throw new Error('Method not implemented.'); }
+  getAiModelByName(modelId: string): Promise<AiModel | undefined> { throw new Error('Method not implemented.'); }
+  getAllAiModels(): Promise<AiModel[]> { throw new Error('Method not implemented.'); }
+  getAiModelsByProviderId(providerId: number): Promise<AiModel[]> { throw new Error('Method not implemented.'); }
+  createAiModel(model: InsertAiModel): Promise<AiModel> { throw new Error('Method not implemented.'); }
+  updateAiModel(id: number, updates: Partial<Omit<AiModel, 'id'>>): Promise<AiModel | undefined> { throw new Error('Method not implemented.'); }
+  deleteAiModel(id: number): Promise<boolean> { throw new Error('Method not implemented.'); }
+  getAiPrompt(id: number): Promise<AiPrompt | undefined> { throw new Error('Method not implemented.'); }
+  getAllAiPrompts(): Promise<AiPrompt[]> { throw new Error('Method not implemented.'); }
+  getAiPromptsByModelId(modelId: number): Promise<AiPrompt[]> { throw new Error('Method not implemented.'); }
+  createAiPrompt(prompt: InsertAiPrompt): Promise<AiPrompt> { throw new Error('Method not implemented.'); }
+  updateAiPrompt(id: number, updates: Partial<Omit<AiPrompt, 'id'>>): Promise<AiPrompt | undefined> { throw new Error('Method not implemented.'); }
+  deleteAiPrompt(id: number): Promise<boolean> { throw new Error('Method not implemented.'); }
+  getPlan(id: number): Promise<Plan | undefined> { throw new Error('Method not implemented.'); }
+  getPlanByName(name: string): Promise<Plan | undefined> { throw new Error('Method not implemented.'); }
+  getAllPlans(): Promise<Plan[]> { return Promise.resolve(Array.from(this.plans.values())); } // Kept user's working version
+  getActivePlans(): Promise<Plan[]> { return Promise.resolve(Array.from(this.plans.values()).filter(p => p.isActive)); } // Kept user's working version
+  updatePlan(id: number, updates: Partial<Omit<Plan, 'id'>>): Promise<Plan | undefined> { throw new Error('Method not implemented.'); }
+  deletePlan(id: number): Promise<boolean> { throw new Error('Method not implemented.'); }
+  getUserActivity(id: number): Promise<UserActivity | undefined> { throw new Error('Method not implemented.'); }
+  getUserActivitiesByUserId(userId: number, limit?: number): Promise<UserActivity[]> { throw new Error('Method not implemented.'); }
+  createUserActivity(activity: InsertUserActivity): Promise<UserActivity> { throw new Error('Method not implemented.'); }
+  getDashboardPreference(userId: number): Promise<DashboardPreference | undefined> { throw new Error('Method not implemented.'); }
+  createDashboardPreference(preference: InsertDashboardPreference): Promise<DashboardPreference> { throw new Error('Method not implemented.'); }
+  updateDashboardPreference(userId: number, updates: Partial<Omit<DashboardPreference, 'id' | 'userId'>>): Promise<DashboardPreference | undefined> { throw new Error('Method not implemented.'); }
+  getUserAnalytics(userId: number, period: string): Promise<Analytics | undefined> { throw new Error('Method not implemented.'); }
+  createAnalytics(analyticsData: InsertAnalytics): Promise<Analytics> { throw new Error('Method not implemented.'); }
+  updateAnalytics(id: number, updates: Partial<Omit<Analytics, 'id'>>): Promise<Analytics | undefined> { throw new Error('Method not implemented.'); }
 
   private initializePlans(): void {
-    const plans: InsertPlan[] = [
-      {
-        name: "Free",
-        price: 0,
-        interval: "monthly",
-        features: {
-          agentLimit: 2,
-          storageLimit: 500, // MB
-          credentialLimit: 3,
-          taskLimit: 50,
-        },
-        isActive: true,
-      },
-      {
-        name: "Basic",
-        price: 49,
-        interval: "monthly",
-        features: {
-          agentLimit: 5,
-          storageLimit: 2000, // MB
-          credentialLimit: 10,
-          taskLimit: 500,
-        },
-        isActive: true,
-      },
-      {
-        name: "Professional",
-        price: 149,
-        interval: "monthly",
-        features: {
-          agentLimit: 20,
-          storageLimit: 5000, // MB
-          credentialLimit: 50,
-          taskLimit: 5000,
-        },
-        isActive: true,
-      },
-      {
-        name: "Enterprise",
-        price: 499,
-        interval: "monthly",
-        features: {
-          agentLimit: 100,
-          storageLimit: 20000, // MB
-          credentialLimit: 200,
-          taskLimit: 50000,
-        },
-        isActive: true,
-      },
+    const defaultPlans: InsertPlan[] = [
+      { name: "Free", price: 0, interval: "monthly", features: { agentLimit: 2, storageLimit: 500, credentialLimit: 3, taskLimit: 50, }, isActive: true, },
+      { name: "Basic", price: 49, interval: "monthly", features: { agentLimit: 5, storageLimit: 2000, credentialLimit: 10, taskLimit: 500, }, isActive: true, },
+      { name: "Professional", price: 149, interval: "monthly", features: { agentLimit: 20, storageLimit: 5000, credentialLimit: 50, taskLimit: 5000, }, isActive: true, },
+      { name: "Enterprise", price: 499, interval: "monthly", features: { agentLimit: 100, storageLimit: 20000, credentialLimit: 200, taskLimit: 50000, }, isActive: true, },
     ];
-
-    plans.forEach((plan) => this.createPlan(plan));
-  }
-  
-  private initializeSiteSettings(): void {
-    // Create default site settings if none exist
-    const now = new Date();
-    this.siteSettingsObj = {
-      id: 1,
-      logo: {
-        url: "/assets/images/mirxa-logo.svg",
-        showText: true,
-        text: "Mirxa.io",
-        animated: true,
-      },
-      colors: {
-        primary: "#6366f1",
-        secondary: "#0ea5e9",
-        accent: "#f97316",
-        background: "#ffffff",
-        text: "#1e293b",
-      },
-      header: {
-        sticky: true,
-        transparent: false,
-        showLogo: true,
-        showNavigation: true,
-      },
-      footer: {
-        showCopyright: true,
-        copyrightText: "© 2025 Mirxa.io. All rights reserved.",
-        showSocial: true,
-      },
-      chatbot: {
-        enabled: true,
-        position: "bottom-right",
-        welcomeMessage: "Hi! How can I assist you today?",
-        color: "#6366f1",
-      },
-      widgets: [
-        { id: 'header-widget', label: 'Header' },
-        { id: 'hero-widget', label: 'Hero Section' },
-        { id: 'features-widget', label: 'Features' },
-        { id: 'testimonials-widget', label: 'Testimonials' },
-        { id: 'cta-widget', label: 'Call to Action' },
-        { id: 'footer-widget', label: 'Footer' },
-      ],
-      version: 1,
-      lastUpdated: now,
-      updatedBy: null,
-    };
-  }
-  
-  // Site Settings operations
-  async getSiteSettings(): Promise<SiteSettings | undefined> {
-    try {
-      // Always fetch site settings with ID 1 (singleton)
-      const [settings] = await db
-        .select()
-        .from(siteSettings)
-        .where(eq(siteSettings.id, 1));
-      
-      return settings;
-    } catch (error) {
-      console.error("Error fetching site settings:", error);
-      // If settings don't exist, create default settings
-      const existingSettings = await this.getSiteSettings();
-      if (!existingSettings) {
-        return this.createDefaultSiteSettings();
-      }
-      return undefined;
-    }
-  }
-
-  async createDefaultSiteSettings(): Promise<SiteSettings> {
-    const now = new Date();
-    const defaultSettings = {
-      logo: {
-        url: "/assets/images/mirxa-logo.svg",
-        showText: true,
-        text: "Mirxa.io",
-        animated: true,
-      },
-      colors: {
-        primary: "#6366f1",
-        secondary: "#0ea5e9",
-        accent: "#f97316",
-        background: "#ffffff",
-        text: "#1e293b",
-      },
-      header: {
-        sticky: true,
-        transparent: false,
-        showLogo: true,
-        showNavigation: true,
-      },
-      footer: {
-        showCopyright: true,
-        copyrightText: "© 2025 Mirxa.io. All rights reserved.",
-        showSocial: true,
-      },
-      chatbot: {
-        enabled: true,
-        position: "bottom-right",
-        welcomeMessage: "Hi! How can I assist you today?",
-        color: "#6366f1",
-      },
-      widgets: [
-        { id: 'header-widget', label: 'Header' },
-        { id: 'hero-widget', label: 'Hero Section' },
-        { id: 'features-widget', label: 'Features' },
-        { id: 'testimonials-widget', label: 'Testimonials' },
-        { id: 'cta-widget', label: 'Call to Action' },
-        { id: 'footer-widget', label: 'Footer' },
-      ],
-      version: 1,
-      lastUpdated: now,
-      updatedBy: null,
-    };
-    
-    return this.createSiteSettings(defaultSettings);
-  }
-
-  async createSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings> {
-    try {
-      const [newSettings] = await db
-        .insert(siteSettings)
-        .values({
-          ...settings,
-          version: 1,
-          lastUpdated: new Date(),
-        })
-        .returning();
-      
-      return newSettings;
-    } catch (error) {
-      console.error("Error creating site settings:", error);
-      throw new Error("Failed to create site settings");
-    }
-  }
-
-  async updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined> {
-    try {
-      // First check if settings exist
-      const existingSettings = await this.getSiteSettings();
-      
-      if (!existingSettings) {
-        // If no settings exist, create default settings with updates applied
-        const defaultSettings = await this.createDefaultSiteSettings();
-        // Apply the updates on top of default settings
-        return this.updateSiteSettings(updates);
-      }
-      
-      // Prepare updates with version increment and updated timestamp
-      const updatesWithMeta = {
-        ...updates,
-        version: existingSettings.version + 1,
-        lastUpdated: new Date(),
-      };
-      
-      // Update the settings in the database
-      const [updatedSettings] = await db
-        .update(siteSettings)
-        .set(updatesWithMeta)
-        .where(eq(siteSettings.id, 1))
-        .returning();
-      
-      return updatedSettings;
-    } catch (error) {
-      console.error("Error updating site settings:", error);
-      throw new Error("Failed to update site settings");
-    }
-  }
-
-  // User operations
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username.toLowerCase() === username.toLowerCase(),
-    );
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.email.toLowerCase() === email.toLowerCase(),
-    );
-  }
-
-  async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userIdCounter++;
-    const now = new Date();
-
-    // Get the free plan or first plan available
-    let freePlanId: number | null = null;
-    if (this.plans.size > 0) {
-      const freePlan = Array.from(this.plans.values()).find(
-        (plan) => plan.name.toLowerCase() === "free",
-      );
-      if (freePlan) {
-        freePlanId = freePlan.id;
-      } else {
-        // Use the first plan if "Free" not found
-        freePlanId = Array.from(this.plans.values())[0].id;
-      }
-    }
-
-    const user: User = {
-      id,
-      ...insertUser,
-      planId: freePlanId,
-      planExpiresAt: null,
-      role: "user",
-      isActive: true,
-    };
-    this.users.set(id, user);
-    return user;
-  }
-
-  async updateUser(
-    id: number,
-    updates: Partial<Omit<User, "id">>,
-  ): Promise<User | undefined> {
-    const user = await this.getUser(id);
-    if (!user) return undefined;
-
-    const updatedUser = { ...user, ...updates };
-    this.users.set(id, updatedUser);
-    return updatedUser;
-  }
-  
-  async deleteUser(id: number): Promise<boolean> {
-    // Check if user exists
-    const user = await this.getUser(id);
-    if (!user) {
-      return false;
-    }
-    
-    // Don't delete admin users if they're the only admin left
-    if (user.role === "admin") {
-      const admins = Array.from(this.users.values()).filter(u => u.role === "admin");
-      if (admins.length <= 1) {
-        throw new Error("Cannot delete the last admin user");
-      }
-    }
-    
-    return this.users.delete(id);
-  }
-
-  // Agent Tool operations
-  async getAgentTool(id: number): Promise<AgentTool | undefined> {
-    return this.agentTools.get(id);
-  }
-
-  async getAllAgentTools(): Promise<AgentTool[]> {
-    return Array.from(this.agentTools.values());
-  }
-
-  async getAgentToolsByCategory(category: string): Promise<AgentTool[]> {
-    return Array.from(this.agentTools.values()).filter(
-      (tool) => tool.category === category,
-    );
-  }
-
-  async createAgentTool(tool: InsertAgentTool): Promise<AgentTool> {
-    const id = this.agentToolIdCounter++;
-    const now = new Date();
-    const newTool: AgentTool = {
-      id,
-      ...tool,
-      config: tool.config || {}, // Ensure config is not undefined
-      isActive: tool.isActive !== undefined ? tool.isActive : true, // Default to true if not provided
-      isSystem: false, // Default to false, only system can set to true
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.agentTools.set(id, newTool);
-    return newTool;
-  }
-
-  async updateAgentTool(
-    id: number,
-    updates: Partial<Omit<AgentTool, "id">>,
-  ): Promise<AgentTool | undefined> {
-    const tool = await this.getAgentTool(id);
-    if (!tool) return undefined;
-
-    // Don't allow changing isSystem status if it's a system tool
-    if (tool.isSystem && updates.isSystem === false) {
-      throw new Error("Cannot change system status of a system tool");
-    }
-
-    const updatedTool = {
-      ...tool,
-      ...updates,
-      updatedAt: new Date(),
-    };
-
-    this.agentTools.set(id, updatedTool);
-    return updatedTool;
-  }
-
-  async deleteAgentTool(id: number): Promise<boolean> {
-    const tool = await this.getAgentTool(id);
-    if (tool && tool.isSystem) {
-      throw new Error("Cannot delete a system tool");
-    }
-
-    return this.agentTools.delete(id);
-  }
-
-  // Agent operations
-  async getAgent(id: number): Promise<Agent | undefined> {
-    return this.agents.get(id);
-  }
-
-  async getAgentsByUserId(userId: number): Promise<Agent[]> {
-    return Array.from(this.agents.values()).filter(
-      (agent) => agent.userId === userId && !(agent.isTemplate === true),
-    );
-  }
-  
-  async getAgentTemplates(): Promise<Agent[]> {
-    return Array.from(this.agents.values()).filter(
-      (agent) => agent.isTemplate === true
-    );
-  }
-
-  async createAgent(agent: InsertAgent): Promise<Agent> {
-    const id = this.agentIdCounter++;
-    const now = new Date();
-    const newAgent: Agent = {
-      id,
-      ...agent,
-      taskCount: 0,
-      createdAt: now,
-    };
-    this.agents.set(id, newAgent);
-    return newAgent;
-  }
-
-  async updateAgent(
-    id: number,
-    updates: Partial<Omit<Agent, "id">>,
-  ): Promise<Agent | undefined> {
-    const agent = await this.getAgent(id);
-    if (!agent) return undefined;
-
-    const updatedAgent = { ...agent, ...updates };
-    this.agents.set(id, updatedAgent);
-    return updatedAgent;
-  }
-
-  async deleteAgent(id: number): Promise<boolean> {
-    return this.agents.delete(id);
-  }
-
-  // Credential operations
-  async getCredential(id: number): Promise<Credential | undefined> {
-    return this.credentials.get(id);
-  }
-
-  async getCredentialsByUserId(userId: number): Promise<Credential[]> {
-    return Array.from(this.credentials.values()).filter(
-      (credential) => credential.userId === userId,
-    );
-  }
-
-  async getCredentialsByAgentId(agentId: number): Promise<Credential[]> {
-    // In a real implementation, we would have an agent-credential relationship
-    // For simplicity, we'll just return credentials for the user who owns the agent
-    const agent = await this.getAgent(agentId);
-    if (!agent) return [];
-
-    return this.getCredentialsByUserId(agent.userId);
-  }
-
-  async createCredential(credential: InsertCredential): Promise<Credential> {
-    const id = this.credentialIdCounter++;
-    const now = new Date();
-    const newCredential: Credential = {
-      id,
-      ...credential,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.credentials.set(id, newCredential);
-    return newCredential;
-  }
-
-  async updateCredential(
-    id: number,
-    updates: Partial<Omit<Credential, "id">>,
-  ): Promise<Credential | undefined> {
-    const credential = await this.getCredential(id);
-    if (!credential) return undefined;
-
-    const updatedCredential = {
-      ...credential,
-      ...updates,
-      updatedAt: new Date(),
-    };
-    this.credentials.set(id, updatedCredential);
-    return updatedCredential;
-  }
-
-  async deleteCredential(id: number): Promise<boolean> {
-    return this.credentials.delete(id);
-  }
-
-  // File operations
-  async getFile(id: number): Promise<File | undefined> {
-    return this.files.get(id);
-  }
-
-  async getFilesByUserId(
-    userId: number, 
-    options?: { limit?: number; orderBy?: string; order?: 'asc' | 'desc' }
-  ): Promise<File[]> {
-    let files = Array.from(this.files.values()).filter(
-      (file) => file.userId === userId,
-    );
-
-    if (options?.orderBy) {
-      const sortField = options.orderBy as keyof File;
-      files = files.sort((a, b) => {
-        if (options.order === 'desc') {
-          return a[sortField] > b[sortField] ? -1 : 1;
-        }
-        return a[sortField] < b[sortField] ? -1 : 1;
-      });
-    }
-
-    if (options?.limit && options.limit > 0) {
-      files = files.slice(0, options.limit);
-    }
-
-    return files;
-  }
-
-  async getTemplatesByUserId(userId: number): Promise<File[]> {
-    return Array.from(this.files.values()).filter(
-      (file) => file.userId === userId && file.isTemplate,
-    );
-  }
-
-  async createFile(file: InsertFile): Promise<File> {
-    const id = this.fileIdCounter++;
-    const now = new Date();
-    const newFile: File = {
-      id,
-      ...file,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.files.set(id, newFile);
-    return newFile;
-  }
-
-  async updateFile(
-    id: number,
-    updates: Partial<Omit<File, "id">>,
-  ): Promise<File | undefined> {
-    const file = await this.getFile(id);
-    if (!file) return undefined;
-
-    const updatedFile = {
-      ...file,
-      ...updates,
-      updatedAt: new Date(),
-    };
-    this.files.set(id, updatedFile);
-    return updatedFile;
-  }
-
-  async deleteFile(id: number): Promise<boolean> {
-    return this.files.delete(id);
-  }
-
-  // Get files associated with a task through the task-file relationship
-  async getFilesByTaskId(taskId: number): Promise<File[]> {
-    // Get all task-file relationships for this task
-    const taskFileRelations = Array.from(this.taskFiles.values()).filter(
-      (tf) => tf.taskId === taskId,
-    );
-
-    // Get the actual files
-    const files = taskFileRelations
-      .map((tf) => this.files.get(tf.fileId))
-      .filter(Boolean) as File[];
-
-    return files;
-  }
-
-  // Task-File relationship operations
-  async linkFileToTask(taskId: number, fileId: number): Promise<TaskFile> {
-    // Make sure the task and file exist
-    const task = await this.getTask(taskId);
-    if (!task) {
-      throw new Error(`Task with ID ${taskId} not found`);
-    }
-
-    const file = await this.getFile(fileId);
-    if (!file) {
-      throw new Error(`File with ID ${fileId} not found`);
-    }
-
-    // Create new task-file relationship
-    const id = this.taskFileIdCounter++;
-    const now = new Date();
-    const taskFile: TaskFile = {
-      id,
-      taskId,
-      fileId,
-      createdAt: now,
-    };
-
-    this.taskFiles.set(id, taskFile);
-    return taskFile;
-  }
-
-  async getTaskFilesByTaskId(taskId: number): Promise<TaskFile[]> {
-    return Array.from(this.taskFiles.values()).filter(
-      (taskFile) => taskFile.taskId === taskId,
-    );
-  }
-
-  async unlinkFileFromTask(taskId: number, fileId: number): Promise<boolean> {
-    // Find the task-file relationship to remove
-    const taskFileToRemove = Array.from(this.taskFiles.values()).find(
-      (tf) => tf.taskId === taskId && tf.fileId === fileId,
-    );
-
-    if (!taskFileToRemove) {
-      return false;
-    }
-
-    // Remove the relationship
-    return this.taskFiles.delete(taskFileToRemove.id);
-  }
-
-  // Task operations
-  async getTask(id: number): Promise<Task | undefined> {
-    return this.tasks.get(id);
-  }
-
-  async getTasksByUserId(userId: number, limit?: number): Promise<Task[]> {
-    const tasks = Array.from(this.tasks.values())
-      .filter((task) => task.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    return limit ? tasks.slice(0, limit) : tasks;
-  }
-
-  async getTasksByAgentId(agentId: number): Promise<Task[]> {
-    return Array.from(this.tasks.values())
-      .filter((task) => task.agentId === agentId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }
-
-  async createTask(task: InsertTask): Promise<Task> {
-    const id = this.taskIdCounter++;
-    const now = new Date();
-    const newTask: Task = {
-      id,
-      ...task,
-      status: "pending",
-      result: null,
-      createdAt: now,
-      completedAt: null,
-    };
-    this.tasks.set(id, newTask);
-
-    // Update agent task count
-    const agent = await this.getAgent(task.agentId);
-    if (agent) {
-      await this.updateAgent(agent.id, { taskCount: agent.taskCount + 1 });
-    }
-
-    return newTask;
-  }
-
-  async updateTask(
-    id: number,
-    updates: Partial<Omit<Task, "id">>,
-  ): Promise<Task | undefined> {
-    const task = await this.getTask(id);
-    if (!task) return undefined;
-
-    // If status is changing to completed, set completedAt
-    const updatedTask: Task = {
-      ...task,
-      ...updates,
-    };
-
-    if (updates.status === "completed" && !task.completedAt) {
-      updatedTask.completedAt = new Date();
-    }
-
-    this.tasks.set(id, updatedTask);
-    return updatedTask;
-  }
-
-  async deleteTask(id: number): Promise<boolean> {
-    // Also delete associated messages
-    const messagesToDelete = Array.from(this.messages.values())
-      .filter((message) => message.taskId === id)
-      .map((message) => message.id);
-
-    messagesToDelete.forEach((messageId) => this.messages.delete(messageId));
-
-    return this.tasks.delete(id);
-  }
-
-  // Message operations
-  async getMessage(id: number): Promise<Message | undefined> {
-    return this.messages.get(id);
-  }
-
-  async getMessagesByTaskId(taskId: number): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter((message) => message.taskId === taskId)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  }
-
-  async createMessage(message: InsertMessage): Promise<Message> {
-    const id = this.messageIdCounter++;
-    const now = new Date();
-    const newMessage: Message = {
-      id,
-      ...message,
-      createdAt: now,
-    };
-    this.messages.set(id, newMessage);
-    return newMessage;
-  }
-
-  // AI Provider operations
-  async getAiProvider(id: number): Promise<AiProvider | undefined> {
-    return this.aiProviders.get(id);
-  }
-
-  async getAllAiProviders(): Promise<AiProvider[]> {
-    return Array.from(this.aiProviders.values());
-  }
-
-  async getActiveAiProviders(): Promise<AiProvider[]> {
-    return Array.from(this.aiProviders.values()).filter(
-      (provider) => provider.isActive,
-    );
-  }
-
-  async createAiProvider(provider: InsertAiProvider): Promise<AiProvider> {
-    const id = this.aiProviderIdCounter++;
-    const now = new Date();
-    const newProvider: AiProvider = {
-      id,
-      ...provider,
-      createdAt: now,
-    };
-    this.aiProviders.set(id, newProvider);
-    return newProvider;
-  }
-
-  async updateAiProvider(
-    id: number,
-    updates: Partial<Omit<AiProvider, "id">>,
-  ): Promise<AiProvider | undefined> {
-    const provider = await this.getAiProvider(id);
-    if (!provider) return undefined;
-
-    const updatedProvider = { ...provider, ...updates };
-    this.aiProviders.set(id, updatedProvider);
-    return updatedProvider;
-  }
-
-  async deleteAiProvider(id: number): Promise<boolean> {
-    // Check if any models are using this provider
-    const modelsUsingProvider = await this.getAiModelsByProviderId(id);
-
-    if (modelsUsingProvider.length > 0) {
-      throw new Error("Cannot delete provider while models are using it");
-    }
-
-    return this.aiProviders.delete(id);
-  }
-
-  // AI Model operations
-  async getAiModel(id: number): Promise<AiModel | undefined> {
-    return this.aiModels.get(id);
-  }
-
-  async getAiModelByName(modelId: string): Promise<AiModel | undefined> {
-    return Array.from(this.aiModels.values()).find(
-      (model) => model.modelId === modelId,
-    );
-  }
-
-  async getAllAiModels(): Promise<AiModel[]> {
-    return Array.from(this.aiModels.values());
-  }
-
-  async getAiModelsByProviderId(providerId: number): Promise<AiModel[]> {
-    return Array.from(this.aiModels.values()).filter(
-      (model) => model.providerId === providerId,
-    );
-  }
-
-  async createAiModel(model: InsertAiModel): Promise<AiModel> {
-    const id = this.aiModelIdCounter++;
-    const now = new Date();
-    const newModel: AiModel = {
-      id,
-      ...model,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.aiModels.set(id, newModel);
-    return newModel;
-  }
-
-  async updateAiModel(
-    id: number,
-    updates: Partial<Omit<AiModel, "id">>,
-  ): Promise<AiModel | undefined> {
-    const model = await this.getAiModel(id);
-    if (!model) return undefined;
-
-    const updatedModel = {
-      ...model,
-      ...updates,
-      updatedAt: new Date(),
-    };
-    this.aiModels.set(id, updatedModel);
-    return updatedModel;
-  }
-
-  async deleteAiModel(id: number): Promise<boolean> {
-    // Check if any prompts are using this model
-    const promptsUsingModel = await this.getAiPromptsByModelId(id);
-
-    if (promptsUsingModel.length > 0) {
-      throw new Error("Cannot delete model while prompts are using it");
-    }
-
-    return this.aiModels.delete(id);
-  }
-
-  // AI Prompt operations
-  async getAiPrompt(id: number): Promise<AiPrompt | undefined> {
-    return this.aiPrompts.get(id);
-  }
-
-  async getAllAiPrompts(): Promise<AiPrompt[]> {
-    return Array.from(this.aiPrompts.values());
-  }
-
-  async getAiPromptsByModelId(modelId: number): Promise<AiPrompt[]> {
-    return Array.from(this.aiPrompts.values()).filter(
-      (prompt) => prompt.modelId === modelId,
-    );
-  }
-
-  async createAiPrompt(prompt: InsertAiPrompt): Promise<AiPrompt> {
-    const id = this.aiPromptIdCounter++;
-    const now = new Date();
-    const newPrompt: AiPrompt = {
-      id,
-      ...prompt,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.aiPrompts.set(id, newPrompt);
-    return newPrompt;
-  }
-
-  async updateAiPrompt(
-    id: number,
-    updates: Partial<Omit<AiPrompt, "id">>,
-  ): Promise<AiPrompt | undefined> {
-    const prompt = await this.getAiPrompt(id);
-    if (!prompt) return undefined;
-
-    const updatedPrompt = {
-      ...prompt,
-      ...updates,
-      updatedAt: new Date(),
-    };
-    this.aiPrompts.set(id, updatedPrompt);
-    return updatedPrompt;
-  }
-
-  async deleteAiPrompt(id: number): Promise<boolean> {
-    return this.aiPrompts.delete(id);
-  }
-
-  // Plan operations
-  async getPlan(id: number): Promise<Plan | undefined> {
-    return this.plans.get(id);
-  }
-
-  async getPlanByName(name: string): Promise<Plan | undefined> {
-    return Array.from(this.plans.values()).find(
-      (plan) => plan.name.toLowerCase() === name.toLowerCase(),
-    );
-  }
-
-  async getAllPlans(): Promise<Plan[]> {
-    return Array.from(this.plans.values());
-  }
-
-  async getActivePlans(): Promise<Plan[]> {
-    return Array.from(this.plans.values()).filter((plan) => plan.isActive);
+    defaultPlans.forEach((plan) => this.createPlan(plan));
   }
 
-  async createPlan(plan: InsertPlan): Promise<Plan> {
+  async createPlan(plan: InsertPlan): Promise<Plan> { // Kept user's working version
     const id = this.planIdCounter++;
     const newPlan: Plan = {
       id,
       ...plan,
+      features: plan.features || { agentLimit: 0, storageLimit: 0, credentialLimit: 0, taskLimit: 0 }, // Provide default
+      isActive: plan.isActive !== undefined ? plan.isActive : true, // Ensure isActive is boolean
     };
     this.plans.set(id, newPlan);
     return newPlan;
   }
 
-  async updatePlan(
-    id: number,
-    updates: Partial<Omit<Plan, "id">>,
-  ): Promise<Plan | undefined> {
-    const plan = await this.getPlan(id);
-    if (!plan) return undefined;
-
-    const updatedPlan = { ...plan, ...updates };
-    this.plans.set(id, updatedPlan);
-    return updatedPlan;
-  }
-
-  async deletePlan(id: number): Promise<boolean> {
-    return this.plans.delete(id);
-  }
-
-  // User Activity operations
-  async getUserActivity(id: number): Promise<UserActivity | undefined> {
-    return this.userActivities.get(id);
-  }
-
-  async getUserActivitiesByUserId(
-    userId: number,
-    limit?: number,
-  ): Promise<UserActivity[]> {
-    let activities = Array.from(this.userActivities.values())
-      .filter((activity) => activity.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    if (limit) {
-      activities = activities.slice(0, limit);
-    }
-
-    return activities;
-  }
-
-  async createUserActivity(
-    activity: InsertUserActivity,
-  ): Promise<UserActivity> {
-    const id = this.userActivityIdCounter++;
+  private initializeSiteSettings(): void {
     const now = new Date();
-    const newActivity: UserActivity = {
-      id,
-      ...activity,
-      metadata: activity.metadata || {},
-      createdAt: now,
+    this.siteSettingsObj = {
+      id: 1,
+      logo: { url: "/assets/images/mirxa-logo.svg", showText: true, text: "Mirxa.io", animated: true, },
+      colors: { primary: "#6366f1", secondary: "#0ea5e9", accent: "#f97316", background: "#ffffff", text: "#1e293b", },
+      header: { sticky: true, transparent: false, showLogo: true, showNavigation: true, },
+      footer: { showCopyright: true, copyrightText: "© 2025 Mirxa.io. All rights reserved.", showSocial: true, },
+      chatbot: { enabled: true, position: "bottom-right", welcomeMessage: "Hi! How can I assist you today?", color: "#6366f1", autoOpen: false }, // Added autoOpen as in DB schema
+      widgets: [{ id: 'header-widget', label: 'Header' }, { id: 'hero-widget', label: 'Hero Section' }, { id: 'features-widget', label: 'Features' }, { id: 'testimonials-widget', label: 'Testimonials' }, { id: 'cta-widget', label: 'Call to Action' }, { id: 'footer-widget', label: 'Footer' },],
+      version: 1,
+      lastUpdated: now,
+      updatedBy: null,
+      // createdAt: now, // Removed due to type error: SiteSettings type inferred by TS doesn't have createdAt
     };
-
-    this.userActivities.set(id, newActivity);
-    return newActivity;
   }
 
-  // Dashboard Preferences operations
-  async getDashboardPreference(
-    userId: number,
-  ): Promise<DashboardPreference | undefined> {
-    return Array.from(this.dashboardPreferences.values()).find(
-      (pref) => pref.userId === userId,
-    );
+  async getSiteSettings(): Promise<SiteSettings | undefined> {
+    return Promise.resolve(this.siteSettingsObj);
   }
-
-  async createDashboardPreference(
-    preference: InsertDashboardPreference,
-  ): Promise<DashboardPreference> {
-    // First check if preference already exists for this user
-    const existingPreference = await this.getDashboardPreference(
-      preference.userId,
-    );
-    if (existingPreference) {
-      // If it exists, update it instead
-      return this.updateDashboardPreference(preference.userId, {
-        layout: preference.layout,
-        favoriteAgents: preference.favoriteAgents,
-        recentTasks: preference.recentTasks,
-        widgets: preference.widgets,
-        theme: preference.theme,
-      }) as Promise<DashboardPreference>;
-    }
-
-    // Otherwise create new preference
-    const id = this.dashboardPreferenceIdCounter++;
+  async createSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings> {
     const now = new Date();
-    const newPreference: DashboardPreference = {
+    const newSiteSettings: SiteSettings = {
+      id: 1,
+      logo: settings.logo || { url: "/assets/images/mirxa-logo.svg", showText: true, text: "Mirxa.io", animated: true },
+      colors: settings.colors || { primary: "#6366f1", secondary: "#0ea5e9", accent: "#f97316", background: "#ffffff", text: "#1e293b" },
+      header: settings.header || { sticky: true, transparent: false, showLogo: true, showNavigation: true },
+      footer: settings.footer || { showCopyright: true, copyrightText: "© 2025 Mirxa.io. All rights reserved.", showSocial: true },
+      chatbot: settings.chatbot || { enabled: true, position: "bottom-right", welcomeMessage: "Hi! How can I assist you today?", color: "#6366f1", autoOpen: false },
+      widgets: settings.widgets || [],
+      version: settings.version || 1,
+      lastUpdated: now,
+      updatedBy: settings.updatedBy === undefined ? null : settings.updatedBy,
+      // createdAt: settings.createdAt || now, // Removed due to type error: InsertSiteSettings and SiteSettings types inferred by TS don't have createdAt
+    };
+    this.siteSettingsObj = newSiteSettings;
+    if (!this.siteSettingsObj) {
+      throw new Error("Failed to create site settings object in MemStorage");
+    }
+    return Promise.resolve(this.siteSettingsObj);
+  }
+  async updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined> {
+    if (!this.siteSettingsObj) {
+      this.initializeSiteSettings();
+    }
+    if (!this.siteSettingsObj) {
+      return Promise.resolve(undefined);
+    }
+    this.siteSettingsObj = {
+      ...this.siteSettingsObj,
+      ...updates,
+      version: (this.siteSettingsObj.version || 0) + 1,
+      lastUpdated: new Date(),
+    };
+    return Promise.resolve(this.siteSettingsObj);
+  }
+  async getUser(id: number): Promise<User | undefined> { return Promise.resolve(this.users.get(id)); }
+  async getUserByUsername(username: string): Promise<User | undefined> { return Promise.resolve(Array.from(this.users.values()).find(u => u.username.toLowerCase() === username.toLowerCase())); }
+  async getUserByEmail(email: string): Promise<User | undefined> { return Promise.resolve(Array.from(this.users.values()).find(u => u.email.toLowerCase() === email.toLowerCase())); }
+  async getAllUsers(): Promise<User[]> { return Promise.resolve(Array.from(this.users.values())); }
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const id = this.userIdCounter++;
+    let freePlanId: number | undefined = undefined;
+    if (this.plans.size > 0) {
+      const freePlan = Array.from(this.plans.values()).find(p => p.name.toLowerCase() === "free");
+      freePlanId = freePlan ? freePlan.id : Array.from(this.plans.values())[0].id;
+    }
+    const now = new Date();
+    const user: User = {
       id,
-      ...preference,
-      layout: preference.layout || {},
-      favoriteAgents: preference.favoriteAgents || [],
-      recentTasks: preference.recentTasks || [],
-      widgets: preference.widgets || [],
+      username: insertUser.username,
+      password: insertUser.password,
+      email: insertUser.email,
+      fullName: insertUser.fullName ?? null,
+      planId: freePlanId ?? null,
+      planExpiresAt: null,
+      role: "user", // Default, as InsertUser type inferred by TS doesn't have 'role'
+      isActive: true, // Default, as InsertUser type inferred by TS doesn't have 'isActive'
+      createdAt: now, // Default, as InsertUser type inferred by TS doesn't have 'createdAt'
+      updatedAt: now, // Default, as InsertUser type inferred by TS doesn't have 'updatedAt'
+      avatarUrl: null, // Default, as InsertUser type inferred by TS doesn't have 'avatarUrl'
+      bio: null, // Default, as InsertUser type inferred by TS doesn't have 'bio'
+      lastLoginAt: null,
+      emailVerified: false, // Default, as InsertUser type inferred by TS doesn't have 'emailVerified'
+      settings: {}, // Default, as InsertUser type inferred by TS doesn't have 'settings'
+    };
+    this.users.set(id, user); return Promise.resolve(user);
+  }
+  async updateUser(id: number, updates: Partial<Omit<User, "id">>): Promise<User | undefined> {
+    const user = await this.getUser(id); if (!user) return Promise.resolve(undefined);
+    const updatedUser = { ...user, ...updates, updatedAt: new Date() }; this.users.set(id, updatedUser); return Promise.resolve(updatedUser);
+  }
+  async deleteUser(id: number): Promise<boolean> {
+    const user = await this.getUser(id); if (!user) return false;
+    if (user.role === "admin") { const admins = Array.from(this.users.values()).filter(u => u.role === "admin"); if (admins.length <= 1) throw new Error("Cannot delete the last admin user"); }
+    return this.users.delete(id);
+  }
+  async getAgentTool(id: number): Promise<AgentTool | undefined> { return Promise.resolve(this.agentTools.get(id)); }
+  async getAllAgentTools(): Promise<AgentTool[]> { return Promise.resolve(Array.from(this.agentTools.values())); }
+  async getAgentToolsByCategory(category: string): Promise<AgentTool[]> { return Promise.resolve(Array.from(this.agentTools.values()).filter(t => t.category === category)); }
+  async createAgentTool(tool: InsertAgentTool): Promise<AgentTool> {
+    const id = this.agentToolIdCounter++; const now = new Date();
+    const newTool: AgentTool = {
+      id,
+      name: tool.name,
+      description: tool.description ?? null,
+      category: tool.category ?? null,
+      type: tool.type ?? null,
+      icon: tool.icon ?? null,
+      config: tool.config || {},
+      isActive: tool.isActive !== undefined ? tool.isActive : true,
+      isSystem: false, // Default, as InsertAgentTool type inferred by TS doesn't have 'isSystem'
+      createdAt: now, // Default, as InsertAgentTool type inferred by TS doesn't have 'createdAt'
+      updatedAt: now, // Default, as InsertAgentTool type inferred by TS doesn't have 'updatedAt'
+    };
+    this.agentTools.set(id, newTool); return Promise.resolve(newTool);
+  }
+  async updateAgentTool(id: number, updates: Partial<Omit<AgentTool, "id">>): Promise<AgentTool | undefined> {
+    const tool = await this.getAgentTool(id); if (!tool) return Promise.resolve(undefined);
+    if (tool.isSystem && updates.isSystem === false) throw new Error("Cannot change system status of a system tool");
+    const updatedTool = { ...tool, ...updates, updatedAt: new Date(), }; this.agentTools.set(id, updatedTool); return Promise.resolve(updatedTool);
+  }
+  async deleteAgentTool(id: number): Promise<boolean> {
+    const tool = await this.getAgentTool(id); if (tool && tool.isSystem) throw new Error("Cannot delete a system tool");
+    return this.agentTools.delete(id);
+  }
+  async getAgent(id: number): Promise<Agent | undefined> { return Promise.resolve(this.agents.get(id)); }
+  async getAgentsByUserId(userId: number): Promise<Agent[]> { return Promise.resolve(Array.from(this.agents.values()).filter(a => a.userId === userId && !a.isTemplate)); }
+  async getAgentTemplates(): Promise<Agent[]> { return Promise.resolve(Array.from(this.agents.values()).filter(a => a.isTemplate === true)); }
+  async createAgent(agent: InsertAgent): Promise<Agent> {
+    const id = this.agentIdCounter++; const now = new Date();
+    const newAgent: Agent = {
+      id,
+      ...agent,
+      config: agent.config ?? {},
+      tools: agent.tools ?? [],
+      taskCount: 0,
+      isActive: agent.isActive !== undefined ? agent.isActive : true,
+      isTemplate: agent.isTemplate !== undefined ? agent.isTemplate : false,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.agents.set(id, newAgent); return Promise.resolve(newAgent);
+  }
+  async updateAgent(id: number, updates: Partial<Omit<Agent, "id">>): Promise<Agent | undefined> {
+    const agent = await this.getAgent(id); if (!agent) return Promise.resolve(undefined);
+    const updatedAgent = { ...agent, ...updates, updatedAt: new Date() }; this.agents.set(id, updatedAgent); return Promise.resolve(updatedAgent);
+  }
+  async deleteAgent(id: number): Promise<boolean> { return this.agents.delete(id); }
+  async getCredential(id: number): Promise<Credential | undefined> { return Promise.resolve(this.credentials.get(id)); }
+  async getCredentialsByUserId(userId: number): Promise<Credential[]> { return Promise.resolve(Array.from(this.credentials.values()).filter(c => c.userId === userId)); }
+  async getCredentialsByAgentId(agentId: number): Promise<Credential[]> {
+    const agent = await this.getAgent(agentId); if (!agent) return Promise.resolve([]); return this.getCredentialsByUserId(agent.userId);
+  }
+  async createCredential(credential: InsertCredential): Promise<Credential> {
+    const id = this.credentialIdCounter++; const now = new Date();
+    const newCredential: Credential = {
+      id,
+      ...credential,
+      authMethod: credential.authMethod || "unknown",
+      service: credential.service === undefined ? null : credential.service,
+      expiresAt: credential.expiresAt === undefined ? null : credential.expiresAt,
+      lastRefreshedAt: credential.lastRefreshedAt === undefined ? null : credential.lastRefreshedAt,
+      createdAt: now,
       updatedAt: now,
     };
-
-    this.dashboardPreferences.set(id, newPreference);
-    return newPreference;
+    this.credentials.set(id, newCredential); return Promise.resolve(newCredential);
   }
-
-  async updateDashboardPreference(
-    userId: number,
-    updates: Partial<Omit<DashboardPreference, "id" | "userId">>,
-  ): Promise<DashboardPreference | undefined> {
-    const preference = await this.getDashboardPreference(userId);
-    if (!preference) return undefined;
-
-    const updatedPreference = {
-      ...preference,
-      ...updates,
-      updatedAt: new Date(),
-    };
-
-    this.dashboardPreferences.set(preference.id, updatedPreference);
-    return updatedPreference;
+  async updateCredential(id: number, updates: Partial<Omit<Credential, "id">>): Promise<Credential | undefined> {
+    const credential = await this.getCredential(id); if (!credential) return Promise.resolve(undefined);
+    const updatedCredential = { ...credential, ...updates, updatedAt: new Date(), };
+    this.credentials.set(id, updatedCredential); return Promise.resolve(updatedCredential);
   }
-
-  // Analytics operations
-  async getUserAnalytics(
-    userId: number,
-    period: string,
-  ): Promise<Analytics | undefined> {
-    return Array.from(this.analyticsEntries.values())
-      .filter((a) => a.userId === userId && a.period === period)
-      .sort((a, b) => b.periodEnd.getTime() - a.periodEnd.getTime())[0];
+  async deleteCredential(id: number): Promise<boolean> { return Promise.resolve(this.credentials.delete(id)); }
+  async getFile(id: number): Promise<File | undefined> { return Promise.resolve(this.files.get(id)); }
+  async getFilesByUserId(userId: number): Promise<File[]> { return Promise.resolve(Array.from(this.files.values()).filter(f => f.userId === userId)); }
+  async getTemplatesByUserId(userId: number): Promise<File[]> { return Promise.resolve(Array.from(this.files.values()).filter(f => f.userId === userId && f.isTemplate)); }
+  async getFilesByTaskId(taskId: number): Promise<File[]> {
+    const taskFileRelations = Array.from(this.taskFiles.values()).filter(tf => tf.taskId === taskId);
+    return Promise.resolve(taskFileRelations.map(tf => this.files.get(tf.fileId)).filter(Boolean) as File[]);
   }
-
-  async createAnalytics(analyticsData: InsertAnalytics): Promise<Analytics> {
-    const id = this.analyticsIdCounter++;
-    const now = new Date();
-    const newAnalytics: Analytics = {
+  async createFile(file: InsertFile): Promise<File> {
+    const id = this.fileIdCounter++; const now = new Date();
+    const newFile: File = {
       id,
-      ...analyticsData,
-      metadata: analyticsData.metadata || {},
-      createdAt: now,
-    };
-
-    this.analyticsEntries.set(id, newAnalytics);
-    return newAnalytics;
-  }
-
-  async updateAnalytics(
-    id: number,
-    updates: Partial<Omit<Analytics, "id">>,
-  ): Promise<Analytics | undefined> {
-    const analytics = this.analyticsEntries.get(id);
-    if (!analytics) return undefined;
-
-    const updatedAnalytics = {
-      ...analytics,
-      ...updates,
-    };
-
-    this.analyticsEntries.set(id, updatedAnalytics);
-    return updatedAnalytics;
-  }
-  
-  // Browser Sequence operations
-  async getBrowserSequence(id: number): Promise<BrowserSequence | undefined> {
-    return this.browserSequences.get(id);
-  }
-
-  async getBrowserSequencesByUserId(userId: number): Promise<BrowserSequence[]> {
-    return Array.from(this.browserSequences.values()).filter(
-      (sequence) => sequence.userId === userId
-    );
-  }
-
-  async createBrowserSequence(sequence: InsertBrowserSequence): Promise<BrowserSequence> {
-    const id = this.browserSequenceIdCounter++;
-    const now = new Date();
-    const newSequence: BrowserSequence = {
-      id,
-      ...sequence,
-      isAutomated: sequence.isAutomated !== undefined ? sequence.isAutomated : false,
-      triggerCondition: sequence.triggerCondition || {},
+      ...file,
+      description: file.description === undefined ? null : file.description,
+      isTemplate: file.isTemplate !== undefined ? file.isTemplate : false,
+      templateType: file.templateType === undefined ? null : file.templateType,
+      templateCategory: file.templateCategory === undefined ? null : file.templateCategory,
       createdAt: now,
       updatedAt: now,
-      lastExecutedAt: null,
-      executionCount: 0,
-      isActive: sequence.isActive !== undefined ? sequence.isActive : true,
     };
-    
-    this.browserSequences.set(id, newSequence);
-    return newSequence;
+    this.files.set(id, newFile); return Promise.resolve(newFile);
   }
+  async updateFile(id: number, updates: Partial<Omit<File, "id">>): Promise<File | undefined> {
+    const file = await this.getFile(id); if (!file) return Promise.resolve(undefined);
+    const updatedFile = { ...file, ...updates, updatedAt: new Date(), };
+    this.files.set(id, updatedFile); return Promise.resolve(updatedFile);
+  }
+  async deleteFile(id: number): Promise<boolean> { return Promise.resolve(this.files.delete(id)); }
 
-  async updateBrowserSequence(
-    id: number,
-    updates: Partial<Omit<BrowserSequence, "id">>,
-  ): Promise<BrowserSequence | undefined> {
-    const sequence = await this.getBrowserSequence(id);
-    if (!sequence) return undefined;
-    
-    const updatedSequence: BrowserSequence = {
-      ...sequence,
-      ...updates,
-      updatedAt: new Date(),
-    };
-    
-    this.browserSequences.set(id, updatedSequence);
-    return updatedSequence;
-  }
-
-  async deleteBrowserSequence(id: number): Promise<boolean> {
-    // Also delete all steps associated with this sequence
-    const steps = await this.getBrowserSequenceStepsBySequenceId(id);
-    steps.forEach(step => this.deleteBrowserSequenceStep(step.id));
-    
-    return this.browserSequences.delete(id);
-  }
-  
-  // Browser Sequence Step operations
-  async getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined> {
-    return this.browserSequenceSteps.get(id);
-  }
-  
-  async getBrowserSequenceStepsBySequenceId(sequenceId: number): Promise<BrowserSequenceStep[]> {
-    return Array.from(this.browserSequenceSteps.values())
-      .filter(step => step.sequenceId === sequenceId)
-      .sort((a, b) => a.stepOrder - b.stepOrder);
-  }
-  
-  async createBrowserSequenceStep(step: InsertBrowserSequenceStep): Promise<BrowserSequenceStep> {
-    const id = this.browserSequenceStepIdCounter++;
-    
-    const newStep: BrowserSequenceStep = {
+  async createMessage(message: InsertMessage): Promise<Message> {
+    const id = this.messageIdCounter++; const now = new Date();
+    const newMessage: Message = {
       id,
-      ...step,
-      waitBeforeMs: step.waitBeforeMs || 0,
-      waitAfterMs: step.waitAfterMs || 0,
-      isConditional: step.isConditional || false,
-      condition: step.condition || {},
-      metadata: step.metadata || {},
+      // ...message, // Spreading InsertMessage might bring in fields not in Message select type
+      taskId: message.taskId === undefined ? null : message.taskId,
+      conversationId: message.conversationId === undefined ? null : message.conversationId,
+      role: message.role,
+      content: message.content,
+      timestamp: message.timestamp || now,
+      metadata: message.metadata || {},
+      createdAt: now, // Message select type has createdAt
     };
-    
-    this.browserSequenceSteps.set(id, newStep);
-    return newStep;
+    this.messages.set(id, newMessage); return Promise.resolve(newMessage);
   }
-  
-  async updateBrowserSequenceStep(
-    id: number,
-    updates: Partial<Omit<BrowserSequenceStep, "id">>,
-  ): Promise<BrowserSequenceStep | undefined> {
-    const step = await this.getBrowserSequenceStep(id);
-    if (!step) return undefined;
-    
-    const updatedStep: BrowserSequenceStep = {
-      ...step,
-      ...updates,
+  async getMessagesByConversationId(conversationId: number): Promise<Message[]> {
+    return Promise.resolve(Array.from(this.messages.values()).filter(m => m.conversationId === conversationId).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()));
+  }
+  async getConversation(id: number): Promise<Conversation | undefined> { return Promise.resolve(this.conversations.get(id)); }
+  async getConversationsByUserId(userId: number, agentId?: number): Promise<Conversation[]> {
+    let userConversations = Array.from(this.conversations.values()).filter(c => c.userId === userId);
+    if (agentId !== undefined) { userConversations = userConversations.filter(c => c.agentId === agentId); }
+    return Promise.resolve(userConversations.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
+  }
+  async createConversation(conversation: InsertConversation): Promise<Conversation> {
+    const id = this.conversationIdCounter++; const now = new Date();
+    const newConversation: Conversation = {
+      id,
+      ...conversation,
+      title: conversation.title === undefined ? null : conversation.title,
+      createdAt: now,
+      updatedAt: now,
     };
-    
-    this.browserSequenceSteps.set(id, updatedStep);
-    return updatedStep;
+    this.conversations.set(id, newConversation); return Promise.resolve(newConversation);
   }
-  
-  async deleteBrowserSequenceStep(id: number): Promise<boolean> {
-    return this.browserSequenceSteps.delete(id);
+  async updateConversation(id: number, updates: Partial<Omit<Conversation, "id">>): Promise<Conversation | undefined> {
+    const conversation = await this.getConversation(id); if (!conversation) return Promise.resolve(undefined);
+    const updatedConversation = { ...conversation, ...updates, updatedAt: new Date() };
+    this.conversations.set(id, updatedConversation); return Promise.resolve(updatedConversation);
+  }
+  async deleteConversation(id: number): Promise<boolean> {
+    const messagesToDelete = Array.from(this.messages.values()).filter(m => m.conversationId === id).map(m => m.id);
+    messagesToDelete.forEach(mid => this.messages.delete(mid));
+    return Promise.resolve(this.conversations.delete(id));
   }
 }
 
@@ -1521,56 +701,11 @@ export class DatabaseStorage implements IStorage {
     const existingPlans = await this.getAllPlans();
     if (existingPlans.length === 0) {
       const defaultPlans: InsertPlan[] = [
-        {
-          name: "Free",
-          price: 0,
-          interval: "monthly",
-          features: {
-            agentLimit: 2,
-            storageLimit: 500, // MB
-            credentialLimit: 3,
-            taskLimit: 50,
-          },
-          isActive: true,
-        },
-        {
-          name: "Basic",
-          price: 49,
-          interval: "monthly",
-          features: {
-            agentLimit: 5,
-            storageLimit: 2000, // MB
-            credentialLimit: 10,
-            taskLimit: 500,
-          },
-          isActive: true,
-        },
-        {
-          name: "Professional",
-          price: 149,
-          interval: "monthly",
-          features: {
-            agentLimit: 20,
-            storageLimit: 5000, // MB
-            credentialLimit: 50,
-            taskLimit: 5000,
-          },
-          isActive: true,
-        },
-        {
-          name: "Enterprise",
-          price: 499,
-          interval: "monthly",
-          features: {
-            agentLimit: 100,
-            storageLimit: 20000, // MB
-            credentialLimit: 200,
-            taskLimit: 50000,
-          },
-          isActive: true,
-        },
+        { name: "Free", price: 0, interval: "monthly", features: { agentLimit: 2, storageLimit: 500, credentialLimit: 3, taskLimit: 50, }, isActive: true, },
+        { name: "Basic", price: 49, interval: "monthly", features: { agentLimit: 5, storageLimit: 2000, credentialLimit: 10, taskLimit: 500, }, isActive: true, },
+        { name: "Professional", price: 149, interval: "monthly", features: { agentLimit: 20, storageLimit: 5000, credentialLimit: 50, taskLimit: 5000, }, isActive: true, },
+        { name: "Enterprise", price: 499, interval: "monthly", features: { agentLimit: 100, storageLimit: 20000, credentialLimit: 200, taskLimit: 50000, }, isActive: true, },
       ];
-
       for (const plan of defaultPlans) {
         await this.createPlan(plan);
       }
@@ -1584,10 +719,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, username));
+    const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
 
@@ -1598,8 +730,7 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     try {
-      const allUsers = await db.select().from(users).orderBy(asc(users.id));
-      return allUsers;
+      return await db.select().from(users).orderBy(asc(users.id));
     } catch (error) {
       console.error("Error getting all users:", error);
       return [];
@@ -1607,72 +738,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    // Get the free plan ID, or use null if no plans exist yet
     let freePlanId: number | undefined = undefined;
     try {
-      const [freePlan] = await db
-        .select()
-        .from(plans)
-        .where(eq(plans.name, "Free"))
-        .limit(1);
-      if (freePlan) {
-        freePlanId = freePlan.id;
-      }
-    } catch (error) {
-      console.error("Error finding free plan:", error);
-    }
+      const [freePlan] = await db.select().from(plans).where(eq(plans.name, "Free")).limit(1);
+      if (freePlan) freePlanId = freePlan.id;
+    } catch (error) { console.error("Error finding free plan:", error); }
 
-    const [user] = await db
-      .insert(users)
-      .values({
-        ...insertUser,
-        planId: freePlanId,
-        planExpiresAt: null,
-        role: "user",
-        isActive: true,
-      })
-      .returning();
+    const userToInsert: InsertUser = { // Ensure type is InsertUser
+      username: insertUser.username,
+      password: insertUser.password,
+      email: insertUser.email,
+      fullName: insertUser.fullName,
+      planId: freePlanId ?? null,
+      planExpiresAt: null,
+      role: insertUser.role || "user",
+      isActive: insertUser.isActive !== undefined ? insertUser.isActive : true,
+      // createdAt and updatedAt are handled by DB defaults
+    };
+
+    const [user] = await db.insert(users).values(userToInsert).returning();
     return user;
   }
 
-  async updateUser(
-    id: number,
-    updates: Partial<Omit<User, "id">>,
-  ): Promise<User | undefined> {
-    const [updatedUser] = await db
-      .update(users)
-      .set(updates)
-      .where(eq(users.id, id))
-      .returning();
+  async updateUser(id: number, updates: Partial<Omit<User, "id">>): Promise<User | undefined> {
+    const [updatedUser] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     return updatedUser;
   }
-  
+
   async deleteUser(id: number): Promise<boolean> {
     try {
-      // Check if user exists first
       const user = await this.getUser(id);
-      if (!user) {
-        return false;
-      }
-      
-      // Don't delete admin users if they're the only admin left
+      if (!user) return false;
       if (user.role === "admin") {
-        const admins = await db
-          .select()
-          .from(users)
-          .where(eq(users.role, "admin"));
-          
-        if (admins.length <= 1) {
-          throw new Error("Cannot delete the last admin user");
-        }
+        const admins = await db.select().from(users).where(eq(users.role, "admin"));
+        if (admins.length <= 1) throw new Error("Cannot delete the last admin user");
       }
-      
-      // Perform deletion
-      const result = await db
-        .delete(users)
-        .where(eq(users.id, id))
-        .returning({ id: users.id });
-      
+      const result = await db.delete(users).where(eq(users.id, id)).returning({ id: users.id });
       return result.length > 0;
     } catch (error) {
       console.error(`Error deleting user with ID ${id}:`, error);
@@ -1680,21 +781,13 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Helper method to get AI model by name
   async getAiModelByName(modelId: string): Promise<AiModel | undefined> {
-    const [model] = await db
-      .select()
-      .from(aiModels)
-      .where(eq(aiModels.modelId, modelId));
+    const [model] = await db.select().from(aiModels).where(eq(aiModels.modelId, modelId));
     return model;
   }
 
-  // Agent Tool operations
   async getAgentTool(id: number): Promise<AgentTool | undefined> {
-    const [tool] = await db
-      .select()
-      .from(agentTools)
-      .where(eq(agentTools.id, id));
+    const [tool] = await db.select().from(agentTools).where(eq(agentTools.id, id));
     return tool;
   }
 
@@ -1703,183 +796,102 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAgentToolsByCategory(category: string): Promise<AgentTool[]> {
-    return await db
-      .select()
-      .from(agentTools)
-      .where(eq(agentTools.category, category));
+    return await db.select().from(agentTools).where(eq(agentTools.category, category));
   }
 
   async createAgentTool(tool: InsertAgentTool): Promise<AgentTool> {
     const now = new Date();
-    const toolWithDefaults = {
-      ...tool,
-      isSystem: false, // Default to false, only system can set to true
-      createdAt: now,
-      updatedAt: now,
+    const toolToInsert: InsertAgentTool = { // Ensure type is InsertAgentTool
+      name: tool.name,
+      description: tool.description,
+      category: tool.category,
+      type: tool.type,
+      icon: tool.icon,
+      config: tool.config || {},
+      isActive: tool.isActive !== undefined ? tool.isActive : true,
+      isSystem: tool.isSystem ?? false, // Default isSystem if not provided
+      // createdAt and updatedAt are handled by DB defaults
     };
 
-    const [newTool] = await db
-      .insert(agentTools)
-      .values(toolWithDefaults)
-      .returning();
-
+    const [newTool] = await db.insert(agentTools).values(toolToInsert).returning();
     return newTool;
   }
 
-  async updateAgentTool(
-    id: number,
-    updates: Partial<Omit<AgentTool, "id">>,
-  ): Promise<AgentTool | undefined> {
-    // Check if tool exists and if it's a system tool
+  async updateAgentTool(id: number, updates: Partial<Omit<AgentTool, "id">>): Promise<AgentTool | undefined> {
     const tool = await this.getAgentTool(id);
     if (!tool) return undefined;
-
-    // Don't allow changing isSystem status if it's a system tool
-    if (tool.isSystem && updates.isSystem === false) {
-      throw new Error("Cannot change system status of a system tool");
-    }
-
-    // Set the updated timestamp
-    const updatesWithTimestamp = {
-      ...updates,
-      updatedAt: new Date(),
-    };
-
-    const [updatedTool] = await db
-      .update(agentTools)
-      .set(updatesWithTimestamp)
-      .where(eq(agentTools.id, id))
-      .returning();
-
+    if (tool.isSystem && updates.isSystem === false) throw new Error("Cannot change system status of a system tool");
+    const [updatedTool] = await db.update(agentTools).set({ ...updates, updatedAt: new Date(), }).where(eq(agentTools.id, id)).returning();
     return updatedTool;
   }
 
   async deleteAgentTool(id: number): Promise<boolean> {
-    // Check if tool exists and if it's a system tool
     const tool = await this.getAgentTool(id);
     if (!tool) return false;
-
-    // Cannot delete system tools
-    if (tool.isSystem) {
-      throw new Error("Cannot delete a system tool");
-    }
-
+    if (tool.isSystem) throw new Error("Cannot delete a system tool");
     const result = await db.delete(agentTools).where(eq(agentTools.id, id));
-
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
-  // Agent operations
   async getAgent(id: number): Promise<Agent | undefined> {
     const [agent] = await db.select().from(agents).where(eq(agents.id, id));
     return agent;
   }
 
   async getAgentsByUserId(userId: number): Promise<Agent[]> {
-    return await db
-      .select()
-      .from(agents)
-      .where(and(
-        eq(agents.userId, userId),
-        eq(agents.isTemplate, false)
-      ));
+    return await db.select().from(agents).where(and(eq(agents.userId, userId), eq(agents.isTemplate, false)));
   }
-  
+
   async getAgentTemplates(): Promise<Agent[]> {
-    return await db
-      .select()
-      .from(agents)
-      .where(eq(agents.isTemplate, true));
+    return await db.select().from(agents).where(eq(agents.isTemplate, true));
   }
 
   async createAgent(agent: InsertAgent): Promise<Agent> {
     const now = new Date();
-    const [newAgent] = await db
-      .insert(agents)
-      .values({
-        ...agent,
-        taskCount: 0,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
+    const [newAgent] = await db.insert(agents).values({ ...agent, taskCount: 0, createdAt: now, updatedAt: now, }).returning();
     return newAgent;
   }
 
-  async updateAgent(
-    id: number,
-    updates: Partial<Omit<Agent, "id">>,
-  ): Promise<Agent | undefined> {
-    const [updatedAgent] = await db
-      .update(agents)
-      .set(updates)
-      .where(eq(agents.id, id))
-      .returning();
+  async updateAgent(id: number, updates: Partial<Omit<Agent, "id">>): Promise<Agent | undefined> {
+    const [updatedAgent] = await db.update(agents).set({ ...updates, updatedAt: new Date() }).where(eq(agents.id, id)).returning();
     return updatedAgent;
   }
 
   async deleteAgent(id: number): Promise<boolean> {
     const result = await db.delete(agents).where(eq(agents.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
-  // Credential operations
   async getCredential(id: number): Promise<Credential | undefined> {
-    const [credential] = await db
-      .select()
-      .from(credentials)
-      .where(eq(credentials.id, id));
+    const [credential] = await db.select().from(credentials).where(eq(credentials.id, id));
     return credential;
   }
 
   async getCredentialsByUserId(userId: number): Promise<Credential[]> {
-    return await db
-      .select()
-      .from(credentials)
-      .where(eq(credentials.userId, userId));
+    return await db.select().from(credentials).where(eq(credentials.userId, userId));
   }
 
   async getCredentialsByAgentId(agentId: number): Promise<Credential[]> {
-    // In a real implementation, we would have an agent-credential relationship
-    // For now, we get the agent first, then get credentials for that user
     const agent = await this.getAgent(agentId);
     if (!agent) return [];
-
     return this.getCredentialsByUserId(agent.userId);
   }
 
   async createCredential(credential: InsertCredential): Promise<Credential> {
     const now = new Date();
-    const [newCredential] = await db
-      .insert(credentials)
-      .values({
-        ...credential,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
+    const [newCredential] = await db.insert(credentials).values({ ...credential, createdAt: now, updatedAt: now, }).returning();
     return newCredential;
   }
 
-  async updateCredential(
-    id: number,
-    updates: Partial<Omit<Credential, "id">>,
-  ): Promise<Credential | undefined> {
+  async updateCredential(id: number, updates: Partial<Omit<Credential, "id">>): Promise<Credential | undefined> {
     const now = new Date();
-    const [updatedCredential] = await db
-      .update(credentials)
-      .set({
-        ...updates,
-        updatedAt: now,
-      })
-      .where(eq(credentials.id, id))
-      .returning();
+    const [updatedCredential] = await db.update(credentials).set({ ...updates, updatedAt: now, }).where(eq(credentials.id, id)).returning();
     return updatedCredential;
   }
 
   async deleteCredential(id: number): Promise<boolean> {
     const result = await db.delete(credentials).where(eq(credentials.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // File operations
@@ -1893,225 +905,163 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTemplatesByUserId(userId: number): Promise<File[]> {
-    return await db
-      .select()
-      .from(files)
-      .where(and(eq(files.userId, userId), eq(files.isTemplate, true)));
+    return await db.select().from(files).where(and(eq(files.userId, userId), eq(files.isTemplate, true)));
   }
 
-  async createFile(file: InsertFile): Promise<File> {
+  async createFile(fileData: InsertFile): Promise<File> { // Changed param name
     const now = new Date();
-    const [newFile] = await db
-      .insert(files)
-      .values({
-        ...file,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
+    const [newFile] = await db.insert(files).values({ ...fileData, createdAt: now, updatedAt: now, }).returning();
     return newFile;
   }
 
-  async updateFile(
-    id: number,
-    updates: Partial<Omit<File, "id">>,
-  ): Promise<File | undefined> {
+  async updateFile(id: number, updates: Partial<Omit<File, "id">>): Promise<File | undefined> {
     const now = new Date();
-    const [updatedFile] = await db
-      .update(files)
-      .set({
-        ...updates,
-        updatedAt: now,
-      })
-      .where(eq(files.id, id))
-      .returning();
+    const [updatedFile] = await db.update(files).set({ ...updates, updatedAt: now, }).where(eq(files.id, id)).returning();
     return updatedFile;
   }
 
   async deleteFile(id: number): Promise<boolean> {
     const result = await db.delete(files).where(eq(files.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
-  // Get files linked to a task through the task-file relationship
   async getFilesByTaskId(taskId: number): Promise<File[]> {
-    // Get file IDs from task-file relationship
-    const fileIds = await db
-      .select({ fileId: taskFiles.fileId })
-      .from(taskFiles)
-      .where(eq(taskFiles.taskId, taskId));
-
-    if (fileIds.length === 0) {
-      return [];
-    }
-
-    // Create an array of OR conditions for each fileId
-    const fileIdConditions = fileIds.map((row) => eq(files.id, row.fileId));
-
-    return await db
-      .select()
-      .from(files)
-      .where(or(...fileIdConditions));
+    const fileIdRows = await db.select({ fileId: taskFiles.fileId }).from(taskFiles).where(eq(taskFiles.taskId, taskId));
+    if (fileIdRows.length === 0) return [];
+    const fileIds = fileIdRows.map(row => row.fileId);
+    return await db.select().from(files).where(inArray(files.id, fileIds));
   }
 
-  // Task-File relationship operations
   async linkFileToTask(taskId: number, fileId: number): Promise<TaskFile> {
-    // Verify the task and file exist
     const task = await this.getTask(taskId);
-    if (!task) {
-      throw new Error(`Task with ID ${taskId} not found`);
-    }
-
+    if (!task) throw new Error(`Task with ID ${taskId} not found`);
     const file = await this.getFile(fileId);
-    if (!file) {
-      throw new Error(`File with ID ${fileId} not found`);
-    }
-
-    // Create the relationship record
+    if (!file) throw new Error(`File with ID ${fileId} not found`);
     const now = new Date();
-    const [taskFile] = await db
-      .insert(taskFiles)
-      .values({
-        taskId,
-        fileId,
-        createdAt: now,
-      })
-      .returning();
-
+    const [taskFile] = await db.insert(taskFiles).values({ taskId, fileId, createdAt: now, }).returning();
     return taskFile;
   }
 
   async getTaskFilesByTaskId(taskId: number): Promise<TaskFile[]> {
-    return await db
-      .select()
-      .from(taskFiles)
-      .where(eq(taskFiles.taskId, taskId));
+    return await db.select().from(taskFiles).where(eq(taskFiles.taskId, taskId));
   }
 
   async unlinkFileFromTask(taskId: number, fileId: number): Promise<boolean> {
-    const result = await db
-      .delete(taskFiles)
-      .where(and(eq(taskFiles.taskId, taskId), eq(taskFiles.fileId, fileId)));
-
-    return result.rowCount > 0;
+    const result = await db.delete(taskFiles).where(and(eq(taskFiles.taskId, taskId), eq(taskFiles.fileId, fileId)));
+    return (result.rowCount ?? 0) > 0;
   }
 
-  // Task operations
   async getTask(id: number): Promise<Task | undefined> {
     const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
     return task;
   }
 
   async getTasksByUserId(userId: number, limit?: number): Promise<Task[]> {
-    let query = db
-      .select()
-      .from(tasks)
-      .where(eq(tasks.userId, userId))
-      .orderBy(desc(tasks.createdAt));
-
+    const baseQuery = db.select().from(tasks).where(eq(tasks.userId, userId)).orderBy(desc(tasks.createdAt));
     if (limit) {
-      query = query.limit(limit);
+      return await baseQuery.limit(limit);
     }
-
-    return await query;
+    return await baseQuery;
   }
 
   async getTasksByAgentId(agentId: number): Promise<Task[]> {
-    return await db
-      .select()
-      .from(tasks)
-      .where(eq(tasks.agentId, agentId))
-      .orderBy(desc(tasks.createdAt));
+    return await db.select().from(tasks).where(eq(tasks.agentId, agentId)).orderBy(desc(tasks.createdAt));
   }
 
   async createTask(task: InsertTask): Promise<Task> {
     const now = new Date();
-    const [newTask] = await db
-      .insert(tasks)
-      .values({
-        ...task,
-        status: "pending",
-        result: null,
-        createdAt: now,
-        completedAt: null,
-      })
-      .returning();
-
-    // Update agent task count
+    const [newTask] = await db.insert(tasks).values({ ...task, status: "pending", result: null, createdAt: now, completedAt: null, }).returning();
     const agent = await this.getAgent(task.agentId);
-    if (agent) {
-      await this.updateAgent(agent.id, { taskCount: agent.taskCount + 1 });
-    }
-
+    if (agent) await this.updateAgent(agent.id, { taskCount: agent.taskCount + 1 });
     return newTask;
   }
 
-  async updateTask(
-    id: number,
-    updates: Partial<Omit<Task, "id">>,
-  ): Promise<Task | undefined> {
-    // If status is changing to completed, set completedAt
+  async updateTask(id: number, updates: Partial<Omit<Task, "id">>): Promise<Task | undefined> {
     let updatesWithTimestamp = { ...updates };
-
     if (updates.status === "completed") {
       const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
-      if (task && !task.completedAt) {
-        updatesWithTimestamp.completedAt = new Date();
-      }
+      if (task && !task.completedAt) updatesWithTimestamp.completedAt = new Date();
     }
-
-    const [updatedTask] = await db
-      .update(tasks)
-      .set(updatesWithTimestamp)
-      .where(eq(tasks.id, id))
-      .returning();
-
+    const [updatedTask] = await db.update(tasks).set(updatesWithTimestamp).where(eq(tasks.id, id)).returning();
     return updatedTask;
   }
 
   async deleteTask(id: number): Promise<boolean> {
-    // Delete associated messages first
     await db.delete(messages).where(eq(messages.taskId, id));
-
     const result = await db.delete(tasks).where(eq(tasks.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
-  // Message operations
   async getMessage(id: number): Promise<Message | undefined> {
-    const [message] = await db
-      .select()
-      .from(messages)
-      .where(eq(messages.id, id));
+    const [message] = await db.select().from(messages).where(eq(messages.id, id));
     return message;
   }
 
   async getMessagesByTaskId(taskId: number): Promise<Message[]> {
-    return await db
-      .select()
-      .from(messages)
-      .where(eq(messages.taskId, taskId))
-      .orderBy(asc(messages.timestamp));
+    return await db.select().from(messages).where(eq(messages.taskId, taskId)).orderBy(asc(messages.timestamp));
+  }
+
+  async getMessagesByConversationId(conversationId: number): Promise<Message[]> {
+    return await db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(asc(messages.timestamp));
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
     const now = new Date();
-    const [newMessage] = await db
-      .insert(messages)
-      .values({
-        ...message,
-        timestamp: message.timestamp || now,
-      })
-      .returning();
+    // Ensure that the properties match the `messagesTable` schema, especially nullability
+    const messageToInsert: typeof messages.$inferInsert = {
+      taskId: message.taskId === undefined ? null : message.taskId,
+      conversationId: message.conversationId === undefined ? null : message.conversationId,
+      role: message.role,
+      content: message.content,
+      timestamp: message.timestamp || now,
+      metadata: message.metadata || {},
+      // createdAt is handled by DB default or trigger, not needed in insert usually
+      // id is serial
+    };
+
+    const [newMessage] = await db.insert(messages).values(messageToInsert).returning();
     return newMessage;
   }
 
-  // AI Provider operations
+  async getConversation(id: number): Promise<Conversation | undefined> {
+    const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
+    return conversation;
+  }
+
+  async getConversationsByUserId(userId: number, agentId?: number): Promise<Conversation[]> {
+    const conditions = [eq(conversations.userId, userId)];
+    if (agentId !== undefined) {
+      conditions.push(eq(conversations.agentId, agentId));
+    }
+    // Use 'and' if there are multiple conditions, otherwise Drizzle handles a single condition fine.
+    // However, to be safe and explicit, especially if conditions array could be empty (though not here):
+    if (conditions.length === 0) { // Should not happen in this specific logic
+      return await db.select().from(conversations).orderBy(desc(conversations.updatedAt));
+    }
+    return await db.select().from(conversations)
+      .where(conditions.length > 1 ? and(...conditions) : conditions[0])
+      .orderBy(desc(conversations.updatedAt));
+  }
+
+  async createConversation(conversation: InsertConversation): Promise<Conversation> {
+    const now = new Date();
+    const [newConversation] = await db.insert(conversations).values({ ...conversation, createdAt: now, updatedAt: now, }).returning();
+    return newConversation;
+  }
+
+  async updateConversation(id: number, updates: Partial<Omit<Conversation, "id">>): Promise<Conversation | undefined> {
+    const [updatedConversation] = await db.update(conversations).set({ ...updates, updatedAt: new Date() }).where(eq(conversations.id, id)).returning();
+    return updatedConversation;
+  }
+
+  async deleteConversation(id: number): Promise<boolean> {
+    await db.delete(messages).where(eq(messages.conversationId, id));
+    const result = await db.delete(conversations).where(eq(conversations.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async getAiProvider(id: number): Promise<AiProvider | undefined> {
-    const [provider] = await db
-      .select()
-      .from(aiProviders)
-      .where(eq(aiProviders.id, id));
+    const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, id));
     return provider;
   }
 
@@ -2120,55 +1070,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getActiveAiProviders(): Promise<AiProvider[]> {
-    return await db
-      .select()
-      .from(aiProviders)
-      .where(eq(aiProviders.isActive, true));
+    return await db.select().from(aiProviders).where(eq(aiProviders.isActive, true));
   }
 
   async createAiProvider(provider: InsertAiProvider): Promise<AiProvider> {
     const now = new Date();
-    const [newProvider] = await db
-      .insert(aiProviders)
-      .values({
-        ...provider,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
+    const [newProvider] = await db.insert(aiProviders).values({ ...provider, createdAt: now, updatedAt: now, }).returning();
     return newProvider;
   }
 
-  async updateAiProvider(
-    id: number,
-    updates: Partial<Omit<AiProvider, "id">>,
-  ): Promise<AiProvider | undefined> {
-    const updatesWithTimestamp = {
-      ...updates,
-      updatedAt: new Date(),
-    };
-
-    const [updatedProvider] = await db
-      .update(aiProviders)
-      .set(updatesWithTimestamp)
-      .where(eq(aiProviders.id, id))
-      .returning();
+  async updateAiProvider(id: number, updates: Partial<Omit<AiProvider, "id">>): Promise<AiProvider | undefined> {
+    const [updatedProvider] = await db.update(aiProviders).set({ ...updates, updatedAt: new Date(), }).where(eq(aiProviders.id, id)).returning();
     return updatedProvider;
   }
 
   async deleteAiProvider(id: number): Promise<boolean> {
-    // Check if any models are using this provider
     const modelsUsingProvider = await this.getAiModelsByProviderId(id);
-
-    if (modelsUsingProvider.length > 0) {
-      throw new Error("Cannot delete provider while models are using it");
-    }
-
+    if (modelsUsingProvider.length > 0) throw new Error("Cannot delete provider while models are using it");
     const result = await db.delete(aiProviders).where(eq(aiProviders.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
-  // AI Model operations
   async getAiModel(id: number): Promise<AiModel | undefined> {
     const [model] = await db.select().from(aiModels).where(eq(aiModels.id, id));
     return model;
@@ -2179,60 +1101,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAiModelsByProviderId(providerId: number): Promise<AiModel[]> {
-    return await db
-      .select()
-      .from(aiModels)
-      .where(eq(aiModels.providerId, providerId));
+    return await db.select().from(aiModels).where(eq(aiModels.providerId, providerId));
   }
 
   async createAiModel(model: InsertAiModel): Promise<AiModel> {
     const now = new Date();
-    const [newModel] = await db
-      .insert(aiModels)
-      .values({
-        ...model,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
+    const [newModel] = await db.insert(aiModels).values({ ...model, createdAt: now, updatedAt: now, }).returning();
     return newModel;
   }
 
-  async updateAiModel(
-    id: number,
-    updates: Partial<Omit<AiModel, "id">>,
-  ): Promise<AiModel | undefined> {
-    const updatesWithTimestamp = {
-      ...updates,
-      updatedAt: new Date(),
-    };
-
-    const [updatedModel] = await db
-      .update(aiModels)
-      .set(updatesWithTimestamp)
-      .where(eq(aiModels.id, id))
-      .returning();
+  async updateAiModel(id: number, updates: Partial<Omit<AiModel, "id">>): Promise<AiModel | undefined> {
+    const [updatedModel] = await db.update(aiModels).set({ ...updates, updatedAt: new Date(), }).where(eq(aiModels.id, id)).returning();
     return updatedModel;
   }
 
   async deleteAiModel(id: number): Promise<boolean> {
-    // Check if any prompts are using this model
     const promptsUsingModel = await this.getAiPromptsByModelId(id);
-
-    if (promptsUsingModel.length > 0) {
-      throw new Error("Cannot delete model while prompts are using it");
-    }
-
+    if (promptsUsingModel.length > 0) throw new Error("Cannot delete model while prompts are using it");
     const result = await db.delete(aiModels).where(eq(aiModels.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
-  // AI Prompt operations
   async getAiPrompt(id: number): Promise<AiPrompt | undefined> {
-    const [prompt] = await db
-      .select()
-      .from(aiPrompts)
-      .where(eq(aiPrompts.id, id));
+    const [prompt] = await db.select().from(aiPrompts).where(eq(aiPrompts.id, id));
     return prompt;
   }
 
@@ -2241,48 +1132,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAiPromptsByModelId(modelId: number): Promise<AiPrompt[]> {
-    return await db
-      .select()
-      .from(aiPrompts)
-      .where(eq(aiPrompts.modelId, modelId));
+    return await db.select().from(aiPrompts).where(eq(aiPrompts.modelId, modelId));
   }
 
   async createAiPrompt(prompt: InsertAiPrompt): Promise<AiPrompt> {
     const now = new Date();
-    const [newPrompt] = await db
-      .insert(aiPrompts)
-      .values({
-        ...prompt,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
+    const [newPrompt] = await db.insert(aiPrompts).values({ ...prompt, createdAt: now, updatedAt: now, }).returning();
     return newPrompt;
   }
 
-  async updateAiPrompt(
-    id: number,
-    updates: Partial<Omit<AiPrompt, "id">>,
-  ): Promise<AiPrompt | undefined> {
-    const updatesWithTimestamp = {
-      ...updates,
-      updatedAt: new Date(),
-    };
-
-    const [updatedPrompt] = await db
-      .update(aiPrompts)
-      .set(updatesWithTimestamp)
-      .where(eq(aiPrompts.id, id))
-      .returning();
+  async updateAiPrompt(id: number, updates: Partial<Omit<AiPrompt, "id">>): Promise<AiPrompt | undefined> {
+    const [updatedPrompt] = await db.update(aiPrompts).set({ ...updates, updatedAt: new Date(), }).where(eq(aiPrompts.id, id)).returning();
     return updatedPrompt;
   }
 
   async deleteAiPrompt(id: number): Promise<boolean> {
     const result = await db.delete(aiPrompts).where(eq(aiPrompts.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
-  // Plan operations
   async getPlan(id: number): Promise<Plan | undefined> {
     const [plan] = await db.select().from(plans).where(eq(plans.id, id));
     return plan;
@@ -2302,22 +1170,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPlan(plan: InsertPlan): Promise<Plan> {
-    const [newPlan] = await db.insert(plans).values(plan).returning();
+    // Ensure the plan has isActive property set
+    const planToInsert = {
+      ...plan,
+      isActive: plan.isActive !== undefined ? plan.isActive : true,
+      // Ensure features is included even if not provided
+      features: plan.features || { agentLimit: 0, storageLimit: 0, credentialLimit: 0, taskLimit: 0 }
+    };
+
+    const [newPlan] = await db.insert(plans).values(planToInsert).returning();
     return newPlan;
   }
 
-  async updatePlan(
-    id: number,
-    updates: Partial<Omit<Plan, "id">>,
-  ): Promise<Plan | undefined> {
+  async updatePlan(id: number, updates: Partial<Omit<Plan, "id">>): Promise<Plan | undefined> {
     try {
-      const [updatedPlan] = await db
-        .update(plans)
-        .set(updates)
-        .where(eq(plans.id, id))
-        .returning();
+      const [updatedPlan] = await db.update(plans).set(updates).where(eq(plans.id, id)).returning();
       return updatedPlan;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating plan:", error);
       throw new Error(`Failed to update plan: ${error.message}`);
     }
@@ -2325,124 +1194,55 @@ export class DatabaseStorage implements IStorage {
 
   async deletePlan(id: number): Promise<boolean> {
     const result = await db.delete(plans).where(eq(plans.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
-  // User Activity operations
   async getUserActivity(id: number): Promise<UserActivity | undefined> {
-    const [activity] = await db
-      .select()
-      .from(userActivities)
-      .where(eq(userActivities.id, id));
+    const [activity] = await db.select().from(userActivities).where(eq(userActivities.id, id));
     return activity;
   }
 
-  async getUserActivitiesByUserId(
-    userId: number,
-    limit?: number,
-  ): Promise<UserActivity[]> {
-    let query = db
-      .select()
-      .from(userActivities)
-      .where(eq(userActivities.userId, userId))
-      .orderBy(desc(userActivities.createdAt));
-
+  async getUserActivitiesByUserId(userId: number, limit?: number): Promise<UserActivity[]> {
+    const baseQuery = db.select().from(userActivities).where(eq(userActivities.userId, userId)).orderBy(desc(userActivities.createdAt));
     if (limit) {
-      query = query.limit(limit);
+      return await baseQuery.limit(limit);
     }
-
-    return query;
+    return await baseQuery;
   }
 
-  async createUserActivity(
-    activity: InsertUserActivity,
-  ): Promise<UserActivity> {
-    const [newActivity] = await db
-      .insert(userActivities)
-      .values(activity)
-      .returning();
+  async createUserActivity(activity: InsertUserActivity): Promise<UserActivity> {
+    const [newActivity] = await db.insert(userActivities).values(activity).returning();
     return newActivity;
   }
 
-  // Dashboard Preferences operations
-  async getDashboardPreference(
-    userId: number,
-  ): Promise<DashboardPreference | undefined> {
-    const [preference] = await db
-      .select()
-      .from(dashboardPreferences)
-      .where(eq(dashboardPreferences.userId, userId));
+  async getDashboardPreference(userId: number): Promise<DashboardPreference | undefined> {
+    const [preference] = await db.select().from(dashboardPreferences).where(eq(dashboardPreferences.userId, userId));
     return preference;
   }
 
-  async createDashboardPreference(
-    preference: InsertDashboardPreference,
-  ): Promise<DashboardPreference> {
-    // First check if preference already exists for this user
-    const existingPreference = await this.getDashboardPreference(
-      preference.userId,
-    );
-    if (existingPreference) {
-      // If it exists, update it instead
-      return this.updateDashboardPreference(preference.userId, {
-        layout: preference.layout,
-        favoriteAgents: preference.favoriteAgents,
-        recentTasks: preference.recentTasks,
-        widgets: preference.widgets,
-        theme: preference.theme,
-      }) as Promise<DashboardPreference>;
+  async createDashboardPreference(preference: InsertDashboardPreference): Promise<DashboardPreference> {
+    const existing = await this.getDashboardPreference(preference.userId);
+    if (existing) {
+      return this.updateDashboardPreference(preference.userId, preference as Partial<Omit<DashboardPreference, "id" | "userId">>) as Promise<DashboardPreference>;
     }
-
-    // Otherwise create new preference
-    const [newPreference] = await db
-      .insert(dashboardPreferences)
-      .values(preference)
-      .returning();
+    const [newPreference] = await db.insert(dashboardPreferences).values(preference).returning();
     return newPreference;
   }
 
-  async updateDashboardPreference(
-    userId: number,
-    updates: Partial<Omit<DashboardPreference, "id" | "userId">>,
-  ): Promise<DashboardPreference | undefined> {
-    // Add updated timestamp
-    const updatesWithTimestamp = {
-      ...updates,
-      updatedAt: new Date(),
-    };
-
-    const result = await db
-      .update(dashboardPreferences)
-      .set(updatesWithTimestamp)
-      .where(eq(dashboardPreferences.userId, userId))
-      .returning();
-
-    return result[0];
+  async updateDashboardPreference(userId: number, updates: Partial<Omit<DashboardPreference, "id" | "userId">>): Promise<DashboardPreference | undefined> {
+    const [updated] = await db.update(dashboardPreferences).set({ ...updates, updatedAt: new Date() }).where(eq(dashboardPreferences.userId, userId)).returning();
+    return updated;
   }
 
-  // Analytics operations
-  async getUserAnalytics(
-    userId: number,
-    period: string,
-  ): Promise<Analytics | undefined> {
-    const [analyticsData] = await db
-      .select()
-      .from(analytics)
-      .where(and(eq(analytics.userId, userId), eq(analytics.period, period)))
-      .orderBy(desc(analytics.periodEnd))
-      .limit(1);
-
+  async getUserAnalytics(userId: number, period: string): Promise<Analytics | undefined> {
+    const [analyticsData] = await db.select().from(analytics).where(and(eq(analytics.userId, userId), eq(analytics.period, period))).orderBy(desc(analytics.periodEnd)).limit(1);
     return analyticsData;
   }
 
   async createAnalytics(analyticsData: InsertAnalytics): Promise<Analytics> {
-    const [newAnalytics] = await db
-      .insert(analytics)
-      .values(analyticsData)
-      .returning();
+    const [newAnalytics] = await db.insert(analytics).values(analyticsData).returning();
     return newAnalytics;
   }
-
   async updateAnalytics(
     id: number,
     updates: Partial<Omit<Analytics, "id">>,
@@ -2455,7 +1255,7 @@ export class DatabaseStorage implements IStorage {
 
     return result[0];
   }
-  
+
   // Browser Sequence operations
   async getBrowserSequence(id: number): Promise<BrowserSequence | undefined> {
     const [sequence] = await db
@@ -2476,16 +1276,18 @@ export class DatabaseStorage implements IStorage {
 
   async createBrowserSequence(sequence: InsertBrowserSequence): Promise<BrowserSequence> {
     const now = new Date();
+    const sequenceToInsert = {
+      ...sequence,
+      createdAt: now,
+      updatedAt: now,
+      lastExecutedAt: null,
+      executionCount: 0,
+      isActive: sequence.isActive !== undefined ? sequence.isActive : true,
+    };
+
     const [newSequence] = await db
       .insert(browserSequences)
-      .values({
-        ...sequence,
-        createdAt: now,
-        updatedAt: now,
-        lastExecutedAt: null,
-        executionCount: 0,
-        isActive: sequence.isActive !== undefined ? sequence.isActive : true,
-      })
+      .values(sequenceToInsert)
       .returning();
     return newSequence;
   }
@@ -2504,7 +1306,7 @@ export class DatabaseStorage implements IStorage {
       .set(updatesWithTimestamp)
       .where(eq(browserSequences.id, id))
       .returning();
-    
+
     return updatedSequence;
   }
 
@@ -2514,19 +1316,19 @@ export class DatabaseStorage implements IStorage {
       await db
         .delete(browserSequenceSteps)
         .where(eq(browserSequenceSteps.sequenceId, id));
-      
+
       // Then delete the sequence itself
       const result = await db
         .delete(browserSequences)
         .where(eq(browserSequences.id, id));
-      
-      return result.rowCount > 0;
+
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error(`Error deleting browser sequence ${id}:`, error);
       return false;
     }
   }
-  
+
   // Browser Sequence Step operations
   async getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined> {
     const [step] = await db
@@ -2535,7 +1337,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(browserSequenceSteps.id, id));
     return step;
   }
-  
+
   async getBrowserSequenceStepsBySequenceId(sequenceId: number): Promise<BrowserSequenceStep[]> {
     const steps = await db
       .select()
@@ -2544,7 +1346,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(browserSequenceSteps.stepOrder));
     return steps;
   }
-  
+
   async createBrowserSequenceStep(step: InsertBrowserSequenceStep): Promise<BrowserSequenceStep> {
     const [newStep] = await db
       .insert(browserSequenceSteps)
@@ -2557,7 +1359,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newStep;
   }
-  
+
   async updateBrowserSequenceStep(
     id: number,
     updates: Partial<Omit<BrowserSequenceStep, "id">>,
@@ -2569,12 +1371,12 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedStep;
   }
-  
+
   async deleteBrowserSequenceStep(id: number): Promise<boolean> {
     const result = await db
       .delete(browserSequenceSteps)
       .where(eq(browserSequenceSteps.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Site Settings operations
@@ -2585,7 +1387,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(siteSettings)
         .where(eq(siteSettings.id, 1));
-      
+
       console.log("Site settings found:", settings ? "yes" : "no");
       return settings;
     } catch (error) {
@@ -2643,7 +1445,7 @@ export class DatabaseStorage implements IStorage {
         ...settings,
         id: 1
       };
-      
+
       console.log("Inserting site settings into database");
       const [newSettings] = await db
         .insert(siteSettings)
@@ -2653,7 +1455,7 @@ export class DatabaseStorage implements IStorage {
           set: settingsWithId
         })
         .returning();
-      
+
       console.log("Site settings created successfully");
       return newSettings;
     } catch (error) {
@@ -2665,23 +1467,26 @@ export class DatabaseStorage implements IStorage {
   async updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined> {
     try {
       // Check if settings exist
-      const existingSettings = await this.getSiteSettings();
-      
+      let existingSettings = await this.getSiteSettings();
+
       // If no settings, create default then apply updates
       if (!existingSettings) {
         console.log("No existing settings found, creating defaults first");
-        const defaultSettings = await this.createDefaultSiteSettings();
-        // Apply the updates on top of default settings
-        return this.updateSiteSettings(updates);
+        await this.createDefaultSiteSettings(); // Ensure this is awaited
+        existingSettings = await this.getSiteSettings(); // Re-fetch after creation
+        if (!existingSettings) {
+          console.error("Failed to create or retrieve default settings.");
+          throw new Error("Failed to initialize site settings.");
+        }
       }
-      
+
       // Prepare updates with version increment and updated timestamp
       const updatesWithMeta = {
         ...updates,
-        version: existingSettings.version + 1,
+        version: (existingSettings.version || 0) + 1, // Ensure version is a number
         lastUpdated: new Date(),
       };
-      
+
       console.log("Updating site settings in database");
       // Update the settings in the database
       const [updatedSettings] = await db
@@ -2689,7 +1494,7 @@ export class DatabaseStorage implements IStorage {
         .set(updatesWithMeta)
         .where(eq(siteSettings.id, 1))
         .returning();
-      
+
       console.log("Site settings updated successfully");
       return updatedSettings;
     } catch (error) {

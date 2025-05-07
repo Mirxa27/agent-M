@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
-import type { Express, NextFunction, Request, Response } from "express";
+import express, { type Express, NextFunction, Request, Response, Router } from "express";
 import fs from "fs";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import { hashPassword, setupAuth } from "./auth";
-import { checkRequiredApiKey } from "./config";
+import config, { checkRequiredApiKey } from "./config";
 import { checkDatabaseConnection, db } from "./db";
 import { storage } from "./storage";
 // Import AI services
@@ -34,6 +34,7 @@ import {
   storeChatMessage,
   updateStreak
 } from "./services/chatbot-service";
+import * as documentTemplateService from "./services/document-template-service"; // Import the new service
 import { credentialService, SERVICE_TYPES } from "./services/credential-service";
 import { gmailService } from "./services/gmail-service";
 import { paymentService } from "./services/payment-service";
@@ -3092,6 +3093,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Import workflow progress routes
   import("./routes/workflow-progress-routes").then(({ workflowProgressRouter }) => {
     app.use("/api/workflow-progress", workflowProgressRouter);
+  });
+
+  // Admin Router for super admin functionalities
+  const adminRouter = Router();
+
+  adminRouter.post("/login", (req: Request, res: Response) => {
+    const { username, password } = req.body;
+
+    if (username === config.admin.username && password === config.admin.password) {
+      if (req.session) {
+        req.session.isAdmin = true; // Mark session as super admin
+        res.json({ success: true, message: "Admin login successful" });
+      } else {
+        // This case should ideally not happen if session middleware is correctly set up
+        res.status(500).json({ error: "Session not available" });
+      }
+    } else {
+      res.status(401).json({ error: "Invalid admin credentials" });
+    }
+  });
+
+  adminRouter.post("/logout", (req: Request, res: Response) => {
+    if (req.session) {
+      req.session.isAdmin = false;
+      res.json({ success: true, message: "Admin logout successful" });
+    } else {
+      res.status(500).json({ error: "Session not available" });
+    }
+  });
+
+  // Middleware to protect super admin routes
+  const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (req.session && req.session.isAdmin) {
+      next();
+    } else {
+      res.status(403).json({ error: "Super admin access required" });
+    }
+  };
+
+  // Example protected admin route
+  adminRouter.get("/dashboard-access-check", requireSuperAdmin, (req: Request, res: Response) => {
+    res.json({ success: true, message: "Welcome to the admin dashboard!" });
+  });
+
+  app.use("/api/admin", adminRouter); // Mount the admin router
+
+  // Document Template Routes
+  app.get("/api/document-templates", requireAuth, async (req, res) => {
+    try {
+      const templates = await documentTemplateService.listDocumentTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching document templates:", error);
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  app.get("/api/document-templates/:templateId", requireAuth, async (req, res) => {
+    try {
+      const templateId = req.params.templateId;
+      const content = await documentTemplateService.getDocumentTemplateContent(templateId);
+      if (content === null) {
+        return res.status(404).json({ error: "Template not found or invalid ID" });
+      }
+      res.type("text/markdown").send(content); // Send as markdown
+    } catch (error) {
+      console.error(`Error fetching template ${req.params.templateId}:`, error);
+      res.status(500).json({ error: handleError(error) });
+    }
   });
 
   const httpServer = createServer(app);
