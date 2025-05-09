@@ -1,1 +1,1 @@
-ALTER TABLE "messages" ADD COLUMN "metadata" jsonb NOT NULL DEFAULT '{}';
+ALTER TABLE messages ADD metadata NVARCHAR(MAX) NOT NULL DEFAULT '{}';

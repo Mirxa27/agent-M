@@ -584,7 +584,7 @@ export class BrowserObserverService {
             valueOrText: a.valueOrText || "",
             url: a.url,
           })),
-          confidence: 0.85,
+          confidence: "0.85",
           status: "pending",
         };
       }
@@ -630,7 +630,7 @@ export class BrowserObserverService {
               valueOrText: a.valueOrText || "",
               url: a.url,
             })),
-            confidence: 0.78,
+            confidence: "0.78",
             status: "pending",
           };
         }
@@ -729,16 +729,19 @@ export class BrowserObserverService {
       });
 
       // Convert actions to steps
-      const steps: InsertBrowserSequenceStep[] = sessionActions.map((action, index) => ({
-        sequenceId: sequence.id,
-        stepOrder: index + 1,
-        actionType: String(action.actionType), // Ensure string
-        targetElement: String(action.targetElement), // Ensure string
-        targetUrl: String(action.url), // Ensure string
-        valueOrText: action.valueOrText ? String(action.valueOrText) : null, // Ensure string or null
-        isConditional: false,
-        metadata: action.metadata as any, // Assuming metadata is compatible
-      }));
+      const steps: InsertBrowserSequenceStep[] = sessionActions.map((actionItem, index) => {
+        const action = actionItem as BrowserAction; // Explicit cast
+        return {
+          sequenceId: sequence.id,
+          stepOrder: index + 1,
+          actionType: action.actionType as string,
+          targetElement: action.targetElement as string,
+          targetUrl: action.url as string,
+          valueOrText: action.valueOrText as (string | null),
+          isConditional: false,
+          metadata: action.metadata as any, // Assuming metadata is compatible
+        };
+      });
 
       // Add steps to sequence
       const savedSteps = await this.addSequenceSteps(steps);

@@ -390,7 +390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/agents", requireAuth, async (req: Request, res: Response) => { // Added types
+  app.post("/api/agents", requireAuth, async (req: any, res: any) => { // Changed types to any
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -2380,6 +2380,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
+
+  // AI Prompts Admin Routes
+  app.get("/api/admin/ai-prompts", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const prompts = await storage.getAllAiPrompts(); // Assuming this method exists in storage.ts
+      res.json(prompts);
+    } catch (error) {
+      console.error("Error fetching AI prompts:", error);
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  // TODO: Add POST, PATCH, DELETE endpoints for /api/admin/ai-prompts/:id as needed
 
   // Payment Routes
   // Create a payment session for a subscription

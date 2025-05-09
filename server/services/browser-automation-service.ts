@@ -780,8 +780,8 @@ export class BrowserAutomationService {
         case 'screenshot': {
           // Create screenshot with proper error handling
           try {
-            const screenshot = await page.screenshot({ type: 'jpeg', quality: 80 });
-            const screenshotBase64 = screenshot.toString('base64');
+            const screenshot = await page.screenshot({ type: 'jpeg', quality: 80, encoding: 'base64' });
+            const screenshotBase64 = screenshot; // screenshot is now already a base64 string
             return {
               stepId: step.id,
               status: 'completed',
@@ -892,10 +892,11 @@ export class BrowserAutomationService {
       const screenshot = await page.screenshot({
         type: 'jpeg',
         quality: 90,
-        fullPage: true
+        fullPage: true,
+        encoding: 'base64'
       });
 
-      return screenshot.toString('base64');
+      return screenshot;
     } catch (error) {
       console.error(`Error capturing screenshot of ${url} (attempt ${retryCount + 1}/${MAX_RETRIES + 1}):`, error);
       const errorMessage = error instanceof Error ? error.message : String(error);

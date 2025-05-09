@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "@/hooks/use-toast";
-import { User } from "@shared/schema";
+import { User, Plan } from "@shared/schema"; // Added Plan import
 import { apiRequest } from "@/lib/queryClient";
 import {
   EditIcon,
@@ -102,12 +102,12 @@ export default function UsersPanel() {
     data: users = [],
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<Omit<User, "password">[]>({ // Explicitly type users
     queryKey: ["/api/admin/users"],
   });
 
   // Fetch all plans for the dropdown
-  const { data: plans = [], isLoading: isLoadingPlans } = useQuery({
+  const { data: plans = [], isLoading: isLoadingPlans } = useQuery<Plan[]>({ // Explicitly type plans
     queryKey: ["/api/admin/plans"],
   });
 
@@ -318,7 +318,7 @@ export default function UsersPanel() {
       fullName: user.fullName || "",
       role: user.role as "user" | "admin",
       password: "",
-      planId: user.planId,
+      planId: user.planId === null ? undefined : user.planId, // Handle null from DB
       isActive: user.isActive,
     });
     setIsEditDialogOpen(true);
@@ -410,9 +410,9 @@ export default function UsersPanel() {
                     <TableHead className="hidden md:table-cell">
                       Status
                     </TableHead>
-                    <TableHead className="hidden lg:table-cell">
+                    {/* <TableHead className="hidden lg:table-cell">
                       Created
-                    </TableHead>
+                    </TableHead> */}
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -420,7 +420,7 @@ export default function UsersPanel() {
                   {filteredUsers.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={8}
+                        colSpan={7} // Adjusted colSpan
                         className="text-center py-6 text-muted-foreground"
                       >
                         {searchQuery
@@ -469,11 +469,11 @@ export default function UsersPanel() {
                             <Badge variant="destructive">Inactive</Badge>
                           )}
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                        {/* <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                           {user.createdAt
                             ? format(new Date(user.createdAt), "MMM d, yyyy")
                             : "N/A"}
-                        </TableCell>
+                        </TableCell> */}
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -627,8 +627,8 @@ export default function UsersPanel() {
                     <FormItem>
                       <FormLabel>Subscription Plan</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
-                        value={field.value?.toString()}
+                        onValueChange={(value) => field.onChange(value === "__NO_PLAN__" ? undefined : parseInt(value))}
+                        value={field.value === undefined ? "__NO_PLAN__" : field.value.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -636,8 +636,8 @@ export default function UsersPanel() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No Plan</SelectItem>
-                          {plans.map((plan) => (
+                          <SelectItem value="__NO_PLAN__">No Plan</SelectItem>
+                          {plans.map((plan: Plan) => ( // Added type for plan
                             <SelectItem key={plan.id} value={plan.id.toString()}>
                               {plan.name}
                             </SelectItem>
@@ -807,10 +807,8 @@ export default function UsersPanel() {
                     <FormItem>
                       <FormLabel>Subscription Plan</FormLabel>
                       <Select
-                        onValueChange={(value) =>
-                          field.onChange(value ? parseInt(value) : undefined)
-                        }
-                        value={field.value?.toString() || ""}
+                        onValueChange={(value) => field.onChange(value === "__NO_PLAN__" ? undefined : parseInt(value))}
+                        value={field.value === undefined || field.value === null ? "__NO_PLAN__" : field.value.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -818,13 +816,13 @@ export default function UsersPanel() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No Plan</SelectItem>
+                          <SelectItem value="__NO_PLAN__">No Plan</SelectItem>
                           {isLoadingPlans ? (
                             <div className="flex items-center justify-center p-2">
                               <Skeleton className="h-5 w-full" />
                             </div>
                           ) : (
-                            plans.map((plan) => (
+                            plans.map((plan: Plan) => ( // Added type for plan
                               <SelectItem
                                 key={plan.id}
                                 value={plan.id.toString()}

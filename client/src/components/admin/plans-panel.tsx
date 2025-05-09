@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -156,20 +156,16 @@ export default function PlansPanel() {
   const {
     data: plans = [],
     isLoading,
-    error,
-  } = useQuery({
+    error, // Typed as Error by useQuery generic
+  } = useQuery<Plan[], Error>({ // Explicitly type the query's success and error types
     queryKey: ["/api/admin/plans"],
+    queryFn: async () => apiRequest<Plan[]>("GET", "/api/admin/plans"),
   });
 
   // Create plan mutation
-  const createPlanMutation = useMutation({
-    mutationFn: async (plan: PlanFormValues) => {
-      const res = await apiRequest("POST", "/api/admin/plans", plan);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create plan");
-      }
-      return res.json();
+  const createPlanMutation = useMutation<Plan, Error, PlanFormValues>({
+    mutationFn: async (planData: PlanFormValues) => {
+      return apiRequest<Plan>("POST", "/api/admin/plans", planData);
     },
     onSuccess: () => {
       toast({
@@ -178,32 +174,21 @@ export default function PlansPanel() {
       });
       setIsCreateDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
-      resetForm();
+      resetForm(); // form.reset is called here
     },
-    onError: (error) => {
+    onError: (err: Error) => { // Explicitly type error
       toast({
         title: "Error creating plan",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     },
   });
 
   // Update plan mutation
-  const updatePlanMutation = useMutation({
-    mutationFn: async ({
-      id,
-      plan,
-    }: {
-      id: number;
-      plan: Partial<PlanFormValues>;
-    }) => {
-      const res = await apiRequest("PATCH", `/api/admin/plans/${id}`, plan);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to update plan");
-      }
-      return res.json();
+  const updatePlanMutation = useMutation<Plan, Error, { id: number; plan: Partial<PlanFormValues> }>({
+    mutationFn: async ({ id, plan: planData }) => {
+      return apiRequest<Plan>("PATCH", `/api/admin/plans/${id}`, planData);
     },
     onSuccess: () => {
       toast({
@@ -213,24 +198,20 @@ export default function PlansPanel() {
       setIsEditDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
     },
-    onError: (error) => {
+    onError: (err: Error) => { // Explicitly type error
       toast({
         title: "Error updating plan",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     },
   });
 
   // Delete plan mutation
-  const deletePlanMutation = useMutation({
+  const deletePlanMutation = useMutation<boolean, Error, number>({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/admin/plans/${id}`);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to delete plan");
-      }
-      return true;
+      await apiRequest<void>("DELETE", `/api/admin/plans/${id}`); // Assuming DELETE returns void or throws
+      return true; // Indicate success for the mutation
     },
     onSuccess: () => {
       toast({
@@ -240,10 +221,10 @@ export default function PlansPanel() {
       setIsDeleteDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
     },
-    onError: (error) => {
+    onError: (err: Error) => { // Explicitly type error
       toast({
         title: "Error deleting plan",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     },
@@ -259,33 +240,22 @@ export default function PlansPanel() {
       interval: "monthly",
       currency: "SAR",
       isActive: true,
-      features: {
-        agents: 2,
-        tasks: 100,
-        maxFilesSize: 100,
-        templates: 5,
-        advancedModels: false,
-        customPrompts: false,
-        priority: false,
-      },
+      features: planFeatures.reduce((acc, feature) => {
+        if (feature.type === "number") acc[feature.key] = 0;
+        else if (feature.type === "boolean") acc[feature.key] = false;
+        else if (feature.type === "string") acc[feature.key] = "";
+        return acc;
+      }, {} as Record<string, string | number | boolean>),
     },
   });
 
   // Edit form
   const editForm = useForm<PlanFormValues>({
     resolver: zodResolver(planFormSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      price: 0,
-      interval: "monthly",
-      currency: "SAR",
-      isActive: true,
-      features: {},
-    },
+    // Default values will be set by useEffect when selectedPlan changes
   });
-
-  // Reset form to default values
+  
+  // Reset form to default values (for create form)
   const resetForm = () => {
     form.reset({
       name: "",
@@ -294,137 +264,82 @@ export default function PlansPanel() {
       interval: "monthly",
       currency: "SAR",
       isActive: true,
-      features: {
-        agents: 2,
-        tasks: 100,
-        maxFilesSize: 100,
-        templates: 5,
-        advancedModels: false,
-        customPrompts: false,
-        priority: false,
-      },
+      features: planFeatures.reduce((acc, feature) => {
+        if (feature.type === "number") acc[feature.key] = 0;
+        else if (feature.type === "boolean") acc[feature.key] = false;
+        else if (feature.type === "string") acc[feature.key] = "";
+        return acc;
+      }, {} as Record<string, string | number | boolean>),
     });
   };
 
-  // Handle create submission
+  // Populate edit form when selectedPlan changes
+  useEffect(() => {
+    if (selectedPlan) {
+      const initialFeatures: Record<string, any> = {}; // Use 'any' temporarily for flexibility, or be more specific
+      planFeatures.forEach(pf => {
+        const planFeatureValue = selectedPlan.features?.[pf.key]; // Access feature from selectedPlan
+        switch (pf.type) {
+          case "number":
+            initialFeatures[pf.key] = typeof planFeatureValue === 'number' ? planFeatureValue : 0;
+            break;
+          case "boolean":
+            initialFeatures[pf.key] = typeof planFeatureValue === 'boolean' ? planFeatureValue : false;
+            break;
+          case "string":
+            initialFeatures[pf.key] = typeof planFeatureValue === 'string' ? planFeatureValue : "";
+            break;
+          default:
+            initialFeatures[pf.key] = ""; 
+        }
+      });
+
+      editForm.reset({
+        name: selectedPlan.name,
+        description: selectedPlan.description || "",
+        price: selectedPlan.price,
+        interval: selectedPlan.interval as PlanFormValues['interval'], // Cast to ensure compatibility
+        currency: selectedPlan.currency,
+        isActive: selectedPlan.isActive,
+        features: initialFeatures, 
+      });
+    }
+  }, [selectedPlan, editForm]); // Dependencies for the effect
+
+  const handleCreate = () => {
+    resetForm(); // Ensure form is reset before opening
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleEdit = (plan: Plan) => {
+    setSelectedPlan(plan);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (plan: Plan) => {
+    setSelectedPlan(plan);
+    setIsDeleteDialogOpen(true);
+  };
+
   const onCreateSubmit = (values: PlanFormValues) => {
     createPlanMutation.mutate(values);
   };
 
-  // Handle edit submission
   const onEditSubmit = (values: PlanFormValues) => {
     if (selectedPlan) {
-      updatePlanMutation.mutate({
-        id: selectedPlan.id,
-        plan: values,
-      });
+      updatePlanMutation.mutate({ id: selectedPlan.id, plan: values });
     }
   };
 
-  // Handle delete confirmation
   const onDeleteConfirm = () => {
     if (selectedPlan) {
       deletePlanMutation.mutate(selectedPlan.id);
     }
   };
 
-  // Handle opening edit dialog
-  const handleEdit = (plan: Plan) => {
-    setSelectedPlan(plan);
-
-    // Parse features from string/JSON if needed
-    let featuresObj = {};
-    try {
-      if (typeof plan.features === "string") {
-        featuresObj = JSON.parse(plan.features);
-      } else if (plan.features && typeof plan.features === "object") {
-        featuresObj = plan.features;
-      }
-    } catch (err) {
-      console.error("Error parsing plan features:", err);
-    }
-
-    editForm.reset({
-      name: plan.name,
-      description: plan.description || "",
-      price: plan.price,
-      interval: plan.interval as "monthly" | "yearly" | "one-time",
-      currency: "SAR", // Default to SAR as per requirements
-      isActive: plan.isActive,
-      features: featuresObj as Record<string, any>,
-    });
-
-    setIsEditDialogOpen(true);
-  };
-
-  // Handle opening delete dialog
-  const handleDelete = (plan: Plan) => {
-    setSelectedPlan(plan);
-    setIsDeleteDialogOpen(true);
-  };
-
-  // Filter plans by search query
-  const filteredPlans = plans.filter(
-    (plan) =>
-      plan.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (plan.description &&
-        plan.description.toLowerCase().includes(searchQuery.toLowerCase())),
+  const filteredPlans = plans.filter((plan: Plan) => // Explicitly type plan here
+    plan.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  // Format price with currency
-  const formatPrice = (
-    price: number,
-    currency: string = "SAR",
-    interval: string = "monthly",
-  ) => {
-    let formatted = `${price} ${currency}`;
-
-    if (interval === "monthly") {
-      formatted += "/month";
-    } else if (interval === "yearly") {
-      formatted += "/year";
-    }
-
-    return formatted;
-  };
-
-  // Get feature value from plan (handles different storage formats)
-  const getFeatureValue = (plan: Plan, key: string) => {
-    try {
-      let features = {};
-
-      if (typeof plan.features === "string") {
-        features = JSON.parse(plan.features);
-      } else if (plan.features && typeof plan.features === "object") {
-        features = plan.features;
-      }
-
-      return features[key];
-    } catch (err) {
-      return undefined;
-    }
-  };
-
-  // Render feature value based on its type
-  const renderFeatureValue = (plan: Plan, feature: PlanFeature) => {
-    const value = getFeatureValue(plan, feature.key);
-
-    if (feature.type === "boolean") {
-      return value === true ? (
-        <CheckIcon className="h-5 w-5 text-green-500" />
-      ) : (
-        <XIcon className="h-5 w-5 text-red-500" />
-      );
-    } else if (feature.type === "number") {
-      return value !== undefined ? (
-        <span className="font-medium">{value}</span>
-      ) : (
-        <span className="text-muted-foreground">-</span>
-      );
-    } else {
-      return value || <span className="text-muted-foreground">-</span>;
-    }
-  };
 
   if (error) {
     return (
