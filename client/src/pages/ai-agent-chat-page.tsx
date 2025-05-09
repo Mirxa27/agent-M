@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Agent, Message as MessageType } from "@shared/schema";
+import { Agent, Conversation, Message as MessageType } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, Loader2, Send, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -33,14 +33,9 @@ export default function AiAgentChatPage() {
     queryKey: ["/api/conversations", currentConversationId, "messages"],
     queryFn: async () => {
       if (!currentConversationId) return [];
-      // TODO: Replace with actual endpoint for fetching conversation messages if different from task messages
-      // This might require a new backend endpoint /api/conversations/:id/messages
-      // For now, assuming a similar structure to task messages or a placeholder.
-      // const res = await apiRequest("GET", `/api/tasks/${currentConversationId}/messages`);
-      // if (!res.ok) throw new Error("Failed to fetch messages");
-      // return res.json();
-      console.warn("Message fetching for conversations not fully implemented yet.");
-      return []; // Placeholder
+      const res = await apiRequest("GET", `/api/conversations/${currentConversationId}/messages`);
+      if (!res.ok) throw new Error("Failed to fetch messages");
+      return res.json();
     },
     enabled: !!currentConversationId,
   });
@@ -50,28 +45,44 @@ export default function AiAgentChatPage() {
   }, [messages]);
 
   const sendMessageMutation = useMutation({
-    mutationFn: async (newMessage: { agentId: string; content: string; conversationId?: number }) => {
-      // TODO: This needs to be adapted to a new backend endpoint for agent chat.
-      // It might involve creating a conversation if one doesn't exist,
-      // then sending a message to that conversation, which then triggers the agent.
-      // For now, this is a placeholder.
-      console.log("Sending message (placeholder):", newMessage);
-      // const res = await apiRequest("POST", `/api/agents/${newMessage.agentId}/chat`, { content: newMessage.content, conversationId: newMessage.conversationId });
-      // if (!res.ok) {
-      //   const errorData = await res.json().catch(() => ({ message: "Failed to send message" }));
-      //   throw new Error(errorData.message);
-      // }
-      // return res.json();
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      return { id: Date.now(), conversationId: newMessage.conversationId || Date.now(), role: "assistant", content: "This is a simulated agent response.", timestamp: new Date().toISOString() };
+    mutationFn: async (newMessage: { agentId: string; content: string; conversationId?: number | null }) => {
+      let convId = newMessage.conversationId;
+
+      if (!convId) {
+        // Create a new conversation if one doesn't exist
+        const createConvRes = await apiRequest("POST", "/api/conversations", { agentId: newMessage.agentId, title: `Chat with Agent ${newMessage.agentId}` });
+        if (!createConvRes.ok) {
+          const errorData = await createConvRes.json().catch(() => ({ message: "Failed to create conversation" }));
+          throw new Error(errorData.message);
+        }
+        const conversation: Conversation = await createConvRes.json();
+        if (conversation && typeof conversation.id === 'number') {
+          convId = conversation.id;
+          setCurrentConversationId(convId);
+        } else {
+          console.error("Failed to get valid ID from new conversation:", conversation);
+          throw new Error("Failed to create conversation with a valid ID.");
+        }
+      }
+
+      if (convId === null || convId === undefined) {
+        throw new Error("Conversation ID is missing after attempt to create/get conversation.");
+      }
+
+      // Send the message to the conversation
+      const sendMessageRes = await apiRequest("POST", `/api/conversations/${convId}/messages`, { content: newMessage.content });
+      if (!sendMessageRes.ok) {
+        const errorData = await sendMessageRes.json().catch(() => ({ message: "Failed to send message" }));
+        throw new Error(errorData.message);
+      }
+      return sendMessageRes.json(); // This should return the user's message and a processing flag
     },
     onSuccess: (data) => {
       setInputMessage("");
-      if (data.conversationId && !currentConversationId) {
-        setCurrentConversationId(data.conversationId);
-      }
+      // The currentConversationId should be set by the mutationFn if a new conversation was created.
+      // Invalidate queries to refetch messages, which will include the user's new message and the pending agent response.
       queryClient.invalidateQueries({ queryKey: ["/api/conversations", currentConversationId, "messages"] });
-      toast({ title: "Message sent (simulated)" });
+      toast({ title: "Message sent" });
     },
     onError: (error: Error) => {
       toast({

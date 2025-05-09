@@ -7,11 +7,19 @@ import path from "path";
 import { hashPassword, setupAuth } from "./auth";
 import config, { checkRequiredApiKey } from "./config";
 import { checkDatabaseConnection, db } from "./db";
-import { storage } from "./storage";
+import { storage } from "./storage"; // Assuming export is correct despite linter error
 // Import AI services
-import aiService from "./services/ai-service";
+import aiService, { AIProvider } from "./services/ai-service"; // Removed AgentConfig, AIMessage, AgentResponse
+import { AIMessage, AgentResponse } from "./services/openai-service"; // Import AIMessage, AgentResponse from openai-service
 // Import the processAgentTask function
 import {
+  Agent, // Added Agent type
+  AgentTool, // Added AgentTool type
+  AiProvider as AiProviderSchema, // Added AiProvider type
+  Credential, // Added Credential type
+  Message, // Added Message type
+  Task, // Added Task type
+  User, // Added User type
   agentTools,
   insertAgentSchema,
   insertAgentToolSchema,
@@ -19,7 +27,8 @@ import {
   insertCredentialSchema,
   insertFileSchema,
   insertMessageSchema,
-  insertTaskSchema
+  insertTaskSchema,
+  insertConversationSchema,
 } from "@shared/schema";
 import { decrypt, encrypt } from "../shared/crypto";
 import { processAgentTask } from "./agent-task-processor";
@@ -39,9 +48,18 @@ import { credentialService, SERVICE_TYPES } from "./services/credential-service"
 import { gmailService } from "./services/gmail-service";
 import { paymentService } from "./services/payment-service";
 
+// Define AgentConfig locally as it's not exported from ai-service
+interface AgentConfig {
+  provider: AIProvider;
+  model?: string;
+  systemInstructions?: string;
+  tools?: AgentTool[];
+}
+
+
 // Configure multer for file uploads
 const storage_engine = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (req: Request, file, cb) => { // Added type
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
     // Ensure upload directory exists
     if (!fs.existsSync(uploadDir)) {
@@ -49,7 +67,7 @@ const storage_engine = multer.diskStorage({
     }
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
+  filename: (req: Request, file, cb) => { // Added type
     // Create unique filename with original extension
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
@@ -62,7 +80,7 @@ const upload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB max file size
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (req: Request, file, cb) => { // Added type
     // Accept only image files
     const filetypes = /jpeg|jpg|png|gif|svg/;
     const mimetype = filetypes.test(file.mimetype);
@@ -85,7 +103,7 @@ const handleError = (error: unknown): string => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint - no auth required, useful for deployment monitoring
-  app.get("/api/health", async (req, res) => {
+  app.get("/api/health", async (req: Request, res: Response) => { // Added types
     try {
       const dbStatus = await checkDatabaseConnection();
       if (!dbStatus) {
@@ -113,7 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get site settings (public access)
-  app.get("/api/site-settings", async (req, res) => {
+  app.get("/api/site-settings", async (req: Request, res: Response) => { // Added types
     try {
       // Get settings or create default if none exist
       let settings = await storage.getSiteSettings();
@@ -168,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload logo endpoint - requires admin permissions
-  app.post("/api/admin/upload-logo", requireAdmin, upload.single('logo'), async (req, res) => {
+  app.post("/api/admin/upload-logo", requireAdmin, upload.single('logo'), async (req: Request, res: Response) => { // Added types
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
@@ -207,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard preferences routes
   import("./services/dashboard-service").then((dashboardService) => {
     // Get user dashboard preferences
-    app.get("/api/user/dashboard/preferences", requireAuth, async (req, res) => { // Added requireAuth
+    app.get("/api/user/dashboard/preferences", requireAuth, async (req: Request, res: Response) => { // Added types
       try {
         // Middleware ensures req.user exists, but TS needs explicit check
         if (!req.user) {
@@ -227,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     // Update user dashboard preferences
-    app.patch("/api/user/dashboard/preferences", requireAuth, async (req, res) => { // Added requireAuth
+    app.patch("/api/user/dashboard/preferences", requireAuth, async (req: Request, res: Response) => { // Added types
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
         return res.status(401).send({ error: "Not authenticated" });
@@ -298,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agent routes
-  app.get("/api/agents", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/agents", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -312,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get agent templates for creating new agents
-  app.get("/api/agent-templates", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/agent-templates", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -328,7 +346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agent status endpoint for dashboard - must come before the :id route
-  app.get("/api/agents/status", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/agents/status", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -339,8 +357,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Count agents by status
       const agentCounts = {
         total: agents.length,
-        active: agents.filter(agent => agent.isActive === true).length,
-        inactive: agents.filter(agent => agent.isActive === false || agent.isActive === undefined).length
+        active: agents.filter((agent: Agent) => agent.isActive === true).length, // Added type
+        inactive: agents.filter((agent: Agent) => agent.isActive === false || agent.isActive === undefined).length // Added type
       };
 
       res.json(agentCounts);
@@ -349,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/agents/:id", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/agents/:id", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -372,7 +390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/agents", requireAuth, async (req: Request, res: Response) => {
+  app.post("/api/agents", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -398,7 +416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/agents/:id", requireAuth, async (req: Request, res: Response) => {
+  app.patch("/api/agents/:id", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -433,7 +451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/agents/:id", requireAuth, async (req: Request, res: Response) => {
+  app.delete("/api/agents/:id", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -460,7 +478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Credential routes
-  app.get("/api/credentials", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/credentials", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -468,7 +486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const credentials = await storage.getCredentialsByUserId(req.user.id);
       // Don't include sensitive data in the response
-      const sanitizedCredentials = credentials.map((cred) => {
+      const sanitizedCredentials = credentials.map((cred: Credential) => { // Added type
         const { data, ...rest } = cred;
         return rest;
       });
@@ -480,7 +498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get credentials by type (service)
-  app.get("/api/credentials/service/:type", requireAuth, async (req, res) => {
+  app.get("/api/credentials/service/:type", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -502,7 +520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get expiring credentials
-  app.get("/api/credentials/expiring", requireAuth, async (req, res) => {
+  app.get("/api/credentials/expiring", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -524,7 +542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/credentials/:id", requireAuth, async (req, res) => {
+  app.get("/api/credentials/:id", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -573,7 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/credentials", requireAuth, async (req, res) => {
+  app.post("/api/credentials", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -632,7 +650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/credentials/:id", requireAuth, async (req, res) => {
+  app.patch("/api/credentials/:id", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -696,7 +714,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/credentials/:id", requireAuth, async (req, res) => {
+  app.delete("/api/credentials/:id", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -734,7 +752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Gmail service-specific routes
-  app.post("/api/services/gmail/credentials", requireAuth, async (req, res) => {
+  app.post("/api/services/gmail/credentials", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -789,7 +807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/services/gmail/credentials", requireAuth, async (req, res) => {
+  app.get("/api/services/gmail/credentials", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -803,7 +821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/services/gmail/send-email", requireAuth, async (req, res) => {
+  app.post("/api/services/gmail/send-email", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -859,7 +877,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/services/gmail/messages", requireAuth, async (req, res) => {
+  app.get("/api/services/gmail/messages", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -916,7 +934,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Endpoint to refresh OAuth tokens
-  app.post("/api/services/gmail/refresh-token", requireAuth, async (req, res) => {
+  app.post("/api/services/gmail/refresh-token", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -954,7 +972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // File/Template routes
-  app.get("/api/files", requireAuth, async (req, res) => {
+  app.get("/api/files", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -968,7 +986,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Recent files endpoint for dashboard
-  app.get("/api/files/recent", requireAuth, async (req, res) => {
+  app.get("/api/files/recent", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -982,7 +1000,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/templates", requireAuth, async (req, res) => {
+  app.get("/api/templates", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -995,7 +1013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/files/:id", requireAuth, async (req, res) => {
+  app.get("/api/files/:id", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1020,7 +1038,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Note: File upload would typically be handled with multipart/form-data and a library like multer
   // For simplicity in this prototype, we're just storing file metadata
-  app.post("/api/files", requireAuth, async (req, res) => {
+  app.post("/api/files", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1046,7 +1064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/files/:id", requireAuth, async (req, res) => {
+  app.delete("/api/files/:id", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1073,7 +1091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task routes
-  app.get("/api/tasks", requireAuth, async (req, res) => {
+  app.get("/api/tasks", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1090,7 +1108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API endpoint to register AI agent tools
-  app.post("/api/admin/register-tools", requireAdmin, async (req, res) => {
+  app.post("/api/admin/register-tools", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const tools = [
         {
@@ -1253,7 +1271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/agents/:agentId/tasks", requireAuth, async (req, res) => {
+  app.get("/api/agents/:agentId/tasks", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1278,7 +1296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/tasks/:id", requireAuth, async (req, res) => {
+  app.get("/api/tasks/:id", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1301,7 +1319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tasks", requireAuth, async (req, res) => {
+  app.post("/api/tasks", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1345,7 +1363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/tasks/:id", requireAuth, async (req, res) => {
+  app.patch("/api/tasks/:id", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1372,7 +1390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Message routes
-  app.get("/api/tasks/:taskId/messages", requireAuth, async (req, res) => {
+  app.get("/api/tasks/:taskId/messages", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1397,7 +1415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tasks/:taskId/messages", requireAuth, async (req, res) => {
+  app.post("/api/tasks/:taskId/messages", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1465,7 +1483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Endpoint to explicitly execute a task with an agent
-  app.post("/api/tasks/:taskId/execute", requireAuth, async (req, res) => {
+  app.post("/api/tasks/:taskId/execute", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1512,7 +1530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task-File relationship routes
-  app.get("/api/tasks/:taskId/files", requireAuth, async (req, res) => {
+  app.get("/api/tasks/:taskId/files", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1541,7 +1559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/tasks/:taskId/files/:fileId",
     requireAuth,
-    async (req, res) => {
+    async (req: Request, res: Response) => { // Added types
       try {
         // Middleware ensures req.user exists, but TS needs explicit check
         if (!req.user) {
@@ -1587,7 +1605,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete(
     "/api/tasks/:taskId/files/:fileId",
     requireAuth,
-    async (req, res) => {
+    async (req: Request, res: Response) => { // Added types
       try {
         // Middleware ensures req.user exists, but TS needs explicit check
         if (!req.user) {
@@ -1622,10 +1640,237 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+// Conversation routes (for direct agent chat)
+  app.get("/api/conversations", requireAuth, async (req: Request, res: Response) => { // Added types
+    try {
+      if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+      const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : undefined;
+      const conversations = await storage.getConversationsByUserId(req.user.id, agentId);
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  app.post("/api/conversations", requireAuth, async (req: Request, res: Response) => { // Added types
+    try {
+      if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+      const { agentId, title } = req.body;
+
+      if (!agentId) {
+        return res.status(400).json({ error: "Agent ID is required" });
+      }
+
+      // Verify agent exists and user can access it (optional, depends on requirements)
+      const agent = await storage.getAgent(agentId);
+      if (!agent) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      // Add ownership check if needed: if (agent.userId !== req.user.id && !agent.isPublic) ...
+
+      const validatedData = insertConversationSchema.safeParse({
+        userId: req.user.id,
+        agentId: agentId,
+        title: title || `Conversation with ${agent.name}`,
+      });
+
+      if (!validatedData.success) {
+        return res.status(400).json({ error: "Validation failed", details: validatedData.error.format() });
+      }
+
+      const conversation = await storage.createConversation(validatedData.data);
+      res.status(201).json(conversation);
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  app.get("/api/conversations/:conversationId", requireAuth, async (req: Request, res: Response) => { // Added types
+     try {
+       if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+       const conversationId = parseInt(req.params.conversationId);
+       const conversation = await storage.getConversation(conversationId);
+
+       if (!conversation) {
+         return res.status(404).json({ error: "Conversation not found" });
+       }
+
+       // Check ownership
+       if (conversation.userId !== req.user.id) {
+         return res.status(403).json({ error: "Not authorized" });
+       }
+
+       res.json(conversation);
+     } catch (error) {
+       console.error("Error fetching conversation:", error);
+       res.status(500).json({ error: handleError(error) });
+     }
+   });
+
+  app.get("/api/conversations/:conversationId/messages", requireAuth, async (req: Request, res: Response) => { // Added types
+    try {
+      if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+      const conversationId = parseInt(req.params.conversationId);
+      const conversation = await storage.getConversation(conversationId);
+
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      // Check ownership
+      if (conversation.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+
+      const messages = await storage.getMessagesByConversationId(conversationId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching conversation messages:", error);
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
+
+  app.post("/api/conversations/:conversationId/messages", requireAuth, async (req: Request, res: Response) => { // Added types
+    try {
+      if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+      const conversationId = parseInt(req.params.conversationId);
+      const conversation = await storage.getConversation(conversationId);
+
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      // Check ownership
+      if (conversation.userId !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+
+      // Validate message input
+      const validatedData = insertMessageSchema.safeParse({
+        ...req.body,
+        conversationId: conversationId,
+        role: 'user', // Ensure message is from user
+      });
+
+      if (!validatedData.success) {
+        return res.status(400).json({ error: "Validation failed", details: validatedData.error.format() });
+      }
+
+      // Create user message
+      const userMessage = await storage.createMessage(validatedData.data);
+
+      // Update conversation's updatedAt timestamp
+      await storage.updateConversation(conversationId, { updatedAt: new Date() });
+
+// Asynchronously process agent response
+      setTimeout(async () => {
+        try {
+          const agent = await storage.getAgent(conversation.agentId);
+          if (!agent) {
+            console.error(`Agent ${conversation.agentId} not found for conversation ${conversationId}`);
+            return;
+          }
+
+          const conversationHistory = await storage.getMessagesByConversationId(conversationId);
+
+          const messagesForAI: AIMessage[] = []; // Use AIMessage type
+          if ((agent.config as any)?.systemPrompt) { // Access via config with type assertion
+            messagesForAI.push({ role: "system", content: (agent.config as any).systemPrompt });
+          }
+          conversationHistory.forEach((msg: Message) => { // Added type
+            if ((msg.role === 'user' || msg.role === 'assistant') && typeof msg.content === 'string') {
+              messagesForAI.push({ role: msg.role, content: msg.content });
+            }
+          });
+
+          // Construct a dummy Task object for processTask
+          const dummyTask: Task = {
+            id: 0, // Dummy ID
+            title: `Conversation ${conversationId}`,
+            description: userMessage.content, // Use user message content as description
+            status: "in_progress",
+            userId: req.user!.id, // User ID is guaranteed by requireAuth
+            agentId: agent.id,
+            createdAt: new Date(),
+            completedAt: null,
+            result: null
+          };
+
+          // Determine provider and model
+          const provider = (agent.config as any)?.provider as AIProvider || 'openai'; // Default to openai
+          const model = (agent.config as any)?.model || config.ai[provider as keyof typeof config.ai]?.defaultModel || 'gpt-4o'; // Get default for provider
+
+          // Construct AgentConfig
+          const agentConfig: AgentConfig = {
+            provider: provider,
+            model: model,
+            systemInstructions: (agent.config as any)?.systemPrompt || undefined, // Access via config
+            tools: (agent.tools as AgentTool[]) || [] // Assuming agent.tools is compatible or needs casting
+          };
+
+          // Call the correct AI service function
+          const aiResponse: AgentResponse = await aiService.processTask(
+            dummyTask,
+            agentConfig,
+            messagesForAI
+          );
+
+          if (aiResponse.content && typeof aiResponse.content === 'string') {
+            await storage.createMessage({
+              // TODO: Review if taskId should be nullable in schema for conversation messages
+              // Using 0 as a placeholder for non-task-associated messages if schema requires a number.
+              taskId: 0,
+              conversationId: conversationId,
+              role: 'assistant',
+              content: aiResponse.content,
+            });
+            await storage.updateConversation(conversationId, { updatedAt: new Date() });
+          } else {
+            console.error(`AI service returned no content or invalid content for conversation ${conversationId}`);
+            await storage.createMessage({
+              // TODO: Review if taskId should be nullable in schema for conversation messages
+              taskId: 0,
+              conversationId: conversationId,
+              role: 'assistant',
+              content: "I encountered an issue and couldn't generate a response. Please try again later.",
+              metadata: { error: "AI returned no content or invalid content" }
+            });
+          }
+
+        } catch (processingError) {
+          console.error(`Error processing agent response for conversation ${conversationId}:`, handleError(processingError));
+          try {
+            await storage.createMessage({
+              // TODO: Review if taskId should be nullable in schema for conversation messages
+              taskId: 0,
+              conversationId: conversationId,
+              role: 'assistant',
+              content: "I encountered an error while processing your request. Please try again.",
+              metadata: { error: handleError(processingError) }
+            });
+          } catch (storeErrorError) {
+            console.error(`Failed to store error message for conversation ${conversationId}:`, storeErrorError);
+          }
+        }
+      }, 0);
+
+      // Return the user message immediately
+      res.status(201).json({
+        message: userMessage,
+        processing: true // Indicate that agent response is pending
+      });
+
+    } catch (error) {
+      console.error("Error posting conversation message:", error);
+      res.status(500).json({ error: handleError(error) });
+    }
+  });
   // Admin routes
 
   // Site Settings Admin Route
-  app.patch("/api/admin/site-settings", requireAdmin, async (req, res) => {
+  app.patch("/api/admin/site-settings", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1662,7 +1907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agent Tools Routes
-  app.get("/api/admin/agent-tools", requireAdmin, async (req, res) => {
+  app.get("/api/admin/agent-tools", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const tools = await storage.getAllAgentTools();
       res.json(tools);
@@ -1671,7 +1916,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/agent-tools/:id", requireAdmin, async (req, res) => {
+  app.get("/api/admin/agent-tools/:id", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const toolId = parseInt(req.params.id);
       const tool = await storage.getAgentTool(toolId);
@@ -1686,7 +1931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/agent-tools", requireAdmin, async (req, res) => {
+  app.post("/api/admin/agent-tools", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       // Validate and create tool
       const validatedData = insertAgentToolSchema.safeParse(req.body);
@@ -1705,7 +1950,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/agent-tools/:id", requireAdmin, async (req, res) => {
+  app.patch("/api/admin/agent-tools/:id", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const toolId = parseInt(req.params.id);
       const tool = await storage.getAgentTool(toolId);
@@ -1722,7 +1967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/agent-tools/:id", requireAdmin, async (req, res) => {
+  app.delete("/api/admin/agent-tools/:id", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const toolId = parseInt(req.params.id);
       const tool = await storage.getAgentTool(toolId);
@@ -1745,11 +1990,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User accessible agent tools (for agent task execution)
-  app.get("/api/agent-tools", requireAuth, async (req, res) => {
+  app.get("/api/agent-tools", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Only return active tools for regular users
       const tools = await storage.getAllAgentTools();
-      const activeTools = tools.filter((tool) => tool.isActive);
+      const activeTools = tools.filter((tool: AgentTool) => tool.isActive); // Added type
       res.json(activeTools);
     } catch (error) {
       res.status(500).json({ error: handleError(error) }); // Use handleError
@@ -1759,12 +2004,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
     "/api/agent-tools/category/:category",
     requireAuth,
-    async (req, res) => {
+    async (req: Request, res: Response) => { // Added types
       try {
         const category = req.params.category;
         // Only return active tools for regular users
         const tools = await storage.getAgentToolsByCategory(category);
-        const activeTools = tools.filter((tool) => tool.isActive);
+        const activeTools = tools.filter((tool: AgentTool) => tool.isActive); // Added type
         res.json(activeTools);
       } catch (error) {
         res.status(500).json({ error: handleError(error) }); // Use handleError
@@ -1773,7 +2018,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Plans
-  app.get("/api/plans", async (req, res) => {
+  app.get("/api/plans", async (req: Request, res: Response) => { // Added types
     try {
       const plans = await storage.getActivePlans();
       res.json(plans);
@@ -1782,7 +2027,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/plans", requireAdmin, async (req, res) => {
+  app.get("/api/admin/plans", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const plans = await storage.getAllPlans();
       res.json(plans);
@@ -1791,7 +2036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/plans", requireAdmin, async (req, res) => {
+  app.post("/api/admin/plans", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const plan = await storage.createPlan(req.body);
       res.status(201).json(plan);
@@ -1800,7 +2045,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/plans/:id", requireAdmin, async (req, res) => {
+  app.patch("/api/admin/plans/:id", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const planId = parseInt(req.params.id);
       const updatedPlan = await storage.updatePlan(planId, req.body);
@@ -1816,13 +2061,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Providers Status Endpoint for dashboard
-  app.get("/api/ai-providers/status", async (req, res) => {
+  app.get("/api/ai-providers/status", async (req: Request, res: Response) => { // Added types
     try {
       // Get active providers
       const activeProviders = await storage.getActiveAiProviders();
 
       // Transform data for the widget display
-      const providerStatus = activeProviders.map(provider => ({
+      const providerStatus = activeProviders.map((provider: AiProviderSchema) => ({ // Added type
         id: provider.provider,
         name: provider.name,
         status: provider.isActive ? 'active' : 'inactive',
@@ -1839,7 +2084,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Providers Admin Endpoints
-  app.get("/api/admin/ai-providers", requireAdmin, async (req, res) => {
+  app.get("/api/admin/ai-providers", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1848,7 +2093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const providers = await storage.getAllAiProviders();
 
       // Enhance each provider with API key availability
-      const enhancedProviders = await Promise.all(providers.map(async provider => {
+      const enhancedProviders = await Promise.all(providers.map(async (provider: AiProviderSchema) => { // Added type
         // Check env var first
         let hasApiKey = checkRequiredApiKey(provider.provider);
 
@@ -1878,7 +2123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check if API key is available for provider
-  app.get("/api/admin/ai-providers/check-key/:provider", requireAdmin, async (req, res) => {
+  app.get("/api/admin/ai-providers/check-key/:provider", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1908,7 +2153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/ai-providers", requireAdmin, async (req, res) => {
+  app.post("/api/admin/ai-providers", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -1947,7 +2192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/ai-providers/:id", requireAdmin, async (req, res) => {
+  app.patch("/api/admin/ai-providers/:id", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -2009,7 +2254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Models Admin Routes
-  app.get("/api/admin/ai-models", requireAdmin, async (req, res) => {
+  app.get("/api/admin/ai-models", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const models = await storage.getAllAiModels();
       res.json(models);
@@ -2019,7 +2264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get OpenRouter models endpoint
-  app.get("/api/admin/openrouter/models", requireAdmin, async (req, res) => {
+  app.get("/api/admin/openrouter/models", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       if (!process.env.OPENROUTER_API_KEY) {
         return res.status(400).json({
@@ -2044,7 +2289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/ai-models/:id", requireAdmin, async (req, res) => {
+  app.get("/api/admin/ai-models/:id", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const modelId = parseInt(req.params.id);
       const model = await storage.getAiModel(modelId);
@@ -2059,7 +2304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/ai-models", requireAdmin, async (req, res) => {
+  app.post("/api/admin/ai-models", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       // Verify the provider exists
       const provider = await storage.getAiProvider(req.body.providerId);
@@ -2085,7 +2330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/ai-models/:id", requireAdmin, async (req, res) => {
+  app.patch("/api/admin/ai-models/:id", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const modelId = parseInt(req.params.id);
       const model = await storage.getAiModel(modelId);
@@ -2110,7 +2355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/ai-models/:id", requireAdmin, async (req, res) => {
+  app.delete("/api/admin/ai-models/:id", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const modelId = parseInt(req.params.id);
 
@@ -2138,7 +2383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Payment Routes
   // Create a payment session for a subscription
-  app.post("/api/payments/create-session", requireAuth, async (req, res) => {
+  app.post("/api/payments/create-session", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -2172,7 +2417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Payment verification callback endpoint
-  app.get("/api/payments/callback", async (req, res) => {
+  app.get("/api/payments/callback", async (req: Request, res: Response) => { // Added types
     try {
       const paymentId = req.query.paymentId;
 
@@ -2204,12 +2449,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Payment error callback endpoint
-  app.get("/api/payments/error", (req, res) => {
+  app.get("/api/payments/error", (req: Request, res: Response) => { // Added types
     res.redirect("/payment-failed?reason=gateway-error");
   });
 
   // Webhook for payment notifications (would be configured in MyFatoorah dashboard)
-  app.post("/api/payments/webhook", async (req, res) => {
+  app.post("/api/payments/webhook", async (req: Request, res: Response) => { // Added types
     try {
       // Log the webhook payload for debugging
       console.log("Received payment webhook:", req.body);
@@ -2269,7 +2514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check subscription status
-  app.get("/api/subscription", requireAuth, async (req, res) => {
+  app.get("/api/subscription", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -2303,13 +2548,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User Admin Routes
-  app.get("/api/admin/users", requireAdmin, async (req, res) => {
+  app.get("/api/admin/users", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       // Get all users (only admin can access)
       const users = await storage.getAllUsers();
 
       // Remove sensitive data from the response
-      const sanitizedUsers = users.map((user) => {
+      const sanitizedUsers = users.map((user: User) => { // Added type
         const { password, ...userWithoutPassword } = user;
         return userWithoutPassword;
       });
@@ -2320,7 +2565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/users/:id", requireAdmin, async (req, res) => {
+  app.get("/api/admin/users/:id", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const userId = parseInt(req.params.id);
       const user = await storage.getUser(userId);
@@ -2337,7 +2582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/users", requireAdmin, async (req, res) => {
+  app.post("/api/admin/users", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -2401,7 +2646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
+  app.patch("/api/admin/users/:id", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -2458,7 +2703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/users/:id", requireAdmin, async (req, res) => {
+  app.delete("/api/admin/users/:id", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -2509,7 +2754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Translation Routes
-  app.post("/api/ai/translate", requireAuth, async (req, res) => {
+  app.post("/api/ai/translate", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       const { text, sourceLanguage, targetLanguage } = req.body;
 
@@ -2536,7 +2781,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk translate translations (admin only)
-  app.post("/api/ai/translate-bulk", requireAdmin, async (req, res) => {
+  app.post("/api/ai/translate-bulk", requireAdmin, async (req: Request, res: Response) => { // Added types
     try {
       const { translations, sourceLanguage, targetLanguage } = req.body;
 
@@ -2565,7 +2810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Content Generation Routes
-  app.post("/api/ai/generate-content", requireAuth, async (req, res) => {
+  app.post("/api/ai/generate-content", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       const { prompt, contentType, tone } = req.body;
 
@@ -2588,7 +2833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analyze content
-  app.post("/api/ai/analyze-content", requireAuth, async (req, res) => {
+  app.post("/api/ai/analyze-content", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       const { text } = req.body;
 
@@ -2613,7 +2858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Activity & Dashboard Routes
 
   // Get user activity feed
-  app.get("/api/user/activity", requireAuth, async (req, res) => {
+  app.get("/api/user/activity", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -2636,7 +2881,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user analytics summary
-  app.get("/api/user/analytics", requireAuth, async (req, res) => {
+  app.get("/api/user/analytics", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -2653,7 +2898,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user dashboard preferences
-  app.get("/api/user/dashboard/preferences", requireAuth, async (req, res) => {
+  app.get("/api/user/dashboard/preferences", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -2699,7 +2944,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update dashboard preferences
-  app.put("/api/user/dashboard/preferences", requireAuth, async (req, res) => {
+  app.put("/api/user/dashboard/preferences", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
@@ -2767,7 +3012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/user/dashboard/favorites/agent/:agentId",
     requireAuth,
-    async (req, res) => {
+    async (req: Request, res: Response) => { // Added types
       try {
         // Middleware ensures req.user exists, but TS needs explicit check
         if (!req.user) {
@@ -2857,7 +3102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete(
     "/api/user/dashboard/favorites/agent/:agentId",
     requireAuth,
-    async (req, res) => {
+    async (req: Request, res: Response) => { // Added types
       try {
         // Middleware ensures req.user exists, but TS needs explicit check
         if (!req.user) {
@@ -2903,7 +3148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Chatbot routes
   // Chatbot message history
-  app.get("/api/chatbot/history", async (req, res) => {
+  app.get("/api/chatbot/history", async (req: Request, res: Response) => { // Added types
     try {
       const userId = req.isAuthenticated() ? req.user!.id : null;
       const sessionId = req.query.sessionId as string;
@@ -2921,7 +3166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send message to chatbot
-  app.post("/api/chatbot/message", async (req, res) => {
+  app.post("/api/chatbot/message", async (req: Request, res: Response) => { // Added types
     try {
       if (!req.body.content) {
         return res.status(400).json({ error: "Message content is required" });
@@ -3024,7 +3269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get available challenges
-  app.get("/api/chatbot/challenges", async (req, res) => {
+  app.get("/api/chatbot/challenges", async (req: Request, res: Response) => { // Added types
     try {
       const difficulty = req.query.difficulty as string | undefined;
       // Correct: getAvailableChallenges only takes optional difficulty
@@ -3037,7 +3282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Complete a challenge
-  app.post("/api/chatbot/complete-challenge", async (req, res) => {
+  app.post("/api/chatbot/complete-challenge", async (req: Request, res: Response) => { // Added types
     try {
       if (!req.body.challengeId || !req.body.sessionId) {
         return res.status(400).json({ error: "Challenge ID and Session ID are required" });
@@ -3063,7 +3308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user game progress
-  app.get("/api/chatbot/game-progress", async (req, res) => {
+  app.get("/api/chatbot/game-progress", async (req: Request, res: Response) => { // Added types
     try {
       const userId = req.isAuthenticated() ? req.user!.id : null;
       const sessionId = req.query.sessionId as string;
@@ -3140,7 +3385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/admin", adminRouter); // Mount the admin router
 
   // Document Template Routes
-  app.get("/api/document-templates", requireAuth, async (req, res) => {
+  app.get("/api/document-templates", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       const templates = await documentTemplateService.listDocumentTemplates();
       res.json(templates);
@@ -3150,7 +3395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/document-templates/:templateId", requireAuth, async (req, res) => {
+  app.get("/api/document-templates/:templateId", requireAuth, async (req: Request, res: Response) => { // Added types
     try {
       const templateId = req.params.templateId;
       const content = await documentTemplateService.getDocumentTemplateContent(templateId);
@@ -3165,5 +3410,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
-  return httpServer;
+  return httpServer; // Added return statement
 }

@@ -1,8 +1,8 @@
 import { db } from "../db";
-import { 
-  browserActions, 
-  browserSequences, 
-  browserSequenceSteps, 
+import {
+  browserActions,
+  browserSequences,
+  browserSequenceSteps,
   browserAiSuggestions,
   browserSettings,
   type BrowserAction,
@@ -16,7 +16,7 @@ import {
   type InsertBrowserAiSuggestion,
   type InsertBrowserSetting
 } from "@shared/schema";
-import { desc, eq, and, sql } from "drizzle-orm";
+import { desc, eq, and, sql, SQL } from "drizzle-orm"; // Added SQL import
 // Import AI service - adjust to your available service
 import * as openaiService from "./openai-service";
 
@@ -40,7 +40,8 @@ export class BrowserObserverService {
       return savedAction;
     } catch (error) {
       console.error("Error recording browser action:", error);
-      throw new Error(`Failed to record browser action: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to record browser action: ${message}`);
     }
   }
 
@@ -63,7 +64,8 @@ export class BrowserObserverService {
       return savedActions;
     } catch (error) {
       console.error("Error recording batch browser actions:", error);
-      throw new Error(`Failed to record batch browser actions: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to record batch browser actions: ${message}`);
     }
   }
 
@@ -85,7 +87,8 @@ export class BrowserObserverService {
       return actions;
     } catch (error) {
       console.error("Error getting recent browser actions:", error);
-      throw new Error(`Failed to get recent browser actions: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get recent browser actions: ${message}`);
     }
   }
 
@@ -107,7 +110,8 @@ export class BrowserObserverService {
       return actions;
     } catch (error) {
       console.error("Error getting session browser actions:", error);
-      throw new Error(`Failed to get session browser actions: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get session browser actions: ${message}`);
     }
   }
 
@@ -126,7 +130,8 @@ export class BrowserObserverService {
       return savedSequence;
     } catch (error) {
       console.error("Error creating browser sequence:", error);
-      throw new Error(`Failed to create browser sequence: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to create browser sequence: ${message}`);
     }
   }
 
@@ -145,7 +150,8 @@ export class BrowserObserverService {
       return sequence || null;
     } catch (error) {
       console.error("Error getting browser sequence:", error);
-      throw new Error(`Failed to get browser sequence: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get browser sequence: ${message}`);
     }
   }
 
@@ -165,7 +171,8 @@ export class BrowserObserverService {
       return sequences;
     } catch (error) {
       console.error("Error getting user browser sequences:", error);
-      throw new Error(`Failed to get user browser sequences: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get user browser sequences: ${message}`);
     }
   }
 
@@ -196,7 +203,8 @@ export class BrowserObserverService {
       return updatedSequence;
     } catch (error) {
       console.error("Error updating browser sequence:", error);
-      throw new Error(`Failed to update browser sequence: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to update browser sequence: ${message}`);
     }
   }
 
@@ -221,7 +229,8 @@ export class BrowserObserverService {
       return result.length > 0;
     } catch (error) {
       console.error("Error deleting browser sequence:", error);
-      throw new Error(`Failed to delete browser sequence: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to delete browser sequence: ${message}`);
     }
   }
 
@@ -246,7 +255,8 @@ export class BrowserObserverService {
       return savedSteps;
     } catch (error) {
       console.error("Error adding browser sequence steps:", error);
-      throw new Error(`Failed to add browser sequence steps: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to add browser sequence steps: ${message}`);
     }
   }
 
@@ -266,7 +276,8 @@ export class BrowserObserverService {
       return steps;
     } catch (error) {
       console.error("Error getting browser sequence steps:", error);
-      throw new Error(`Failed to get browser sequence steps: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get browser sequence steps: ${message}`);
     }
   }
 
@@ -294,7 +305,8 @@ export class BrowserObserverService {
       return updatedStep;
     } catch (error) {
       console.error("Error updating browser sequence step:", error);
-      throw new Error(`Failed to update browser sequence step: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to update browser sequence step: ${message}`);
     }
   }
 
@@ -313,7 +325,8 @@ export class BrowserObserverService {
       return result.length > 0;
     } catch (error) {
       console.error("Error deleting browser sequence step:", error);
-      throw new Error(`Failed to delete browser sequence step: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to delete browser sequence step: ${message}`);
     }
   }
 
@@ -327,7 +340,7 @@ export class BrowserObserverService {
     try {
       // Get the most recent user actions (last 100)
       const recentActions = await this.getSessionActions(sessionId, 100);
-      
+
       if (recentActions.length < 10) {
         // Not enough actions to generate meaningful suggestions
         return [];
@@ -335,28 +348,28 @@ export class BrowserObserverService {
 
       // Group actions by URL to identify patterns
       const actionsByUrl = this.groupActionsByUrl(recentActions);
-      
+
       // Generate suggestions
       const suggestions: InsertBrowserAiSuggestion[] = [];
-      
+
       // Pattern 1: Repetitive form filling
       const formFillingSuggestion = await this.detectFormFillingPatterns(
         actionsByUrl,
         userId,
         sessionId
       );
-      
+
       if (formFillingSuggestion) {
         suggestions.push(formFillingSuggestion);
       }
-      
+
       // Pattern 2: Repetitive navigation paths
       const navigationSuggestion = await this.detectNavigationPatterns(
         recentActions,
-        userId, 
+        userId,
         sessionId
       );
-      
+
       if (navigationSuggestion) {
         suggestions.push(navigationSuggestion);
       }
@@ -367,14 +380,15 @@ export class BrowserObserverService {
           .insert(browserAiSuggestions)
           .values(suggestions)
           .returning();
-          
+
         return savedSuggestions;
       }
-      
+
       return [];
     } catch (error) {
       console.error("Error generating AI suggestions:", error);
-      throw new Error(`Failed to generate AI suggestions: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to generate AI suggestions: ${message}`);
     }
   }
 
@@ -389,20 +403,23 @@ export class BrowserObserverService {
     status?: "pending" | "accepted" | "rejected" | "implemented"
   ): Promise<BrowserAiSuggestion[]> {
     try {
-      let query = db
+      const conditions: (SQL<unknown> | undefined)[] = [eq(browserAiSuggestions.userId, userId)];
+      if (status) {
+        conditions.push(eq(browserAiSuggestions.status, status));
+      }
+
+      const finalConditions = conditions.filter(c => c !== undefined) as SQL<unknown>[];
+
+      const suggestions = await db
         .select()
         .from(browserAiSuggestions)
-        .where(eq(browserAiSuggestions.userId, userId));
-        
-      if (status) {
-        query = query.where(eq(browserAiSuggestions.status, status));
-      }
-      
-      const suggestions = await query.orderBy(desc(browserAiSuggestions.createdAt));
+        .where(finalConditions.length > 1 ? and(...finalConditions) : finalConditions[0])
+        .orderBy(desc(browserAiSuggestions.createdAt));
       return suggestions;
     } catch (error) {
       console.error("Error getting AI suggestions:", error);
-      throw new Error(`Failed to get AI suggestions: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get AI suggestions: ${message}`);
     }
   }
 
@@ -418,25 +435,26 @@ export class BrowserObserverService {
   ): Promise<BrowserAiSuggestion> {
     try {
       const updates: Partial<BrowserAiSuggestion> = { status };
-      
+
       if (status === "implemented") {
         updates.implementedAt = new Date();
       }
-      
+
       const [updatedSuggestion] = await db
         .update(browserAiSuggestions)
         .set(updates)
         .where(eq(browserAiSuggestions.id, id))
         .returning();
-        
+
       if (!updatedSuggestion) {
         throw new Error(`AI suggestion with ID ${id} not found`);
       }
-      
+
       return updatedSuggestion;
     } catch (error) {
       console.error("Error updating AI suggestion status:", error);
-      throw new Error(`Failed to update AI suggestion status: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to update AI suggestion status: ${message}`);
     }
   }
 
@@ -452,7 +470,7 @@ export class BrowserObserverService {
         .select()
         .from(browserSettings)
         .where(eq(browserSettings.userId, settings.userId));
-        
+
       if (existingSettings) {
         // Update existing settings
         const [updatedSettings] = await db
@@ -463,20 +481,21 @@ export class BrowserObserverService {
           })
           .where(eq(browserSettings.id, existingSettings.id))
           .returning();
-          
+
         return updatedSettings;
       }
-      
+
       // Create new settings
       const [newSettings] = await db
         .insert(browserSettings)
         .values(settings)
         .returning();
-        
+
       return newSettings;
     } catch (error) {
       console.error("Error saving browser settings:", error);
-      throw new Error(`Failed to save browser settings: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to save browser settings: ${message}`);
     }
   }
 
@@ -491,11 +510,11 @@ export class BrowserObserverService {
         .select()
         .from(browserSettings)
         .where(eq(browserSettings.userId, userId));
-        
+
       if (settings) {
         return settings;
       }
-      
+
       // Return default settings if none found
       return {
         id: 0, // Placeholder ID that will be replaced when saved
@@ -511,7 +530,8 @@ export class BrowserObserverService {
       };
     } catch (error) {
       console.error("Error getting browser settings:", error);
-      throw new Error(`Failed to get browser settings: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get browser settings: ${message}`);
     }
   }
 
@@ -523,14 +543,14 @@ export class BrowserObserverService {
    */
   private groupActionsByUrl(actions: BrowserAction[]): Record<string, BrowserAction[]> {
     const result: Record<string, BrowserAction[]> = {};
-    
+
     for (const action of actions) {
       if (!result[action.url]) {
         result[action.url] = [];
       }
       result[action.url].push(action);
     }
-    
+
     return result;
   }
 
@@ -546,11 +566,11 @@ export class BrowserObserverService {
     // Detect forms with multiple input actions
     for (const [url, actions] of Object.entries(actionsByUrl)) {
       const inputActions = actions.filter(a => a.actionType === "input");
-      
+
       if (inputActions.length >= 3) {
         // Found a potential form filling pattern
         const formFields = inputActions.map(a => a.targetElement);
-        
+
         // Create a suggestion
         return {
           userId,
@@ -569,7 +589,7 @@ export class BrowserObserverService {
         };
       }
     }
-    
+
     return null;
   }
 
@@ -583,19 +603,19 @@ export class BrowserObserverService {
     sessionId: string
   ): Promise<InsertBrowserAiSuggestion | null> {
     // Find sequences of navigation actions that are repeated
-    const navigationActions = actions.filter(a => 
+    const navigationActions = actions.filter(a =>
       a.actionType === "navigation" || a.actionType === "click"
     );
-    
+
     if (navigationActions.length >= 5) {
       // Look for repeated sequences of at least 3 actions
       const sequences = this.findRepeatedSequences(navigationActions, 3);
-      
+
       if (sequences.length > 0) {
         // Sort by frequency and take the most common sequence
         sequences.sort((a, b) => b.frequency - a.frequency);
         const mostCommon = sequences[0];
-        
+
         if (mostCommon.frequency >= 2) {
           // Create a suggestion
           return {
@@ -616,7 +636,7 @@ export class BrowserObserverService {
         }
       }
     }
-    
+
     return null;
   }
 
@@ -625,25 +645,25 @@ export class BrowserObserverService {
    * @private
    */
   private findRepeatedSequences(
-    actions: BrowserAction[], 
+    actions: BrowserAction[],
     minLength: number
   ): { sequence: BrowserAction[], frequency: number }[] {
     const result: { sequence: BrowserAction[], frequency: number }[] = [];
-    
+
     // Simple algorithm to detect repeated sequences
     for (let i = 0; i <= actions.length - minLength; i++) {
       const candidateSequence = actions.slice(i, i + minLength);
       let frequency = 1;
-      
+
       // Check how many times this sequence appears
       for (let j = i + minLength; j <= actions.length - minLength; j++) {
         const compareSequence = actions.slice(j, j + minLength);
-        
+
         if (this.sequencesMatch(candidateSequence, compareSequence)) {
           frequency++;
         }
       }
-      
+
       if (frequency > 1) {
         result.push({
           sequence: candidateSequence,
@@ -651,7 +671,7 @@ export class BrowserObserverService {
         });
       }
     }
-    
+
     return result;
   }
 
@@ -663,7 +683,7 @@ export class BrowserObserverService {
     if (seq1.length !== seq2.length) {
       return false;
     }
-    
+
     for (let i = 0; i < seq1.length; i++) {
       // Match based on action type and target element, not exact values
       if (
@@ -673,7 +693,7 @@ export class BrowserObserverService {
         return false;
       }
     }
-    
+
     return true;
   }
 
@@ -694,11 +714,11 @@ export class BrowserObserverService {
     try {
       // Get session actions
       const sessionActions = await this.getSessionActions(sessionId);
-      
+
       if (sessionActions.length === 0) {
         throw new Error("No actions found for this session");
       }
-      
+
       // Create new sequence
       const sequence = await this.createSequence({
         userId,
@@ -707,26 +727,29 @@ export class BrowserObserverService {
         isAutomated: false,
         isActive: true,
       });
-      
+
       // Convert actions to steps
       const steps: InsertBrowserSequenceStep[] = sessionActions.map((action, index) => ({
         sequenceId: sequence.id,
         stepOrder: index + 1,
-        actionType: action.actionType,
-        targetElement: action.targetElement,
-        targetUrl: action.url,
-        valueOrText: action.valueOrText || null,
+        actionType: String(action.actionType), // Ensure string
+        targetElement: String(action.targetElement), // Ensure string
+        targetUrl: String(action.url), // Ensure string
+        valueOrText: action.valueOrText ? String(action.valueOrText) : null, // Ensure string or null
         isConditional: false,
-        metadata: action.metadata,
+        metadata: action.metadata as any, // Assuming metadata is compatible
       }));
-      
+
       // Add steps to sequence
       const savedSteps = await this.addSequenceSteps(steps);
-      
+
       return { sequence, steps: savedSteps };
     } catch (error) {
       console.error("Error converting session to sequence:", error);
-      throw new Error(`Failed to convert session to sequence: ${error.message}`);
+      if (error instanceof Error) {
+        throw new Error(`Failed to convert session to sequence: ${error.message}`);
+      }
+      throw new Error(`Failed to convert session to sequence: An unknown error occurred`);
     }
   }
 }

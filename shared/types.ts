@@ -1,5 +1,5 @@
 // Import types from schema
-import { AgentTask } from "./schema";
+import { Task } from "./schema";
 import { AIProvider } from "../server/services/ai-service";
 
 // Define AI message structure
@@ -32,4 +32,4 @@ export interface AgentResponse {
 }
 
 // Re-export types
-export { AgentTask, AIProvider };
+export { Task, AIProvider };

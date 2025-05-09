@@ -1,24 +1,16 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AiProvider } from "@shared/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { EditIcon, PlusIcon, SearchIcon, TrashIcon } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { toast } from "@/hooks/use-toast";
-import { AiProvider } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
-import { EditIcon, PlusIcon, SearchIcon, TrashIcon } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +28,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -43,11 +36,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 
 // Define form schema for creating/updating providers
 const providerFormSchema = z.object({
@@ -62,12 +61,15 @@ const providerFormSchema = z.object({
 
 type ProviderFormValues = z.infer<typeof providerFormSchema>;
 
+// New type that includes the hasApiKey property
+type AiProviderWithKeyStatus = AiProvider & { hasApiKey: boolean };
+
 export default function AiProvidersPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<AiProvider | null>(
+  const [selectedProvider, setSelectedProvider] = useState<AiProviderWithKeyStatus | null>( // Updated type
     null,
   );
 
@@ -78,7 +80,7 @@ export default function AiProvidersPanel() {
     data: providers = [],
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<AiProviderWithKeyStatus[]>({ // Updated type
     queryKey: ["/api/admin/ai-providers"],
     queryFn: async () => {
       return await apiRequest("GET", "/api/admin/ai-providers");
@@ -222,7 +224,7 @@ export default function AiProvidersPanel() {
   };
 
   // Handle opening edit dialog
-  const handleEdit = (provider: AiProvider) => {
+  const handleEdit = (provider: AiProviderWithKeyStatus) => { // Updated type
     setSelectedProvider(provider);
     editForm.reset({
       name: provider.name,
@@ -237,14 +239,14 @@ export default function AiProvidersPanel() {
   };
 
   // Handle opening delete dialog
-  const handleDelete = (provider: AiProvider) => {
+  const handleDelete = (provider: AiProviderWithKeyStatus) => { // Updated type
     setSelectedProvider(provider);
     setIsDeleteDialogOpen(true);
   };
 
   // Filter providers by search query
   const filteredProviders = providers.filter(
-    (provider) =>
+    (provider: AiProviderWithKeyStatus) => // Updated type
       provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       provider.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (provider.description &&
@@ -326,7 +328,7 @@ export default function AiProvidersPanel() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredProviders.map((provider) => (
+                    filteredProviders.map((provider: AiProviderWithKeyStatus) => ( // Updated type
                       <TableRow key={provider.id}>
                         <TableCell className="font-medium">
                           {provider.name}
@@ -491,7 +493,7 @@ export default function AiProvidersPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="apiKey"
@@ -507,7 +509,7 @@ export default function AiProvidersPanel() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Leave empty if using environment variables or add securely in credentials.
+                      Enter API Key to store in the database. Keys from environment variables might also be used by the system and may take precedence.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -671,7 +673,7 @@ export default function AiProvidersPanel() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={editForm.control}
                 name="apiKey"
@@ -687,7 +689,7 @@ export default function AiProvidersPanel() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Leave empty to keep existing key or use environment variables.
+                      Enter API Key to store/update in the database. Submitting an empty field will not clear a key set via environment variables but may affect a previously database-stored key. Environment variable keys may take precedence.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

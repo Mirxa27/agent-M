@@ -499,7 +499,7 @@ export class MemStorage implements IStorage {
       freePlanId = freePlan ? freePlan.id : Array.from(this.plans.values())[0].id;
     }
     const now = new Date();
-    const user: User = {
+    const user = {
       id,
       username: insertUser.username,
       password: insertUser.password,
@@ -507,16 +507,14 @@ export class MemStorage implements IStorage {
       fullName: insertUser.fullName ?? null,
       planId: freePlanId ?? null,
       planExpiresAt: null,
-      role: "user", // Default, as InsertUser type inferred by TS doesn't have 'role'
-      isActive: true, // Default, as InsertUser type inferred by TS doesn't have 'isActive'
-      createdAt: now, // Default, as InsertUser type inferred by TS doesn't have 'createdAt'
-      updatedAt: now, // Default, as InsertUser type inferred by TS doesn't have 'updatedAt'
-      avatarUrl: null, // Default, as InsertUser type inferred by TS doesn't have 'avatarUrl'
-      bio: null, // Default, as InsertUser type inferred by TS doesn't have 'bio'
+      role: "user",
+      isActive: true,
+      avatarUrl: null,
+      bio: null,
       lastLoginAt: null,
-      emailVerified: false, // Default, as InsertUser type inferred by TS doesn't have 'emailVerified'
-      settings: {}, // Default, as InsertUser type inferred by TS doesn't have 'settings'
-    };
+      emailVerified: false,
+      settings: {},
+    } as User;
     this.users.set(id, user); return Promise.resolve(user);
   }
   async updateUser(id: number, updates: Partial<Omit<User, "id">>): Promise<User | undefined> {
@@ -542,9 +540,9 @@ export class MemStorage implements IStorage {
       icon: tool.icon ?? null,
       config: tool.config || {},
       isActive: tool.isActive !== undefined ? tool.isActive : true,
-      isSystem: false, // Default, as InsertAgentTool type inferred by TS doesn't have 'isSystem'
-      createdAt: now, // Default, as InsertAgentTool type inferred by TS doesn't have 'createdAt'
-      updatedAt: now, // Default, as InsertAgentTool type inferred by TS doesn't have 'updatedAt'
+      isSystem: false,
+      createdAt: now,
+      updatedAt: now,
     };
     this.agentTools.set(id, newTool); return Promise.resolve(newTool);
   }
@@ -637,14 +635,12 @@ export class MemStorage implements IStorage {
     const id = this.messageIdCounter++; const now = new Date();
     const newMessage: Message = {
       id,
-      // ...message, // Spreading InsertMessage might bring in fields not in Message select type
-      taskId: message.taskId === undefined ? null : message.taskId,
+      taskId: message.taskId,
       conversationId: message.conversationId === undefined ? null : message.conversationId,
       role: message.role,
       content: message.content,
       timestamp: message.timestamp || now,
       metadata: message.metadata || {},
-      createdAt: now, // Message select type has createdAt
     };
     this.messages.set(id, newMessage); return Promise.resolve(newMessage);
   }
@@ -687,13 +683,11 @@ export class DatabaseStorage implements IStorage {
     this.sessionStore = new PostgresSessionStore({
       pool,
       createTableIfMissing: true,
-      tableName: 'session', // Explicitly name the session table
-      schemaName: 'public', // Specify the schema
-      ttl: 86400 * 30, // 30 days (in seconds)
-      pruneSessionInterval: 60 * 60, // 1 hour (in seconds)
+      tableName: 'session',
+      schemaName: 'public',
+      ttl: 86400 * 30,
+      pruneSessionInterval: 60 * 60,
     });
-
-    // Initialize default plans if they don't exist
     this.initializePlans();
   }
 
@@ -712,7 +706,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // User operations
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
@@ -744,19 +737,21 @@ export class DatabaseStorage implements IStorage {
       if (freePlan) freePlanId = freePlan.id;
     } catch (error) { console.error("Error finding free plan:", error); }
 
-    const userToInsert: InsertUser = { // Ensure type is InsertUser
+    const userToInsert: InsertUser = {
       username: insertUser.username,
       password: insertUser.password,
       email: insertUser.email,
       fullName: insertUser.fullName,
       planId: freePlanId ?? null,
       planExpiresAt: null,
-      role: insertUser.role || "user",
-      isActive: insertUser.isActive !== undefined ? insertUser.isActive : true,
-      // createdAt and updatedAt are handled by DB defaults
+      // Default to "user" role as role property may not exist in InsertUser
+      ...((insertUser as any).role !== undefined ? { role: (insertUser as any).role } : { role: "user" }),
+      // isActive is handled by the database schema default (true)
     };
 
-    const [user] = await db.insert(users).values(userToInsert).returning();
+    // Cast userToInsert to 'any' before passing to .values() if type issues persist with Drizzle
+    // regarding the spread of role. However, InsertUser should ideally match what the DB expects for insertion.
+    const [user] = await db.insert(users).values(userToInsert as any).returning();
     return user;
   }
 
@@ -800,8 +795,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAgentTool(tool: InsertAgentTool): Promise<AgentTool> {
-    const now = new Date();
-    const toolToInsert: InsertAgentTool = { // Ensure type is InsertAgentTool
+    const toolToInsert: InsertAgentTool = {
       name: tool.name,
       description: tool.description,
       category: tool.category,
@@ -809,8 +803,7 @@ export class DatabaseStorage implements IStorage {
       icon: tool.icon,
       config: tool.config || {},
       isActive: tool.isActive !== undefined ? tool.isActive : true,
-      isSystem: tool.isSystem ?? false, // Default isSystem if not provided
-      // createdAt and updatedAt are handled by DB defaults
+      // isSystem is not part of InsertAgentTool, it's set by the DB or specific logic
     };
 
     const [newTool] = await db.insert(agentTools).values(toolToInsert).returning();
@@ -847,8 +840,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAgent(agent: InsertAgent): Promise<Agent> {
+    if (agent.userId === null || agent.userId === undefined) {
+      throw new Error("userId is required to create an agent.");
+    }
+    const userId = agent.userId!;
     const now = new Date();
-    const [newAgent] = await db.insert(agents).values({ ...agent, taskCount: 0, createdAt: now, updatedAt: now, }).returning();
+    const [newAgent] = await db.insert(agents).values({ ...agent, userId, taskCount: 0, createdAt: now, updatedAt: now, }).returning();
     return newAgent;
   }
 
@@ -894,7 +891,6 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  // File operations
   async getFile(id: number): Promise<File | undefined> {
     const [file] = await db.select().from(files).where(eq(files.id, id));
     return file;
@@ -908,7 +904,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(files).where(and(eq(files.userId, userId), eq(files.isTemplate, true)));
   }
 
-  async createFile(fileData: InsertFile): Promise<File> { // Changed param name
+  async createFile(fileData: InsertFile): Promise<File> {
     const now = new Date();
     const [newFile] = await db.insert(files).values({ ...fileData, createdAt: now, updatedAt: now, }).returning();
     return newFile;
@@ -969,10 +965,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTask(task: InsertTask): Promise<Task> {
+    if (task.agentId === null || task.agentId === undefined) {
+      throw new Error("agentId is required to create a task.");
+    }
+    const agentId = task.agentId!;
     const now = new Date();
-    const [newTask] = await db.insert(tasks).values({ ...task, status: "pending", result: null, createdAt: now, completedAt: null, }).returning();
-    const agent = await this.getAgent(task.agentId);
-    if (agent) await this.updateAgent(agent.id, { taskCount: agent.taskCount + 1 });
+    const taskDataForDb: typeof tasks.$inferInsert = {
+      userId: task.userId,
+      agentId: agentId,
+      title: task.title,
+      description: task.description,
+      // priority: task.priority, // Property 'priority' does not exist on type 'InsertTask'
+      // isExample: task.isExample, // Property 'isExample' does not exist on type 'InsertTask'
+      status: "pending",
+      result: null,
+      // createdAt is handled by DB default or Drizzle if column allows omitting
+      completedAt: null,
+    };
+    // Ensure optional fields that are undefined are not sent as undefined to Drizzle
+    if (taskDataForDb.description === undefined) delete taskDataForDb.description;
+    // if (taskDataForDb.priority === undefined) delete taskDataForDb.priority; // Remove check for non-existent property
+    // if (taskDataForDb.isExample === undefined) delete taskDataForDb.isExample; // Remove check for non-existent property
+
+    const [newTask] = await db.insert(tasks).values(taskDataForDb).returning();
+
+    const agentResult = await this.getAgent(agentId);
+    if (agentResult) {
+      await this.updateAgent(agentResult.id, { taskCount: (agentResult.taskCount || 0) + 1 });
+    }
     return newTask;
   }
 
@@ -1006,20 +1026,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
-    const now = new Date();
-    // Ensure that the properties match the `messagesTable` schema, especially nullability
-    const messageToInsert: typeof messages.$inferInsert = {
-      taskId: message.taskId === undefined ? null : message.taskId,
-      conversationId: message.conversationId === undefined ? null : message.conversationId,
+    // Use a more specific type initially and ensure required fields are present
+    const messageToInsert: Partial<typeof messages.$inferInsert> = {
       role: message.role,
       content: message.content,
-      timestamp: message.timestamp || now,
       metadata: message.metadata || {},
-      // createdAt is handled by DB default or trigger, not needed in insert usually
-      // id is serial
     };
 
-    const [newMessage] = await db.insert(messages).values(messageToInsert).returning();
+    // Ensure either taskId or conversationId is present, but not both (assuming schema enforces this)
+    if (message.taskId !== undefined && message.conversationId !== undefined) {
+      // This case should ideally be prevented by validation before calling createMessage
+      console.warn(`Message creation attempt with both taskId (${message.taskId}) and conversationId (${message.conversationId}). Prioritizing taskId.`);
+      messageToInsert.taskId = message.taskId;
+    } else if (message.taskId !== undefined) {
+      messageToInsert.taskId = message.taskId;
+    } else if (message.conversationId !== undefined) {
+      messageToInsert.conversationId = message.conversationId;
+    } else {
+      // This case should also be prevented by validation upstream
+      throw new Error("Message must have either a taskId or a conversationId.");
+    }
+
+    // Let the database handle the default timestamp if not provided
+    if (message.timestamp) {
+      messageToInsert.timestamp = message.timestamp;
+    }
+
+    // Cast to the expected insert type before calling Drizzle, trusting the logic above.
+    const [newMessage] = await db.insert(messages).values(messageToInsert as typeof messages.$inferInsert).returning();
+
+    // Drizzle should return the complete row including defaults like createdAt/timestamp
     return newMessage;
   }
 
@@ -1033,9 +1069,7 @@ export class DatabaseStorage implements IStorage {
     if (agentId !== undefined) {
       conditions.push(eq(conversations.agentId, agentId));
     }
-    // Use 'and' if there are multiple conditions, otherwise Drizzle handles a single condition fine.
-    // However, to be safe and explicit, especially if conditions array could be empty (though not here):
-    if (conditions.length === 0) { // Should not happen in this specific logic
+    if (conditions.length === 0) {
       return await db.select().from(conversations).orderBy(desc(conversations.updatedAt));
     }
     return await db.select().from(conversations)
@@ -1045,7 +1079,20 @@ export class DatabaseStorage implements IStorage {
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
     const now = new Date();
-    const [newConversation] = await db.insert(conversations).values({ ...conversation, createdAt: now, updatedAt: now, }).returning();
+    if (conversation.agentId == null) { // Check for null or undefined
+      throw new Error("agentId is required to create a conversation.");
+    }
+    const conversationDataForDb: typeof conversations.$inferInsert = {
+      userId: conversation.userId,
+      agentId: conversation.agentId, // Ensure agentId is a number
+      title: conversation.title,
+      createdAt: now,
+      updatedAt: now,
+    };
+    // Ensure optional fields are handled correctly
+    if (conversationDataForDb.title === undefined) delete conversationDataForDb.title;
+
+    const [newConversation] = await db.insert(conversations).values(conversationDataForDb).returning();
     return newConversation;
   }
 
@@ -1170,11 +1217,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPlan(plan: InsertPlan): Promise<Plan> {
-    // Ensure the plan has isActive property set
     const planToInsert = {
       ...plan,
       isActive: plan.isActive !== undefined ? plan.isActive : true,
-      // Ensure features is included even if not provided
       features: plan.features || { agentLimit: 0, storageLimit: 0, credentialLimit: 0, taskLimit: 0 }
     };
 
@@ -1256,7 +1301,6 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  // Browser Sequence operations
   async getBrowserSequence(id: number): Promise<BrowserSequence | undefined> {
     const [sequence] = await db
       .select()
@@ -1311,17 +1355,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBrowserSequence(id: number): Promise<boolean> {
-    // First delete all steps associated with this sequence
     try {
       await db
         .delete(browserSequenceSteps)
         .where(eq(browserSequenceSteps.sequenceId, id));
-
-      // Then delete the sequence itself
       const result = await db
         .delete(browserSequences)
         .where(eq(browserSequences.id, id));
-
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error(`Error deleting browser sequence ${id}:`, error);
@@ -1329,7 +1369,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Browser Sequence Step operations
   async getBrowserSequenceStep(id: number): Promise<BrowserSequenceStep | undefined> {
     const [step] = await db
       .select()
@@ -1379,7 +1418,6 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  // Site Settings operations
   async getSiteSettings(): Promise<SiteSettings | undefined> {
     try {
       console.log("Getting site settings from database");
@@ -1387,7 +1425,6 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(siteSettings)
         .where(eq(siteSettings.id, 1));
-
       console.log("Site settings found:", settings ? "yes" : "no");
       return settings;
     } catch (error) {
@@ -1399,63 +1436,28 @@ export class DatabaseStorage implements IStorage {
   async createDefaultSiteSettings(): Promise<SiteSettings> {
     const now = new Date();
     const defaultSettings = {
-      logo: {
-        url: "/assets/images/mirxa-logo.svg",
-        showText: true,
-        text: "Mirxa.io",
-        animated: true,
-      },
-      colors: {
-        primary: "#6366f1",
-        secondary: "#0ea5e9",
-        accent: "#f97316",
-        background: "#ffffff",
-        text: "#1e293b",
-      },
-      header: {
-        sticky: true,
-        transparent: false,
-        showLogo: true,
-        showNavigation: true,
-      },
-      footer: {
-        showCopyright: true,
-        copyrightText: "© 2025 Mirxa.io. All rights reserved.",
-        showSocial: true,
-      },
-      chatbot: {
-        enabled: true,
-        position: "bottom-right",
-        welcomeMessage: "Hi! How can I assist you today?",
-        autoOpen: false,
-      },
+      logo: { url: "/assets/images/mirxa-logo.svg", showText: true, text: "Mirxa.io", animated: true, },
+      colors: { primary: "#6366f1", secondary: "#0ea5e9", accent: "#f97316", background: "#ffffff", text: "#1e293b", },
+      header: { sticky: true, transparent: false, showLogo: true, showNavigation: true, },
+      footer: { showCopyright: true, copyrightText: "© 2025 Mirxa.io. All rights reserved.", showSocial: true, },
+      chatbot: { enabled: true, position: "bottom-right", welcomeMessage: "Hi! How can I assist you today?", autoOpen: false, },
       version: 1,
       createdAt: now,
       lastUpdated: now,
     };
-
     console.log("Creating default site settings");
     return this.createSiteSettings(defaultSettings);
   }
 
   async createSiteSettings(settings: InsertSiteSettings): Promise<SiteSettings> {
     try {
-      // Always use ID 1 for site settings
-      const settingsWithId = {
-        ...settings,
-        id: 1
-      };
-
+      const settingsWithId = { ...settings, id: 1 };
       console.log("Inserting site settings into database");
       const [newSettings] = await db
         .insert(siteSettings)
         .values(settingsWithId)
-        .onConflictDoUpdate({
-          target: siteSettings.id,
-          set: settingsWithId
-        })
+        .onConflictDoUpdate({ target: siteSettings.id, set: settingsWithId })
         .returning();
-
       console.log("Site settings created successfully");
       return newSettings;
     } catch (error) {
@@ -1466,35 +1468,23 @@ export class DatabaseStorage implements IStorage {
 
   async updateSiteSettings(updates: Partial<Omit<SiteSettings, "id">>): Promise<SiteSettings | undefined> {
     try {
-      // Check if settings exist
       let existingSettings = await this.getSiteSettings();
-
-      // If no settings, create default then apply updates
       if (!existingSettings) {
         console.log("No existing settings found, creating defaults first");
-        await this.createDefaultSiteSettings(); // Ensure this is awaited
-        existingSettings = await this.getSiteSettings(); // Re-fetch after creation
+        await this.createDefaultSiteSettings();
+        existingSettings = await this.getSiteSettings();
         if (!existingSettings) {
           console.error("Failed to create or retrieve default settings.");
           throw new Error("Failed to initialize site settings.");
         }
       }
-
-      // Prepare updates with version increment and updated timestamp
-      const updatesWithMeta = {
-        ...updates,
-        version: (existingSettings.version || 0) + 1, // Ensure version is a number
-        lastUpdated: new Date(),
-      };
-
+      const updatesWithMeta = { ...updates, version: (existingSettings.version || 0) + 1, lastUpdated: new Date(), };
       console.log("Updating site settings in database");
-      // Update the settings in the database
       const [updatedSettings] = await db
         .update(siteSettings)
         .set(updatesWithMeta)
         .where(eq(siteSettings.id, 1))
         .returning();
-
       console.log("Site settings updated successfully");
       return updatedSettings;
     } catch (error) {

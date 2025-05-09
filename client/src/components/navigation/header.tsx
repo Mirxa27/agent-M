@@ -152,11 +152,10 @@ export function Header({ customLayout = false }: HeaderProps) {
     return user.username?.substring(0, 2).toUpperCase() || "";
   };
 
-  // Check if current page is the AI Agent Chat page
-  const isAiAgentChatPage = location === "/ai-agent-chat";
-
-  // Determine if we should show a simplified header for custom layouts
-  const showSimplifiedHeader = customLayout && isAiAgentChatPage;
+  // Standard header should be shown on all pages, including /ai-agent-chat.
+  // The customLayout prop might still be used for other layout variations, but not for simplifying the header itself.
+  // const isAiAgentChatPage = location === "/ai-agent-chat"; // No longer needed for header simplification
+  // const showSimplifiedHeader = customLayout && isAiAgentChatPage; // This logic will be removed
 
   return (
     <>
@@ -169,35 +168,21 @@ export function Header({ customLayout = false }: HeaderProps) {
         )}
       >
         <div className="container flex h-16 items-center justify-between px-4">
-          {/* Left Side: Logo or Back Button */}
-          {isAiAgentChatPage ? (
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => (window.location.href = "/dashboard")}
-                className="flex items-center space-x-2 text-primary hover:bg-primary/10"
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                <span>Back to Dashboard</span>
-              </Button>
+          {/* Left Side: Always show Logo */}
+          <div className="flex items-center">
+            <div
+              onClick={() => (window.location.href = user ? "/dashboard" : "/")}
+              className="flex items-center space-x-2 cursor-pointer"
+            >
+              <AnimatedLogo size="sm" />
+              <span className="font-heading text-lg font-bold hidden md:block text-primary">
+                {t("app.name")}
+              </span>
             </div>
-          ) : (
-            <div className="flex items-center">
-              <div
-                onClick={() => (window.location.href = user ? "/dashboard" : "/")}
-                className="flex items-center space-x-2 cursor-pointer"
-              >
-                <AnimatedLogo size="sm" />
-                <span className="font-heading text-lg font-bold hidden md:block text-primary">
-                  {t("app.name")}
-                </span>
-              </div>
-            </div>
-          )}
+          </div>
 
-          {/* Desktop Navigation */}
-          {user && !isAiAgentChatPage && (
+          {/* Desktop Navigation: Always show if user is logged in */}
+          {user && (
             <div className="hidden md:flex">
               <NavigationMenu>
                 <NavigationMenuList>
@@ -219,7 +204,7 @@ export function Header({ customLayout = false }: HeaderProps) {
                     </NavigationMenuItem>
                   ))}
 
-                  {user && user.role === "admin" && (
+                  {user.role === "admin" && (
                     <NavigationMenuItem>
                       <div
                         onClick={() => (window.location.href = "/admin/dashboard")}
@@ -239,150 +224,98 @@ export function Header({ customLayout = false }: HeaderProps) {
             </div>
           )}
 
-          {/* Right Section: User Actions & Language */}
-          {/* Show minimal header for AI Agent Chat */}
-          {showSimplifiedHeader ? (
-            <div className="flex items-center space-x-2">
-              {user && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Avatar className="h-8 w-8 cursor-pointer">
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        {user ? getUserInitials() : ""}
-                      </AvatarFallback>
-                    </Avatar>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">
-                          {user?.fullName || user?.username}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {user?.email}
-                        </p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => (window.location.href = "/dashboard")}
-                    >
-                      <div className="flex items-center cursor-pointer">
-                        <Home className="mr-2 h-4 w-4" />
-                        <span>{t("nav.dashboard")}</span>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleLogout}
-                      disabled={logoutMutation.isPending}
-                      className="text-red-600 cursor-pointer"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>
-                        {logoutMutation.isPending ? "Logging out..." : "Logout"}
-                      </span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          ) : (
-            /* Regular header for non-chat pages */
-            !isAiAgentChatPage && (
-              <div className="flex items-center space-x-2">
-                <LanguageSwitcher />
+          {/* Right Section: User Actions & Language - Always show full version */}
+          <div className="flex items-center space-x-2">
+            <LanguageSwitcher />
 
-                {!user ? (
-                  <Button
-                    size="sm"
-                    className="hidden md:flex btn-glass btn-glass-primary shadow-glow bg-opacity-50 text-white/90 text-shadow-sm"
-                    onClick={() => (window.location.href = "/auth")}
+            {!user ? (
+              <Button
+                size="sm"
+                className="hidden md:flex btn-glass btn-glass-primary shadow-glow bg-opacity-50 text-white/90 text-shadow-sm"
+                onClick={() => (window.location.href = "/auth")}
+              >
+                {t("auth.login")}
+              </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Avatar className="h-8 w-8 cursor-pointer">
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {getUserInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium">
+                        {user.fullName || user.username}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = "/dashboard")}
                   >
-                    {t("auth.login")}
-                  </Button>
-                ) : (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Avatar className="h-8 w-8 cursor-pointer">
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {user ? getUserInitials() : ""}
-                        </AvatarFallback>
-                      </Avatar>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>
-                        <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-medium">
-                            {user?.fullName || user?.username}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {user?.email}
-                          </p>
-                        </div>
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => (window.location.href = "/dashboard")}
-                      >
-                        <div className="flex items-center cursor-pointer">
-                          <Home className="mr-2 h-4 w-4" />
-                          <span>{t("nav.dashboard")}</span>
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => (window.location.href = "/agents")}
-                      >
-                        <div className="flex items-center cursor-pointer">
-                          <Bot className="mr-2 h-4 w-4" />
-                          <span>{t("nav.agents")}</span>
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => (window.location.href = "/ai-agent-chat")} // Updated from /ai-browser
-                      >
-                        <div className="flex items-center cursor-pointer">
-                          <Sparkles className="mr-2 h-4 w-4" /> {/* Changed icon to Sparkles */}
-                          <span>AI Agent Chat</span> {/* Updated from AI Browser */}
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => (window.location.href = "/subscription")}
-                      >
-                        <div className="flex items-center cursor-pointer">
-                          <Settings className="mr-2 h-4 w-4" />
-                          <span>{t("nav.subscription")}</span>
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={handleLogout}
-                        disabled={logoutMutation.isPending}
-                        className="text-red-600 cursor-pointer"
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>
-                          {logoutMutation.isPending ? "Logging out..." : "Logout"}
-                        </span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+                    <div className="flex items-center cursor-pointer">
+                      <Home className="mr-2 h-4 w-4" />
+                      <span>{t("nav.dashboard")}</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = "/agents")}
+                  >
+                    <div className="flex items-center cursor-pointer">
+                      <Bot className="mr-2 h-4 w-4" />
+                      <span>{t("nav.agents")}</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = "/ai-agent-chat")}
+                  >
+                    <div className="flex items-center cursor-pointer">
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      <span>AI Agent Chat</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = "/subscription")}
+                  >
+                    <div className="flex items-center cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>{t("nav.subscription")}</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    disabled={logoutMutation.isPending}
+                    className="text-red-600 cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>
+                      {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                    </span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
-                {/* Mobile Menu Button */}
-                {user && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="md:hidden"
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  >
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                )}
-              </div>
-            )
-          )}
+            {/* Mobile Menu Button: Always show if user is logged in */}
+            {user && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 

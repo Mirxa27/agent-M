@@ -30,10 +30,19 @@ export const insertUserSchema = createInsertSchema(users)
     password: true,
     email: true,
     fullName: true,
+    // Make these optional as they are set server-side or have defaults
+    planId: true,
+    planExpiresAt: true,
+    role: true,
+    isActive: true, // Also include isActive if it's being set, though DB has default
   })
   .extend({
     password: z.string().min(8, "Password must be at least 8 characters"),
     email: z.string().email("Invalid email address"),
+    planId: z.number().nullable().optional(),
+    planExpiresAt: z.date().nullable().optional(),
+    role: z.string().optional(),
+    isActive: z.boolean().optional(),
   });
 
 // Agent tools schema
@@ -51,7 +60,117 @@ export const agentTools = pgTable("agent_tools", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertAgentToolSchema = createInsertSchema(agentTools).pick({
+// Specific Zod schemas for AgentTool configurations
+export const openAIToolConfigSchema = z.object({
+  providerId: z.number().optional().describe("AI Provider ID (defaults to a system default if not provided)"),
+  modelId: z.string().optional().describe("AI Model Name (e.g., 'gpt-4o', defaults to a system default if not provided)"),
+  systemPrompt: z.string().optional().describe("System prompt for the OpenAI tool"),
+  temperature: z.number().min(0).max(2).optional().describe("Sampling temperature"),
+  maxTokens: z.number().int().positive().optional().describe("Maximum tokens to generate"),
+}).strict();
+
+export const customApiToolConfigSchema = z.object({
+  endpoint: z.string().url("Must be a valid URL").describe("API endpoint URL"),
+  method: z.enum(["GET", "POST", "PUT", "DELETE", "PATCH"]).default("POST").describe("HTTP method"),
+  headers: z.record(z.string()).optional().describe("HTTP headers as key-value pairs"),
+  // Add more specific fields if needed, e.g., for authentication
+}).strict();
+
+export const webhookToolConfigSchema = z.object({
+  webhookUrl: z.string().url("Must be a valid URL").describe("Webhook URL to call"),
+  headers: z.record(z.string()).optional().describe("Custom headers for the webhook call"),
+  additionalData: z.record(z.any()).optional().describe("Additional static data to include in the webhook payload"),
+}).strict();
+
+export const databaseToolConfigSchema = z.object({
+  connectionType: z.enum(["postgres", "mysql", "sqlite"]).describe("Type of the database"),
+  connectionString: z.string().describe("Database connection string (sensitive, should be handled securely if stored directly, consider referencing a credential ID)"),
+  allowedTables: z.array(z.string()).optional().describe("List of tables the tool is allowed to interact with. If empty or undefined, access might be restricted or open based on service implementation."),
+  // maxQueryExecutionTime: z.number().int().positive().optional().default(5000).describe("Max query execution time in ms"),
+  // maxResultRows: z.number().int().positive().optional().default(1000).describe("Max rows to return from a query"),
+}).strict();
+
+export const fileSystemToolConfigSchema = z.object({
+  baseDirectory: z.string().optional().describe("Base directory for sandboxing. If not set, uses AGENT_FILE_SANDBOX_DIR env var."),
+  // Potentially add allowed operations or path patterns here
+}).strict();
+
+export const emailToolConfigSchema = z.object({
+  // Configuration for an email sending service (e.g., SendGrid, SMTP)
+  // This should likely reference a credential ID for API keys/passwords
+  credentialId: z.number().int().positive().optional().describe("ID of the credential to use for sending email"),
+  provider: z.enum(["sendgrid", "smtp", "custom_api"]).optional().describe("Email provider type"),
+  apiKey: z.string().optional().describe("API Key for email service (use credentialId instead if possible)"),
+  apiUrl: z.string().url().optional().describe("API URL for email service (if custom_api)"),
+  // fromEmail: z.string().email().optional().describe("Default 'from' email address"),
+}).strict();
+
+export const smsToolConfigSchema = z.object({
+  // Configuration for an SMS sending service (e.g., Twilio)
+  credentialId: z.number().int().positive().optional().describe("ID of the credential to use for sending SMS"),
+  provider: z.enum(["twilio", "custom_api"]).optional().describe("SMS provider type"),
+  accountSid: z.string().optional().describe("Account SID for SMS service (use credentialId instead if possible)"),
+  apiKey: z.string().optional().describe("API Key/Auth Token for SMS service (use credentialId instead if possible)"),
+  apiUrl: z.string().url().optional().describe("API URL for SMS service (if custom_api)"),
+  fromNumber: z.string().optional().describe("Default 'from' phone number"),
+}).strict();
+
+export const searchToolConfigSchema = z.object({
+  // Configuration for a web search service (e.g., Google Search API, Bing Search API)
+  credentialId: z.number().int().positive().optional().describe("ID of the credential to use for the search API"),
+  provider: z.enum(["google", "bing", "custom_api"]).optional().describe("Search provider type"),
+  apiKey: z.string().optional().describe("API Key for search service (use credentialId instead if possible)"),
+  searchEngineId: z.string().optional().describe("Search Engine ID (e.g., for Google Custom Search)"),
+  searchEngineUrl: z.string().url().optional().describe("API URL for search service (if custom_api)"),
+}).strict();
+
+export const customToolConfigSchema = z.object({
+  // Generic schema for custom tools not fitting other types
+  // This can be extended or kept minimal
+  scriptPath: z.string().optional().describe("Path to a custom script to execute (if applicable)"),
+  runtime: z.string().optional().describe("Runtime for the script (e.g., 'nodejs', 'python')"),
+  parameters: z.record(z.any()).optional().describe("Custom parameters for the tool"),
+}).strict();
+
+
+// Discriminated union for AgentToolConfig
+export const agentToolConfigSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("openai"), config: openAIToolConfigSchema }),
+  z.object({ type: z.literal("custom_api"), config: customApiToolConfigSchema }),
+  z.object({ type: z.literal("webhook"), config: webhookToolConfigSchema }),
+  z.object({ type: z.literal("database"), config: databaseToolConfigSchema }),
+  z.object({ type: z.literal("file_system"), config: fileSystemToolConfigSchema }),
+  z.object({ type: z.literal("email"), config: emailToolConfigSchema }),
+  z.object({ type: z.literal("sms"), config: smsToolConfigSchema }),
+  z.object({ type: z.literal("search"), config: searchToolConfigSchema }),
+  z.object({ type: z.literal("custom"), config: customToolConfigSchema }), // Fallback for other types
+  // Add other tool types here as they are defined
+]).refine(data => {
+  // This refine is a bit of a hack to make the discriminated union work well with the existing structure
+  // where `type` is a top-level field and `config` is the nested object.
+  // The `config` field in the input to `insertAgentToolSchema` should match the schema for the given `type`.
+  switch (data.type) {
+    case "openai": return openAIToolConfigSchema.safeParse(data.config).success;
+    case "custom_api": return customApiToolConfigSchema.safeParse(data.config).success;
+    case "webhook": return webhookToolConfigSchema.safeParse(data.config).success;
+    case "database": return databaseToolConfigSchema.safeParse(data.config).success;
+    case "file_system": return fileSystemToolConfigSchema.safeParse(data.config).success;
+    case "email": return emailToolConfigSchema.safeParse(data.config).success;
+    case "sms": return smsToolConfigSchema.safeParse(data.config).success;
+    case "search": return searchToolConfigSchema.safeParse(data.config).success;
+    case "custom": return customToolConfigSchema.safeParse(data.config).success;
+    default: return true; // Allow unknown types for now, or make it stricter
+  }
+}, {
+  message: "Tool configuration does not match the specified tool type.",
+  path: ["config"], // Point error to the config field
+});
+
+// Base schema for insertAgentTool before refinement, to help with type inference
+const baseInsertAgentToolSchema = createInsertSchema(agentTools, {
+  // Config will be validated by the .refine() call using the discriminated union
+  config: z.record(z.string(), z.any()).optional().default({}), // Allows any object, validation is deferred
+}).pick({
   name: true,
   description: true,
   category: true,
@@ -60,6 +179,28 @@ export const insertAgentToolSchema = createInsertSchema(agentTools).pick({
   icon: true,
   isActive: true,
 });
+
+export const insertAgentToolSchema = baseInsertAgentToolSchema.superRefine(
+  (data: z.infer<typeof baseInsertAgentToolSchema>, ctx: z.RefinementCtx) => {
+    // Use the discriminated union for validation of the whole object
+    // This ensures that the 'config' field matches the 'type' field.
+    const validationInput = { type: data.type, config: data.config };
+    const result = agentToolConfigSchema.safeParse(validationInput);
+
+    if (!result.success) {
+        // Add issues from the discriminated union validation to the current context
+        result.error.errors.forEach((err) => {
+            ctx.addIssue({
+                ...err, // Spread the original error properties
+                // path: ["config", ...err.path], // Optionally adjust path if needed
+            });
+        });
+        // For superRefine, if ctx.addIssue is called, the validation fails for those issues.
+        // No need to return false explicitly.
+    }
+    // If no issues were added, the validation passes.
+  }
+);
 
 // Agent schema
 export const agents = pgTable("agents", {

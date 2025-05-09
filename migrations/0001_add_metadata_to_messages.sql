@@ -1,1 +1,1 @@
-ALTER TABLE "messages" ADD COLUMN "metadata" jsonb DEFAULT {}::jsonb NOT NULL;
+ALTER TABLE "messages" ADD COLUMN "metadata" jsonb NOT NULL DEFAULT '{}';

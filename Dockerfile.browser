@@ -11,7 +11,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install xvfb for headless browser support
-RUN apt-get update && apt-get install -y xvfb x11vnc x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps
+RUN apt-get update && apt-get install -y xvfb x11vnc x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable x11-apps
 
 # Add user so we don't run as root
 RUN groupadd -r browseruser && useradd -r -g browseruser -G audio,video browseruser \
