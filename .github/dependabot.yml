@@ -1,0 +1,19 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+# Dependabot configuration file for automated dependency updates.
+# For full documentation, see:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Update npm dependencies
+  - package-ecosystem: "npm" # Specify the package manager (e.g., npm for JavaScript/TypeScript projects)
+    directory: "/" # Location of the package.json file (root directory in this case)
+    schedule:
+      interval: "weekly" # Check for updates weekly
+    ignore:
+      - dependency-name: "some-dependency" # Example of a dependency to ignore
+        versions: ["<2.0.0"] # Ignore updates below version 2.0.0
