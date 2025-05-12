@@ -74,7 +74,7 @@
     "i18next": "^25.0.1",
     "i18next-browser-languagedetector": "^8.0.5",
     "input-otp": "^1.4.2",
-    "lucide-react": "^0.453.0",
+    "lucide-react": "^0.501.0",
     "memorystore": "^1.6.7",
     "multer": "^1.4.5-lts.2",
     "myfatoorah-javascript": "^0.0.2",
