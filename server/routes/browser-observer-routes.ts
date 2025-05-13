@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { browserObserverService } from "../services/browser-observer-service";
-import { 
+import { storage } from "../storage";
+import {
   insertBrowserActionSchema,
   insertBrowserSequenceSchema,
   insertBrowserSequenceStepSchema,
@@ -23,10 +24,10 @@ browserObserverRouter.post("/action", async (req: Request, res: Response) => {
   try {
     // Set the Content-Type header explicitly to ensure JSON responses
     res.setHeader('Content-Type', 'application/json');
-    
+
     // Allow anonymous recording with a sessionId for non-authenticated users
     const userId = req.user?.id || 0;
-    
+
     const actionData = insertBrowserActionSchema.parse({
       ...req.body,
       userId
@@ -83,22 +84,22 @@ browserObserverRouter.get("/actions/session/:sessionId", async (req: Request, re
   try {
     // Set the Content-Type header explicitly to ensure JSON responses
     res.setHeader('Content-Type', 'application/json');
-    
+
     const { sessionId } = req.params;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
-    
+
     // If authenticated, ensure the session belongs to the user
     if (req.isAuthenticated()) {
       const actions = await browserObserverService.getSessionActions(sessionId, limit);
-      
+
       // Check if any actions exist for this session
       if (actions.length > 0 && actions[0].userId !== req.user.id) {
         return res.status(403).json({ error: "You don't have permission to access this session" });
       }
-      
+
       return res.json(actions);
     }
-    
+
     // For anonymous users, just return the session actions
     const actions = await browserObserverService.getSessionActions(sessionId, limit);
     res.json(actions);
@@ -134,16 +135,16 @@ browserObserverRouter.get("/sequences/:id", checkAuth, async (req: Request, res:
   try {
     const id = parseInt(req.params.id);
     const sequence = await browserObserverService.getSequence(id);
-    
+
     if (!sequence) {
       return res.status(404).json({ error: "Sequence not found" });
     }
-    
+
     // Check ownership
     if (sequence.userId !== req.user.id) {
       return res.status(403).json({ error: "You don't have permission to access this sequence" });
     }
-    
+
     res.json(sequence);
   } catch (error) {
     console.error("Error getting browser sequence:", error);
@@ -167,16 +168,16 @@ browserObserverRouter.patch("/sequences/:id", checkAuth, async (req: Request, re
   try {
     const id = parseInt(req.params.id);
     const sequence = await browserObserverService.getSequence(id);
-    
+
     if (!sequence) {
       return res.status(404).json({ error: "Sequence not found" });
     }
-    
+
     // Check ownership
     if (sequence.userId !== req.user.id) {
       return res.status(403).json({ error: "You don't have permission to modify this sequence" });
     }
-    
+
     const updates = req.body;
     const updatedSequence = await browserObserverService.updateSequence(id, updates);
     res.json(updatedSequence);
@@ -191,18 +192,18 @@ browserObserverRouter.delete("/sequences/:id", checkAuth, async (req: Request, r
   try {
     const id = parseInt(req.params.id);
     const sequence = await browserObserverService.getSequence(id);
-    
+
     if (!sequence) {
       return res.status(404).json({ error: "Sequence not found" });
     }
-    
+
     // Check ownership
     if (sequence.userId !== req.user.id) {
       return res.status(403).json({ error: "You don't have permission to delete this sequence" });
     }
-    
+
     const success = await browserObserverService.deleteSequence(id);
-    
+
     if (success) {
       res.status(204).end();
     } else {
@@ -221,25 +222,25 @@ browserObserverRouter.post("/sequences/:id/steps", checkAuth, async (req: Reques
   try {
     const sequenceId = parseInt(req.params.id);
     const sequence = await browserObserverService.getSequence(sequenceId);
-    
+
     if (!sequence) {
       return res.status(404).json({ error: "Sequence not found" });
     }
-    
+
     // Check ownership
     if (sequence.userId !== req.user.id) {
       return res.status(403).json({ error: "You don't have permission to modify this sequence" });
     }
-    
+
     if (!Array.isArray(req.body)) {
       return res.status(400).json({ error: "Request body must be an array of steps" });
     }
-    
+
     const stepsData = req.body.map(step => ({
       ...step,
       sequenceId
     }));
-    
+
     const steps = await browserObserverService.addSequenceSteps(stepsData);
     res.status(201).json(steps);
   } catch (error) {
@@ -253,16 +254,16 @@ browserObserverRouter.get("/sequences/:id/steps", checkAuth, async (req: Request
   try {
     const sequenceId = parseInt(req.params.id);
     const sequence = await browserObserverService.getSequence(sequenceId);
-    
+
     if (!sequence) {
       return res.status(404).json({ error: "Sequence not found" });
     }
-    
+
     // Check ownership
     if (sequence.userId !== req.user.id) {
       return res.status(403).json({ error: "You don't have permission to access this sequence" });
     }
-    
+
     const steps = await browserObserverService.getSequenceSteps(sequenceId);
     res.json(steps);
   } catch (error) {
@@ -276,19 +277,19 @@ browserObserverRouter.patch("/steps/:id", checkAuth, async (req: Request, res: R
   try {
     const id = parseInt(req.params.id);
     const steps = await browserObserverService.getSequenceSteps(id);
-    
+
     if (steps.length === 0) {
       return res.status(404).json({ error: "Step not found" });
     }
-    
+
     const step = steps[0];
     const sequence = await browserObserverService.getSequence(step.sequenceId);
-    
+
     // Check ownership
     if (sequence.userId !== req.user.id) {
       return res.status(403).json({ error: "You don't have permission to modify this step" });
     }
-    
+
     const updates = req.body;
     const updatedStep = await browserObserverService.updateSequenceStep(id, updates);
     res.json(updatedStep);
@@ -304,21 +305,21 @@ browserObserverRouter.delete("/steps/:id", checkAuth, async (req: Request, res: 
     const id = parseInt(req.params.id);
     // First find the step to check ownership
     const steps = await browserObserverService.getSequenceSteps(id);
-    
+
     if (steps.length === 0) {
       return res.status(404).json({ error: "Step not found" });
     }
-    
+
     const step = steps[0];
     const sequence = await browserObserverService.getSequence(step.sequenceId);
-    
+
     // Check ownership
     if (sequence.userId !== req.user.id) {
       return res.status(403).json({ error: "You don't have permission to delete this step" });
     }
-    
+
     const success = await browserObserverService.deleteSequenceStep(id);
-    
+
     if (success) {
       res.status(204).end();
     } else {
@@ -336,11 +337,11 @@ browserObserverRouter.delete("/steps/:id", checkAuth, async (req: Request, res: 
 browserObserverRouter.post("/suggestions/generate", async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.body;
-    
+
     if (!sessionId) {
       return res.status(400).json({ error: "Session ID is required" });
     }
-    
+
     const userId = req.user?.id || 0;
     const suggestions = await browserObserverService.generateAiSuggestions(userId, sessionId);
     res.json(suggestions);
@@ -367,16 +368,16 @@ browserObserverRouter.patch("/suggestions/:id/status", checkAuth, async (req: Re
   try {
     const id = parseInt(req.params.id);
     const { status } = req.body;
-    
+
     if (!status || !["pending", "accepted", "rejected", "implemented"].includes(status)) {
       return res.status(400).json({ error: "Invalid status" });
     }
-    
+
     const updatedSuggestion = await browserObserverService.updateAiSuggestionStatus(
       id,
       status as "pending" | "accepted" | "rejected" | "implemented"
     );
-    
+
     res.json(updatedSuggestion);
   } catch (error) {
     console.error("Error updating AI suggestion status:", error);
@@ -389,18 +390,18 @@ browserObserverRouter.post("/sessions/:sessionId/convert", checkAuth, async (req
   try {
     const { sessionId } = req.params;
     const { name, description } = req.body;
-    
+
     if (!name) {
       return res.status(400).json({ error: "Sequence name is required" });
     }
-    
+
     const result = await browserObserverService.convertSessionToSequence(
       req.user.id,
       sessionId,
       name,
       description
     );
-    
+
     res.status(201).json(result);
   } catch (error) {
     console.error("Error converting session to sequence:", error);
@@ -428,7 +429,7 @@ browserObserverRouter.post("/settings", checkAuth, async (req: Request, res: Res
       ...req.body,
       userId: req.user.id
     });
-    
+
     const settings = await browserObserverService.saveSettings(settingsData);
     res.json(settings);
   } catch (error) {

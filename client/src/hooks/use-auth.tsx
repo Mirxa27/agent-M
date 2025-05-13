@@ -1,18 +1,17 @@
-import { createContext, ReactNode, useContext } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
-  useQuery,
-  useMutation,
-  UseMutationResult,
-} from "@tanstack/react-query";
-import {
+  InsertUser,
   insertUserSchema,
   User as SelectUser,
-  InsertUser,
 } from "@shared/schema";
-import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import {
+  useMutation,
+  UseMutationResult,
+  useQuery,
+} from "@tanstack/react-query";
+import { createContext, ReactNode, useContext } from "react";
 import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 
 type AuthContextType = {
   user: Omit<SelectUser, "password"> | null;

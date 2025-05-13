@@ -2,6 +2,7 @@ import {
   chatbotChallenges,
   chatbotGameProgress,
   chatbotMessages,
+  ChatbotMessage, // Import ChatbotMessage type
   InsertChatbotGameProgress,
   InsertChatbotMessage
 } from "@shared/schema";
@@ -10,6 +11,7 @@ import { and, desc, eq } from "drizzle-orm";
 import OpenAI from "openai";
 import config from "../config";
 import { db } from "../db";
+import { like } from "drizzle-orm"; // Import like for partial string matching
 
 // Initialize OpenAI client with configuration
 const openai = new OpenAI({ apiKey: config.ai.openai.apiKey });
@@ -102,7 +104,7 @@ export async function getChatHistory(
   userId: number | null,
   sessionId: string,
   limit: number = 20
-): Promise<any[]> {
+): Promise<ChatbotMessage[]> { // Use ChatbotMessage[] type
   const query = userId
     ? and(eq(chatbotMessages.userId, userId), eq(chatbotMessages.sessionId, sessionId))
     : eq(chatbotMessages.sessionId, sessionId);
@@ -248,6 +250,28 @@ export async function updateStreak(
   return false;
 }
 
+// Search chat history
+export async function searchChatHistory(
+  userId: number | null,
+  sessionId: string,
+  query: string
+): Promise<ChatbotMessage[]> {
+  const queryBuilder = db.select().from(chatbotMessages);
+
+  // Add conditions based on userId and sessionId
+  if (userId) {
+    queryBuilder.where(and(eq(chatbotMessages.userId, userId), eq(chatbotMessages.sessionId, sessionId)));
+  } else {
+    queryBuilder.where(eq(chatbotMessages.sessionId, sessionId));
+  }
+
+  // Add search query condition (case-insensitive partial match)
+  queryBuilder.where(like(chatbotMessages.content, `%${query}%`));
+
+  return queryBuilder;
+}
+
+
 // Get available challenges
 export async function getAvailableChallenges(difficulty?: string): Promise<any[]> {
   let baseQuery = eq(chatbotChallenges.isActive, true);
@@ -326,7 +350,9 @@ export async function generateResponse(
 
     YOUR CAPABILITIES:
     - Answering questions about the Mirxa platform and AI in general.
-    - Performing tasks like Document Summarization and Content Generation when requested.
+    - Performing tasks like Document Summarization, Content Generation, Code Generation (HTML, CSS, JS), and Image Generation when requested.
+    - Searching your conversation history.
+    - Generating PDF documents from text.
     - Guiding users on how to use AI agents, browser automation, and other platform features.
 
     USER PROFILE:

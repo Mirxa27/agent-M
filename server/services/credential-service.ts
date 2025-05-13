@@ -1,6 +1,10 @@
 import { storage } from "../storage";
 import { encrypt, decrypt } from "../../shared/crypto";
-import { Credential, InsertCredential } from "@shared/schema";
+import { Credential, InsertCredential, insertCredentialSchema } from "@shared/schema";
+import { google } from 'googleapis'; // Import googleapis
+import { OAuth2Client } from 'google-auth-library'; // Import OAuth2Client
+import nodemailer from "nodemailer"; // Import nodemailer
+import config from '../config'; // Import config
 
 // List of supported service types with their specific properties
 export const SERVICE_TYPES = {
@@ -288,13 +292,13 @@ export class CredentialService {
   ): Promise<Credential | null> {
     try {
       const credentials = await storage.getCredentialsByUserId(userId);
-      
+
       // Find credentials for this service
       const credential = credentials.find(
-        (cred) => cred.type === serviceName || 
+        (cred) => cred.type === serviceName ||
                   (cred.service !== null && cred.service === serviceName)
       );
-      
+
       return credential || null;
     } catch (error) {
       console.error("Error getting credential by service:", error);
@@ -302,7 +306,7 @@ export class CredentialService {
       throw new Error(`Failed to get credential by service: ${errorMessage}`);
     }
   }
-  
+
   /**
    * Create a new credential from a simple object
    */
@@ -318,9 +322,9 @@ export class CredentialService {
   }): Promise<Credential> {
     try {
       // Encrypt data if it's not already encrypted
-      let encryptedData = typeof data.data === 'string' ? 
+      let encryptedData = typeof data.data === 'string' ?
         data.data : encrypt(JSON.stringify(data.data));
-        
+
       // Create credential record
       const credential = await storage.createCredential({
         userId: data.userId,
@@ -332,7 +336,7 @@ export class CredentialService {
         lastRefreshedAt: data.lastRefreshedAt || new Date(),
         service: data.service
       });
-      
+
       return credential;
     } catch (error) {
       console.error("Error creating credential:", error);
@@ -340,7 +344,7 @@ export class CredentialService {
       throw new Error(`Failed to create credential: ${errorMessage}`);
     }
   }
-  
+
   /**
    * Update a credential by ID
    */
@@ -350,7 +354,7 @@ export class CredentialService {
       if (updates.data && typeof updates.data !== 'string') {
         updates.data = encrypt(JSON.stringify(updates.data));
       }
-      
+
       // Update the credential
       const updatedCredential = await storage.updateCredential(id, updates);
       return updatedCredential || null;
@@ -370,9 +374,57 @@ export async function beginOAuthFlow(
   userId: number,
   serviceType: string
 ): Promise<{ authUrl: string; state: string }> {
-  // Implementation depends on the OAuth service and external libraries
-  // This is a placeholder that would be implemented based on specific services
-  throw new Error("OAuth flow not implemented for this service");
+  try {
+    // Generate a unique state parameter to prevent CSRF attacks
+    const state = Math.random().toString(36).substring(2, 15);
+
+    // Implementation depends on the OAuth service and external libraries
+    switch (serviceType.toLowerCase()) {
+      case SERVICE_TYPES.GMAIL:
+      case SERVICE_TYPES.GOOGLE_CALENDAR:
+      case SERVICE_TYPES.GOOGLE_DRIVE: {
+        const { OAuth2Client } = await import('google-auth-library');
+        const config = (await import('../config')).default; // Dynamically import config
+
+        if (!config.oauth.credentials.google.clientId || !config.oauth.credentials.google.clientSecret) {
+          throw new Error("Google OAuth credentials not configured.");
+        }
+
+        const oauth2Client = new OAuth2Client(
+          config.oauth.credentials.google.clientId,
+          config.oauth.credentials.google.clientSecret,
+          config.oauth.redirectUris.google
+        );
+
+        // Define the scopes required for the service
+        let scopes: string[] = [];
+        if (serviceType === SERVICE_TYPES.GMAIL) {
+          scopes = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send'];
+        } else if (serviceType === SERVICE_TYPES.GOOGLE_CALENDAR) {
+          scopes = ['https://www.googleapis.com/auth/calendar.events.readonly'];
+        } else if (serviceType === SERVICE_TYPES.GOOGLE_DRIVE) {
+          scopes = ['https://www.googleapis.com/auth/drive.readonly'];
+        }
+
+
+        const authUrl = oauth2Client.generateAuthUrl({
+          access_type: 'offline', // Request a refresh token
+          scope: scopes,
+          state: `${userId}:${serviceType}:${state}`, // Include userId and serviceType in state
+          prompt: 'consent', // Ensure refresh token is returned
+        });
+
+        return { authUrl, state };
+      }
+      // Add cases for other services (Microsoft, Dropbox, etc.)
+      default:
+        throw new Error(`OAuth flow not implemented for service: ${serviceType}`);
+    }
+  } catch (error) {
+    console.error(`Error beginning OAuth flow for ${serviceType}:`, error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to begin OAuth flow: ${errorMessage}`);
+  }
 }
 
 export async function completeOAuthFlow(
@@ -381,7 +433,79 @@ export async function completeOAuthFlow(
   code: string,
   state: string
 ): Promise<Credential> {
-  // Implementation depends on the OAuth service and external libraries
-  // This is a placeholder that would be implemented based on specific services
-  throw new Error("OAuth flow not implemented for this service");
+  try {
+    // Validate the state parameter
+    const [stateUserId, stateServiceType, stateRandom] = state.split(':');
+    if (parseInt(stateUserId) !== userId || stateServiceType !== serviceType) {
+      throw new Error("Invalid state parameter.");
+    }
+
+    // Implementation depends on the OAuth service and external libraries
+    switch (serviceType.toLowerCase()) {
+      case SERVICE_TYPES.GMAIL:
+      case SERVICE_TYPES.GOOGLE_CALENDAR:
+      case SERVICE_TYPES.GOOGLE_DRIVE: {
+        const { OAuth2Client } = await import('google-auth-library');
+        const config = (await import('../config')).default; // Dynamically import config
+
+        if (!config.oauth.credentials.google.clientId || !config.oauth.credentials.google.clientSecret) {
+          throw new Error("Google OAuth credentials not configured.");
+        }
+
+        const oauth2Client = new OAuth2Client(
+          config.oauth.credentials.google.clientId,
+          config.oauth.credentials.google.clientSecret,
+          config.oauth.redirectUris.google
+        );
+
+        // Exchange the authorization code for tokens
+        const { tokens } = await oauth2Client.getToken(code);
+
+        if (!tokens.access_token) {
+          throw new Error("Failed to get access token.");
+        }
+
+        // Get user email (optional, but useful for credential name)
+        let userEmail = '';
+        if (tokens.id_token) {
+          try {
+            const { payload } = await oauth2Client.verifyIdToken({
+              idToken: tokens.id_token,
+              audience: config.oauth.credentials.google.clientId,
+            });
+            userEmail = payload?.email || '';
+          } catch (verifyError) {
+            console.warn("Failed to verify ID token:", verifyError);
+          }
+        }
+
+
+        // Create a new credential record
+        const credentialData: GmailCredentials = {
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token, // Store refresh token for offline access
+          expires_at: tokens.expiry_date,
+          email: userEmail,
+          scope: tokens.scope?.split(' '),
+        };
+
+        const credential = await credentialService.createCredential(
+          userId,
+          `${serviceType} (${userEmail || 'OAuth'})`, // Default name
+          serviceType,
+          credentialData,
+          { authMethod: AUTH_METHODS.OAUTH }
+        );
+
+        return credential;
+      }
+      // Add cases for other services (Microsoft, Dropbox, etc.)
+      default:
+        throw new Error(`OAuth flow not implemented for service: ${serviceType}`);
+    }
+  } catch (error) {
+    console.error(`Error completing OAuth flow for ${serviceType}:`, error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to complete OAuth flow: ${errorMessage}`);
+  }
 }

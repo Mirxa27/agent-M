@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { browserAutomationService } from '../services/browser-automation-service';
 import { storage } from '../storage';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth-middleware'; // Corrected import path
 import type { BrowserSequenceStep } from '@shared/schema';
+import { handleError } from '../utils/errorHandler';
+
 
 export const browserAutomationRouter = Router();
 
@@ -10,7 +12,7 @@ export const browserAutomationRouter = Router();
  * Launch a browser session
  * POST /api/browser-automation/launch
  */
-browserAutomationRouter.post('/launch', requireAuth, async (req: any, res: any) => { // Added :any for req, res to access req.user
+browserAutomationRouter.post('/launch', requireAuth, async (req, res) => {
   try {
     const sessionId = req.body.sessionId || `session-${Date.now()}`;
     const userId = req.user?.id; // Assuming requireAuth middleware adds user to req
@@ -34,7 +36,7 @@ browserAutomationRouter.post('/launch', requireAuth, async (req: any, res: any) 
     console.error('Error launching browser:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: handleError(error), // Use handleError for consistent error messages
     });
   }
 });
@@ -64,7 +66,7 @@ browserAutomationRouter.post('/close', requireAuth, async (req, res) => {
     console.error('Error closing browser session:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: handleError(error), // Use handleError for consistent error messages
     });
   }
 });
@@ -102,7 +104,7 @@ browserAutomationRouter.post('/run-sequence', requireAuth, async (req, res) => {
     }
 
     // Run the sequence
-    const userId = (req as any).user?.id; // Assuming requireAuth middleware adds user to req
+    const userId = req.user?.id; // Assuming requireAuth middleware adds user to req
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -110,7 +112,7 @@ browserAutomationRouter.post('/run-sequence', requireAuth, async (req, res) => {
       });
     }
     const results = await browserAutomationService.runSequence(sequence, steps as BrowserSequenceStep[], userId);
-    
+
     res.json({
       success: true,
       results
@@ -119,7 +121,7 @@ browserAutomationRouter.post('/run-sequence', requireAuth, async (req, res) => {
     console.error('Error running browser sequence:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: handleError(error), // Use handleError for consistent error messages
     });
   }
 });
@@ -141,7 +143,7 @@ browserAutomationRouter.post('/screenshot', requireAuth, async (req, res) => {
 
     // Capture the screenshot
     const screenshot = await browserAutomationService.captureScreenshot(url, sessionId, 0);
-    
+
     res.json({
       success: true,
       screenshot
@@ -150,7 +152,7 @@ browserAutomationRouter.post('/screenshot', requireAuth, async (req, res) => {
     console.error('Error capturing screenshot:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: handleError(error), // Use handleError for consistent error messages
     });
   }
 });
@@ -179,7 +181,7 @@ browserAutomationRouter.post('/extract-data', requireAuth, async (req, res) => {
 
     // Extract the data
     const data = await browserAutomationService.extractData(url, selectors, 0);
-    
+
     res.json({
       success: true,
       data
@@ -188,7 +190,7 @@ browserAutomationRouter.post('/extract-data', requireAuth, async (req, res) => {
     console.error('Error extracting data:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: handleError(error), // Use handleError for consistent error messages
     });
   }
 });

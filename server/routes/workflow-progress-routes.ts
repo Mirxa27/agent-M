@@ -2,7 +2,8 @@ import { insertWorkflowExecutionSchema } from "@shared/schema";
 import { Request, Response, Router } from "express";
 import { z } from "zod";
 import { workflowProgressService } from "../services/workflow-progress-service";
-import { storage } from "../storage"; // Import storage service
+import { storage } from "../storage";
+import { handleError } from "../utils/errorHandler"; // Import error handler
 
 export const workflowProgressRouter = Router();
 
@@ -17,9 +18,6 @@ const checkAuth = (req: Request, res: Response, next: Function) => {
 // Create a new workflow execution
 workflowProgressRouter.post("/executions", checkAuth, async (req: Request, res: Response) => {
   try {
-    // Set the Content-Type header explicitly to ensure JSON responses
-    res.setHeader('Content-Type', 'application/json');
-
     const executionData = insertWorkflowExecutionSchema.parse({
       ...req.body,
       userId: req.user!.id
@@ -32,7 +30,7 @@ workflowProgressRouter.post("/executions", checkAuth, async (req: Request, res: 
       return res.status(400).json({ error: error.errors });
     }
     console.error("Error creating workflow execution:", error);
-    res.status(500).json({ error: "Failed to create workflow execution" });
+    res.status(500).json({ error: handleError(error) }); // Updated error handling
   }
 });
 
@@ -46,7 +44,6 @@ workflowProgressRouter.get("/executions/:id", checkAuth, async (req: Request, re
       return res.status(404).json({ error: "Execution not found" });
     }
 
-    // Check ownership
     if (execution.userId !== req.user!.id) {
       return res.status(403).json({ error: "You don't have permission to access this execution" });
     }
@@ -54,7 +51,7 @@ workflowProgressRouter.get("/executions/:id", checkAuth, async (req: Request, re
     res.json(execution);
   } catch (error) {
     console.error("Error getting workflow execution:", error);
-    res.status(500).json({ error: "Failed to get workflow execution" });
+    res.status(500).json({ error: handleError(error) }); // Updated error handling
   }
 });
 
@@ -66,7 +63,7 @@ workflowProgressRouter.get("/executions", checkAuth, async (req: Request, res: R
     res.json(executions);
   } catch (error) {
     console.error("Error getting user workflow executions:", error);
-    res.status(500).json({ error: "Failed to get user workflow executions" });
+    res.status(500).json({ error: handleError(error) }); // Updated error handling
   }
 });
 
@@ -75,28 +72,23 @@ workflowProgressRouter.get("/sequences/:sequenceId/executions", checkAuth, async
   try {
     const sequenceId = parseInt(req.params.sequenceId);
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-    const userId = req.user!.id; // Get authenticated user ID
+    const userId = req.user!.id;
 
-    // --- Authorization Check ---
-    // Fetch the sequence details to check ownership
-    const sequence = await storage.getBrowserSequence(sequenceId); // Corrected method call
+    const sequence = await storage.getBrowserSequence(sequenceId);
 
     if (!sequence) {
       return res.status(404).json({ error: "Workflow sequence not found" });
     }
 
-    // Check if the authenticated user owns the sequence
     if (sequence.userId !== userId) {
-      // Optional: Add logic here for shared sequences if applicable
       return res.status(403).json({ error: "You don't have permission to access this sequence's executions" });
     }
-    // --- End Authorization Check ---
 
     const executions = await workflowProgressService.getSequenceExecutions(sequenceId, limit);
     res.json(executions);
   } catch (error) {
     console.error("Error getting sequence workflow executions:", error);
-    res.status(500).json({ error: "Failed to get sequence workflow executions" });
+    res.status(500).json({ error: handleError(error) }); // Updated error handling
   }
 });
 
@@ -110,7 +102,6 @@ workflowProgressRouter.get("/executions/:id/steps", checkAuth, async (req: Reque
       return res.status(404).json({ error: "Execution not found" });
     }
 
-    // Check ownership
     if (execution.userId !== req.user!.id) {
       return res.status(403).json({ error: "You don't have permission to access this execution" });
     }
@@ -119,7 +110,7 @@ workflowProgressRouter.get("/executions/:id/steps", checkAuth, async (req: Reque
     res.json(steps);
   } catch (error) {
     console.error("Error getting workflow execution steps:", error);
-    res.status(500).json({ error: "Failed to get workflow execution steps" });
+    res.status(500).json({ error: handleError(error) }); // Updated error handling
   }
 });
 
@@ -135,7 +126,6 @@ workflowProgressRouter.patch("/executions/:executionId/steps/:stepId", checkAuth
       return res.status(404).json({ error: "Execution not found" });
     }
 
-    // Check ownership
     if (execution.userId !== req.user!.id) {
       return res.status(403).json({ error: "You don't have permission to access this execution" });
     }
@@ -160,7 +150,7 @@ workflowProgressRouter.patch("/executions/:executionId/steps/:stepId", checkAuth
     res.json(updatedStep);
   } catch (error) {
     console.error("Error updating workflow step execution:", error);
-    res.status(500).json({ error: "Failed to update workflow step execution" });
+    res.status(500).json({ error: handleError(error) }); // Updated error handling
   }
 });
 
@@ -176,7 +166,6 @@ workflowProgressRouter.post("/executions/:executionId/steps/:stepId/logs", check
       return res.status(404).json({ error: "Execution not found" });
     }
 
-    // Check ownership
     if (execution.userId !== req.user!.id) {
       return res.status(403).json({ error: "You don't have permission to access this execution" });
     }
@@ -197,6 +186,6 @@ workflowProgressRouter.post("/executions/:executionId/steps/:stepId/logs", check
     res.json(updatedStep);
   } catch (error) {
     console.error("Error adding log to workflow step:", error);
-    res.status(500).json({ error: "Failed to add log to workflow step" });
+    res.status(500).json({ error: handleError(error) }); // Updated error handling
   }
 });

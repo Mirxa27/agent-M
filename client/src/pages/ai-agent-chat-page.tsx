@@ -8,8 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Agent, Conversation, Message as MessageType } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bot, Loader2, Send, User } from "lucide-react";
+import { Bot, Loader2, Send, User, Search, FileText, ImageIcon, Code2, Settings2, PlusCircle } from "lucide-react"; // Added new icons
 import { useEffect, useRef, useState } from "react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"; // For sidebar
+import { Input } from "@/components/ui/input"; // For search input
 
 export default function AiAgentChatPage() {
   const { user } = useAuth();
@@ -19,9 +21,10 @@ export default function AiAgentChatPage() {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State for sidebar
 
   const { data: agents = [], isLoading: isLoadingAgents } = useQuery<Agent[]>({
-    queryKey: ["/api/agents"],
+    queryKey: ["/api/agents"], // Consider adding user.id to queryKey if agents are user-specific
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/agents");
       if (!res.ok) throw new Error("Failed to fetch agents");
@@ -127,97 +130,122 @@ export default function AiAgentChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-var(--header-height)-2rem)] container mx-auto py-4 gap-4">
-      <Card className="flex-shrink-0">
-        <CardHeader>
-          <CardTitle>Select an AI Agent</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Select onValueChange={handleAgentChange} value={selectedAgentId}>
-            <SelectTrigger className="w-full md:w-1/2">
-              <SelectValue placeholder="Choose an agent to chat with..." />
-            </SelectTrigger>
-            <SelectContent>
-              {agents.map((agent) => (
-                <SelectItem key={agent.id} value={agent.id.toString()}>
-                  {agent.name} ({agent.type})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
-
-      {selectedAgentId ? (
-        <Card className="flex flex-col flex-grow overflow-hidden">
-          <CardHeader>
-            <CardTitle>Chat with: {agents.find(a => a.id.toString() === selectedAgentId)?.name || "Agent"}</CardTitle>
-          </CardHeader>
-          <ScrollArea className="flex-grow p-4 space-y-4">
-            {isLoadingMessages && <div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>}
-            {!isLoadingMessages && messages.length === 0 && (
-              <div className="text-center text-muted-foreground">
-                No messages yet. Start the conversation!
-              </div>
-            )}
-            {messages.map((msg, index) => (
-              <div
-                key={msg.id || index}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {msg.role === "assistant" && (
-                  <Bot className="h-8 w-8 rounded-full bg-primary text-primary-foreground p-1.5 mr-2 flex-shrink-0" />
-                )}
-                <div
-                  className={`p-3 rounded-lg max-w-[70%] break-words ${msg.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-br-none"
-                      : "bg-muted rounded-bl-none"
-                    }`}
-                >
-                  {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
-                </div>
-                {msg.role === "user" && (
-                  <User className="h-8 w-8 rounded-full bg-muted border p-1.5 ml-2 flex-shrink-0" />
-                )}
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </ScrollArea>
-          <CardFooter className="p-4 border-t">
-            <div className="flex w-full items-center space-x-2">
-              <Textarea
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 resize-none"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                disabled={sendMessageMutation.isPending || !selectedAgentId}
-              />
-              <Button
-                onClick={handleSendMessage}
-                disabled={sendMessageMutation.isPending || !inputMessage.trim() || !selectedAgentId}
-              >
-                {sendMessageMutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-                Send
-              </Button>
+    <div className="flex h-[calc(100vh-var(--header-height))]">
+      {/* Sidebar for Agent Selection and Conversation History */}
+      <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+        <SheetContent side="left" className="w-80 p-0">
+          <SheetHeader className="p-4 border-b">
+            <SheetTitle>Conversations</SheetTitle>
+          </SheetHeader>
+          <div className="p-4">
+            <Select onValueChange={handleAgentChange} value={selectedAgentId}>
+              <SelectTrigger className="w-full mb-4">
+                <SelectValue placeholder="Select an AI Agent..." />
+              </SelectTrigger>
+              <SelectContent>
+                {agents.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id.toString()}>
+                    {agent.name} ({agent.type})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* Placeholder for conversation history list */}
+            <div className="text-sm text-muted-foreground">
+              Conversation history will appear here.
             </div>
-          </CardFooter>
-        </Card>
-      ) : (
-        <div className="flex-grow flex flex-col items-center justify-center text-muted-foreground bg-muted/30 rounded-lg">
-          <Bot className="h-16 w-16 mb-4" />
-          <p className="text-lg">Please select an agent to start chatting.</p>
-        </div>
-      )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="p-4 border-b flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)} className="md:hidden">
+              <Settings2 className="h-5 w-5" />
+            </Button>
+            <h2 className="text-lg font-semibold">
+              {selectedAgentId ? agents.find(a => a.id.toString() === selectedAgentId)?.name || "Chat" : "AI Agent Chat"}
+            </h2>
+          </div>
+          {/* Add other header controls if needed */}
+        </header>
+
+        <ScrollArea className="flex-grow p-6 space-y-4">
+          {isLoadingMessages && <div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
+          {!selectedAgentId && !isLoadingMessages && (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+              <Bot className="h-16 w-16 mb-4" />
+              <p className="text-lg">Select an agent from the sidebar to start chatting.</p>
+            </div>
+          )}
+          {selectedAgentId && !isLoadingMessages && messages.length === 0 && (
+            <div className="text-center text-muted-foreground">
+              No messages yet. Send a message to start the conversation!
+            </div>
+          )}
+          {messages.map((msg, index) => (
+            <div
+              key={msg.id || index}
+              className={`flex items-start gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              {msg.role === "assistant" && (
+                <Bot className="h-8 w-8 rounded-full bg-primary text-primary-foreground p-1.5 flex-shrink-0" />
+              )}
+              <div
+                className={`p-3 rounded-lg max-w-[75%] break-words shadow-sm ${msg.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-br-none"
+                    : "bg-muted rounded-bl-none"
+                  }`}
+              >
+                {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
+              </div>
+              {msg.role === "user" && (
+                <User className="h-8 w-8 rounded-full bg-muted border p-1.5 flex-shrink-0" />
+              )}
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </ScrollArea>
+
+        <footer className="p-4 border-t bg-background">
+          <div className="flex items-center gap-2">
+            {/* Toolbar for additional actions */}
+            <Button variant="ghost" size="icon" title="Search History (coming soon)"> <Search className="h-5 w-5" /> </Button>
+            <Button variant="ghost" size="icon" title="Generate Document (coming soon)"> <FileText className="h-5 w-5" /> </Button>
+            <Button variant="ghost" size="icon" title="Generate Image (coming soon)"> <ImageIcon className="h-5 w-5" /> </Button>
+            <Button variant="ghost" size="icon" title="Generate Code (coming soon)"> <Code2 className="h-5 w-5" /> </Button>
+            <Button variant="ghost" size="icon" title="Attach File (coming soon)"> <PlusCircle className="h-5 w-5" /> </Button>
+          </div>
+          <div className="mt-2 flex w-full items-center space-x-2">
+            <Textarea
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder={selectedAgentId ? `Message ${agents.find(a => a.id.toString() === selectedAgentId)?.name || "Agent"}...` : "Select an agent to send a message..."}
+              className="flex-1 resize-none min-h-[40px] max-h-[150px] p-2.5"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              disabled={sendMessageMutation.isPending || !selectedAgentId}
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={sendMessageMutation.isPending || !inputMessage.trim() || !selectedAgentId}
+              size="lg"
+            >
+              {sendMessageMutation.isPending ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
