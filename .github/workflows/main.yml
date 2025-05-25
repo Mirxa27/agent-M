@@ -1,0 +1,31 @@
+name: Mirxa CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20' # Or a version suitable for Next.js
+
+      - name: Install dependencies (placeholder)
+        run: echo "No dependencies to install yet"
+
+      - name: Lint (placeholder)
+        run: |
+          echo "Linting README.md as a placeholder"
+          npm install -g markdownlint-cli
+          markdownlint README.md
+
+      - name: Run tests (placeholder)
+        run: echo "No tests to run yet"
