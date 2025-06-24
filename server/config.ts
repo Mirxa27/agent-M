@@ -114,8 +114,9 @@ const createConfig = () => {
     },
     
     // Database
+    // Use DATABASE_URL directly for PostgreSQL connections
     database: {
-      url: `mysql://${env.DB_USER}:${env.DB_PASSWORD}@${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}`,
+      url: env.DATABASE_URL,
       poolMax: isProd ? 20 : 5,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,

@@ -52,6 +52,15 @@ Mirxa AI Agent Platform provides a unified interface for creating, managing, and
    npm run dev
    ```
 
+### Development Tips
+
+After running `npm install`, use the following commands to verify your setup:
+
+```bash
+npm run check  # TypeScript type checking
+npm test       # Run Jest tests
+```
+
 ## Documentation
 
 - [Deployment Guide](docs/deployment.md)
@@ -71,6 +80,7 @@ The Mirxa AI Agent Platform follows a component-based architecture with clear se
 - Authentication uses secure session management with PostgreSQL storage
 - HTTPS is enforced in production
 - API endpoints are protected with authentication middleware
+- Security headers and request rate limiting via Helmet and express-rate-limit
 
 ## Deployment on Hostinger
 
@@ -78,17 +88,13 @@ The Mirxa AI Agent Platform follows a component-based architecture with clear se
 
 - Hostinger account
 - SSH access to your Hostinger server
-- MySQL database credentials
+- PostgreSQL database credentials
 
 ### Database Configuration
 
-1. Update your `.env` file with the following MySQL credentials:
+1. Update your `.env` file with the following PostgreSQL connection string:
    ```
-   DB_HOST=srv1505.hstgr.io
-   DB_PORT=3306
-   DB_USER=u221943340_agent
-   DB_PASSWORD=Mirxa420$
-   DB_NAME=u221943340_agent
+   DATABASE_URL=postgres://username:password@localhost:5432/database_name
    ```
 
 ### SSH Access
