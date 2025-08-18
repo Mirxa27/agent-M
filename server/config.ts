@@ -65,19 +65,19 @@ const envSchema = z.object({
   // SMTP Configuration
   SMTP_HOST: z.string({
     required_error: "SMTP_HOST is required",
-  }).default("smtp.hostinger.com"),
+  }).default("smtp.example.com"),
   SMTP_PORT: z.coerce.number({
     required_error: "SMTP_PORT is required",
-  }).default(465),
+  }).default(587),
   SMTP_USER: z.string({
     required_error: "SMTP_USER is required",
-  }).default("join@Mirxa.io"),
+  }).default("user@example.com"),
   SMTP_PASS: z.string({
     required_error: "SMTP_PASS is required",
-  }).default("Mirxa420$"),
+  }).default("password"),
   EMAIL_FROM: z.string({
     required_error: "EMAIL_FROM is required",
-  }).default("Mirxa"),
+  }).default("Example"),
 });
 
 // Parse environment variables

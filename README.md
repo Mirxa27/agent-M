@@ -58,6 +58,8 @@ After running `npm install`, use the following commands to verify your setup:
 
 ```bash
 npm run check  # TypeScript type checking
+npm run lint   # ESLint code analysis
+npm run format # Prettier formatting
 npm test       # Run Jest tests
 ```
 

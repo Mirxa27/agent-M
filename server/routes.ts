@@ -37,6 +37,7 @@ import {
 import { credentialService, SERVICE_TYPES } from "./services/credential-service";
 import { gmailService } from "./services/gmail-service";
 import { paymentService } from "./services/payment-service";
+import basicRoutes from "./routes/basic-routes";
 
 // Configure multer for file uploads
 const storage_engine = multer.diskStorage({
@@ -83,6 +84,9 @@ const handleError = (error: unknown): string => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Mount basic routes (health, site settings, etc.)
+  app.use(basicRoutes);
+
   // Health check endpoint - no auth required, useful for deployment monitoring
   app.get("/api/health", async (req, res) => {
     try {
