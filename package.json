@@ -11,7 +11,16 @@
     "db:push": "drizzle-kit push",
     "create-admin": "tsx -r dotenv/config create-admin.ts",
     "vercel-build": "npm run build",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint \"{client,server,shared}/**/*.{ts,tsx,js}\" --max-warnings=0",
+    "format": "prettier --check .",
+    "prepare": "husky install"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,json,md}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",

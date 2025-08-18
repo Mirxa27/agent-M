@@ -1,9 +1,3 @@
-# node_modules is ignored by default
-.config
-.build
-.cache
-.upm
-.tmp
-.git
-replit.nix
-.replit
+node_modules
+dist
+coverage
