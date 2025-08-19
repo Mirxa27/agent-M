@@ -38,6 +38,7 @@ import { credentialService, SERVICE_TYPES } from "./services/credential-service"
 import { gmailService } from "./services/gmail-service";
 import { paymentService } from "./services/payment-service";
 import basicRoutes from "./routes/basic-routes";
+import oauthRoutes from "./routes/oauth-routes";
 
 // Configure multer for file uploads
 const storage_engine = multer.diskStorage({
