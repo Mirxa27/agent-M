@@ -9,21 +9,11 @@ const envSchema = z.object({
   DATABASE_URL: z.string({
     required_error: "DATABASE_URL is required",
   }),
-  DB_HOST: z.string({
-    required_error: "DB_HOST is required",
-  }),
-  DB_PORT: z.coerce.number({
-    required_error: "DB_PORT is required",
-  }).default(3306),
-  DB_USER: z.string({
-    required_error: "DB_USER is required",
-  }),
-  DB_PASSWORD: z.string({
-    required_error: "DB_PASSWORD is required",
-  }),
-  DB_NAME: z.string({
-    required_error: "DB_NAME is required",
-  }),
+  DB_HOST: z.string().optional(),
+  DB_PORT: z.coerce.number().default(5432).optional(),
+  DB_USER: z.string().optional(),
+  DB_PASSWORD: z.string().optional(),
+  DB_NAME: z.string().optional(),
   
   // Session configuration
   SESSION_SECRET: z.string().default("mirxa-super-secret-session-key"),
