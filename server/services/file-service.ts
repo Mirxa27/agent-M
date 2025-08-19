@@ -43,14 +43,28 @@ export async function loadAndProcessFile(file: FileModel): Promise<FileData> {
     } else if (file.contentType === "application/json") {
       // JSON files
       textContent = buffer.toString("utf8");
-    } else if (
-      file.contentType === "application/pdf" ||
-      file.contentType.includes("spreadsheet") ||
-      file.contentType.includes("document") ||
-      file.contentType.includes("presentation")
-    ) {
-      // For documents that need special processing
-      textContent = `[${file.contentType} file content extraction not implemented yet]`;
+    } else if (isSupportedDocumentType(file.contentType)) {
+      // Process documents using document processor
+      try {
+        const documentContent = await processDocument(buffer, file.contentType);
+        textContent = documentContent.text;
+
+        // Add metadata information to content if available
+        if (documentContent.metadata) {
+          const metaInfo = [];
+          if (documentContent.metadata.pages) metaInfo.push(`Pages: ${documentContent.metadata.pages}`);
+          if (documentContent.metadata.sheets) metaInfo.push(`Sheets: ${documentContent.metadata.sheets.join(', ')}`);
+          if (documentContent.metadata.slides) metaInfo.push(`Slides: ${documentContent.metadata.slides}`);
+          if (documentContent.metadata.wordCount) metaInfo.push(`Words: ${documentContent.metadata.wordCount}`);
+
+          if (metaInfo.length > 0) {
+            textContent = `[Document Info: ${metaInfo.join(', ')}]\n\n${textContent}`;
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing document ${file.name}:`, error);
+        textContent = `[Document processing failed: ${error.message}]`;
+      }
     } else if (file.contentType.startsWith("image/")) {
       // Image files
       textContent = `[Image file: ${file.name}]`;
