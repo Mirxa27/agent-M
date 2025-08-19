@@ -368,20 +368,27 @@ export const credentialService = new CredentialService();
 // Export OAuth-specific functions
 export async function beginOAuthFlow(
   userId: number,
-  serviceType: string
+  serviceType: string,
+  scopes?: string[]
 ): Promise<{ authUrl: string; state: string }> {
-  // Implementation depends on the OAuth service and external libraries
-  // This is a placeholder that would be implemented based on specific services
-  throw new Error("OAuth flow not implemented for this service");
+  const { oauthService } = await import('./oauth-service');
+  return await oauthService.beginOAuthFlow(userId, serviceType, scopes);
 }
 
 export async function completeOAuthFlow(
-  userId: number,
-  serviceType: string,
   code: string,
   state: string
-): Promise<Credential> {
-  // Implementation depends on the OAuth service and external libraries
-  // This is a placeholder that would be implemented based on specific services
-  throw new Error("OAuth flow not implemented for this service");
+): Promise<{ userId: number; credential: Credential }> {
+  const { oauthService } = await import('./oauth-service');
+  return await oauthService.completeOAuthFlow(code, state);
+}
+
+export async function refreshOAuthTokens(credential: Credential): Promise<any> {
+  const { oauthService } = await import('./oauth-service');
+  return await oauthService.refreshOAuthTokens(credential);
+}
+
+export function isOAuthSupported(service: string): boolean {
+  const { oauthService } = require('./oauth-service');
+  return oauthService.isOAuthSupported(service);
 }
