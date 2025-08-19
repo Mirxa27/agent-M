@@ -5,7 +5,6 @@ import { Dropbox } from 'dropbox';
 import crypto from 'crypto';
 import config from '../config';
 import { CredentialService } from './credential-service';
-import { storage } from '../storage';
 
 // OAuth state storage (in production, use Redis or database)
 const oauthStates = new Map<string, { userId: number; service: string; timestamp: number }>();
