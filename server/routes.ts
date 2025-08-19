@@ -1,15 +1,15 @@
-import { eq } from "drizzle-orm";
-import type { Express, NextFunction, Request, Response } from "express";
-import fs from "fs";
-import { createServer, type Server } from "http";
-import multer from "multer";
-import path from "path";
-import { hashPassword, setupAuth } from "./auth";
-import { checkRequiredApiKey } from "./config";
-import { checkDatabaseConnection, db } from "./db";
-import { storage } from "./storage";
+import { eq } from 'drizzle-orm';
+import type { Express, NextFunction, Request, Response } from 'express';
+import fs from 'fs';
+import { createServer, type Server } from 'http';
+import multer from 'multer';
+import path from 'path';
+import { hashPassword, setupAuth } from './auth';
+import { checkRequiredApiKey } from './config';
+import { checkDatabaseConnection, db } from './db';
+import { storage } from './storage';
 // Import AI services
-import aiService from "./services/ai-service";
+import aiService from './services/ai-service';
 // Import the processAgentTask function
 import {
   agentTools,
@@ -19,10 +19,10 @@ import {
   insertCredentialSchema,
   insertFileSchema,
   insertMessageSchema,
-  insertTaskSchema
-} from "@shared/schema";
-import { decrypt, encrypt } from "../shared/crypto";
-import { processAgentTask } from "./agent-task-processor";
+  insertTaskSchema,
+} from '@shared/schema';
+import { decrypt, encrypt } from '../shared/crypto';
+import { processAgentTask } from './agent-task-processor';
 import {
   awardPoints,
   completeChallenge,
@@ -32,13 +32,13 @@ import {
   getOrCreateGameProgress,
   getOrCreateSessionId,
   storeChatMessage,
-  updateStreak
-} from "./services/chatbot-service";
-import { credentialService, SERVICE_TYPES } from "./services/credential-service";
-import { gmailService } from "./services/gmail-service";
-import { paymentService } from "./services/payment-service";
-import basicRoutes from "./routes/basic-routes";
-import oauthRoutes from "./routes/oauth-routes";
+  updateStreak,
+} from './services/chatbot-service';
+import { credentialService, SERVICE_TYPES } from './services/credential-service';
+import { gmailService } from './services/gmail-service';
+import { paymentService } from './services/payment-service';
+import basicRoutes from './routes/basic-routes';
+import oauthRoutes from './routes/oauth-routes';
 
 // Configure multer for file uploads
 const storage_engine = multer.diskStorage({
@@ -52,10 +52,10 @@ const storage_engine = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // Create unique filename with original extension
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
     cb(null, 'logo-' + uniqueSuffix + ext);
-  }
+  },
 });
 
 const upload = multer({
@@ -72,8 +72,8 @@ const upload = multer({
     if (mimetype && extname) {
       return cb(null, true);
     }
-    cb(new Error("Only images (jpeg, jpg, png, gif, svg) are allowed!"));
-  }
+    cb(new Error('Only images (jpeg, jpg, png, gif, svg) are allowed!'));
+  },
 });
 
 // Helper function to handle errors consistently
@@ -81,7 +81,7 @@ const handleError = (error: unknown): string => {
   if (error instanceof Error) {
     return error.message;
   }
-  return "Unknown error occurred";
+  return 'Unknown error occurred';
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -89,45 +89,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(basicRoutes);
 
   // Mount OAuth routes
-  app.use("/api/oauth", oauthRoutes);
+  app.use('/api/oauth', oauthRoutes);
 
   // Health check endpoint - no auth required, useful for deployment monitoring
-  app.get("/api/health", async (req, res) => {
+  app.get('/api/health', async (req, res) => {
     try {
       const dbStatus = await checkDatabaseConnection();
       if (!dbStatus) {
         return res.status(500).json({
-          status: "error",
-          database: "disconnected",
-          message: "Database connection failed",
+          status: 'error',
+          database: 'disconnected',
+          message: 'Database connection failed',
         });
       }
 
       return res.status(200).json({
-        status: "ok",
-        database: "connected",
-        server: "running",
+        status: 'ok',
+        database: 'connected',
+        server: 'running',
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error("Health check error:", error);
+      console.error('Health check error:', error);
       return res.status(500).json({
-        status: "error",
-        message: "Health check failed",
+        status: 'error',
+        message: 'Health check failed',
         details: handleError(error),
       });
     }
   });
 
   // Get site settings (public access)
-  app.get("/api/site-settings", async (req, res) => {
+  app.get('/api/site-settings', async (req, res) => {
     try {
       // Get settings or create default if none exist
       let settings = await storage.getSiteSettings();
 
       // If no settings found, create default settings
       if (!settings) {
-        console.log("No site settings found, creating default settings");
+        console.log('No site settings found, creating default settings');
         settings = await storage.createDefaultSiteSettings();
       }
 
@@ -135,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { updatedBy, ...publicSettings } = settings;
       res.json(publicSettings);
     } catch (error) {
-      console.error("Error fetching site settings:", error);
+      console.error('Error fetching site settings:', error);
       res.status(500).json({ error: handleError(error) });
     }
   });
@@ -146,39 +146,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication middleware
   const requireAuth = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Not authenticated" });
+      return res.status(401).json({ error: 'Not authenticated' });
     }
     next();
   };
 
   // Admin middleware
   const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.isAuthenticated() || !req.user || req.user.role !== "admin") {
-      return res.status(403).json({ error: "Not authorized" });
+    if (!req.isAuthenticated() || !req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized' });
     }
     next();
   };
 
   // Simple endpoint to check if user has admin access - for testing
-  app.get("/api/admin/check", requireAdmin, (req: Request, res: Response) => {
+  app.get('/api/admin/check', requireAdmin, (req: Request, res: Response) => {
     // We can safely assume user exists because requireAdmin middleware checks it
     const user = req.user!;
     res.json({
       success: true,
-      message: "You have admin access",
+      message: 'You have admin access',
       user: {
         id: user.id,
         username: user.username,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
   });
 
   // Upload logo endpoint - requires admin permissions
-  app.post("/api/admin/upload-logo", requireAdmin, upload.single('logo'), async (req, res) => {
+  app.post('/api/admin/upload-logo', requireAdmin, upload.single('logo'), async (req, res) => {
     try {
       if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
+        return res.status(400).json({ error: 'No file uploaded' });
       }
 
       // Generate the public URL for the file
@@ -191,9 +191,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Only update the logo URL, keep other settings the same
         await storage.updateSiteSettings({
           logo: {
-            ...((existingSettings.logo && typeof existingSettings.logo === 'object') ? existingSettings.logo : {}),
-            url: fileUrl
-          }
+            ...(existingSettings.logo && typeof existingSettings.logo === 'object'
+              ? existingSettings.logo
+              : {}),
+            url: fileUrl,
+          },
         });
       }
 
@@ -201,10 +203,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json({
         success: true,
         url: fileUrl,
-        message: "Logo uploaded successfully"
+        message: 'Logo uploaded successfully',
       });
     } catch (error) {
-      console.error("Error uploading logo:", error);
+      console.error('Error uploading logo:', error);
       res.status(500).json({
         error: handleError(error), // Use handleError
       });
@@ -212,13 +214,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard preferences routes
-  import("./services/dashboard-service").then((dashboardService) => {
+  import('./services/dashboard-service').then((dashboardService) => {
     // Get user dashboard preferences
-    app.get("/api/user/dashboard/preferences", requireAuth, async (req, res) => { // Added requireAuth
+    app.get('/api/user/dashboard/preferences', requireAuth, async (req, res) => {
+      // Added requireAuth
       try {
         // Middleware ensures req.user exists, but TS needs explicit check
         if (!req.user) {
-          return res.status(401).send({ error: "Not authenticated" });
+          return res.status(401).send({ error: 'Not authenticated' });
         }
         let preferences = await dashboardService.getDashboardPreferences(req.user.id);
 
@@ -228,16 +231,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json(preferences);
       } catch (error) {
-        console.error("Error fetching dashboard preferences:", error);
+        console.error('Error fetching dashboard preferences:', error);
         res.status(500).send({ error: handleError(error) }); // Use handleError
       }
     });
 
     // Update user dashboard preferences
-    app.patch("/api/user/dashboard/preferences", requireAuth, async (req, res) => { // Added requireAuth
+    app.patch('/api/user/dashboard/preferences', requireAuth, async (req, res) => {
+      // Added requireAuth
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).send({ error: "Not authenticated" });
+        return res.status(401).send({ error: 'Not authenticated' });
       }
 
       try {
@@ -245,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const updated = await dashboardService.updateDashboardPreferences(req.user.id, updates);
         res.json(updated);
       } catch (error) {
-        console.error("Error updating dashboard preferences:", error);
+        console.error('Error updating dashboard preferences:', error);
         res.status(500).send({ error: handleError(error) }); // Use handleError
       }
     });
@@ -253,10 +257,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // API routes
   // Get user profile
-  app.get("/api/profile", requireAuth, (req: Request, res: Response) => {
+  app.get('/api/profile', requireAuth, (req: Request, res: Response) => {
     // Middleware ensures req.user exists, but TS needs explicit check
     if (!req.user) {
-      return res.status(401).json({ error: "User not authenticated" });
+      return res.status(401).json({ error: 'User not authenticated' });
     }
     // Explicitly copy properties instead of spreading potentially non-object type
     const userWithoutPassword = {
@@ -273,11 +277,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update user profile
-  app.patch("/api/profile", requireAuth, async (req: Request, res: Response) => {
+  app.patch('/api/profile', requireAuth, async (req: Request, res: Response) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
       const updates: Record<string, any> = {};
@@ -293,7 +297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedUser = await storage.updateUser(req.user.id, updates);
       if (!updatedUser) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({ error: 'User not found' });
       }
 
       // Remove password from response
@@ -305,11 +309,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agent routes
-  app.get("/api/agents", requireAuth, async (req: Request, res: Response) => {
+  app.get('/api/agents', requireAuth, async (req: Request, res: Response) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
       const agents = await storage.getAgentsByUserId(req.user.id);
       res.json(agents);
@@ -319,35 +323,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get agent templates for creating new agents
-  app.get("/api/agent-templates", requireAuth, async (req: Request, res: Response) => {
+  app.get('/api/agent-templates', requireAuth, async (req: Request, res: Response) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
       const templates = await storage.getAgentTemplates();
       res.json(templates);
     } catch (error) {
       res.status(500).json({
-        error: handleError(error) // Use handleError
+        error: handleError(error), // Use handleError
       });
     }
   });
 
   // Agent status endpoint for dashboard - must come before the :id route
-  app.get("/api/agents/status", requireAuth, async (req: Request, res: Response) => {
+  app.get('/api/agents/status', requireAuth, async (req: Request, res: Response) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
       const agents = await storage.getAgentsByUserId(req.user.id);
 
       // Count agents by status
       const agentCounts = {
         total: agents.length,
-        active: agents.filter(agent => agent.isActive === true).length,
-        inactive: agents.filter(agent => agent.isActive === false || agent.isActive === undefined).length
+        active: agents.filter((agent) => agent.isActive === true).length,
+        inactive: agents.filter((agent) => agent.isActive === false || agent.isActive === undefined)
+          .length,
       };
 
       res.json(agentCounts);
@@ -356,21 +361,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/agents/:id", requireAuth, async (req: Request, res: Response) => {
+  app.get('/api/agents/:id', requireAuth, async (req: Request, res: Response) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
       const agent = await storage.getAgent(parseInt(req.params.id));
 
       if (!agent) {
-        return res.status(404).json({ error: "Agent not found" });
+        return res.status(404).json({ error: 'Agent not found' });
       }
 
       // Check ownership
       if (agent.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       res.json(agent);
@@ -379,11 +384,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/agents", requireAuth, async (req: Request, res: Response) => {
+  app.post('/api/agents', requireAuth, async (req: Request, res: Response) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
       // Validate request body
       const validatedData = insertAgentSchema.safeParse({
@@ -393,7 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!validatedData.success) {
         return res.status(400).json({
-          error: "Validation failed",
+          error: 'Validation failed',
           details: validatedData.error.format(),
         });
       }
@@ -405,26 +410,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/agents/:id", requireAuth, async (req: Request, res: Response) => {
+  app.patch('/api/agents/:id', requireAuth, async (req: Request, res: Response) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
       const agentId = parseInt(req.params.id);
       const agent = await storage.getAgent(agentId);
 
       if (!agent) {
-        return res.status(404).json({ error: "Agent not found" });
+        return res.status(404).json({ error: 'Agent not found' });
       }
 
       // Check ownership
       if (agent.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       // Define allowed update fields to avoid spreading potentially unsafe req.body
-      const allowedUpdates = ['name', 'description', 'systemPrompt', 'config', 'isActive', 'icon', 'isPublic'];
+      const allowedUpdates = [
+        'name',
+        'description',
+        'systemPrompt',
+        'config',
+        'isActive',
+        'icon',
+        'isPublic',
+      ];
       const updates: Record<string, any> = {};
       for (const key of allowedUpdates) {
         if (req.body[key] !== undefined) {
@@ -440,22 +453,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/agents/:id", requireAuth, async (req: Request, res: Response) => {
+  app.delete('/api/agents/:id', requireAuth, async (req: Request, res: Response) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
       const agentId = parseInt(req.params.id);
       const agent = await storage.getAgent(agentId);
 
       if (!agent) {
-        return res.status(404).json({ error: "Agent not found" });
+        return res.status(404).json({ error: 'Agent not found' });
       }
 
       // Check ownership
       if (agent.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       // Delete agent
@@ -467,11 +480,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Credential routes
-  app.get("/api/credentials", requireAuth, async (req: Request, res: Response) => {
+  app.get('/api/credentials', requireAuth, async (req: Request, res: Response) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
       const credentials = await storage.getCredentialsByUserId(req.user.id);
       // Don't include sensitive data in the response
@@ -481,23 +494,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.json(sanitizedCredentials);
     } catch (error) {
-      console.error("Error fetching credentials:", error);
+      console.error('Error fetching credentials:', error);
       res.status(500).json({ error: handleError(error) });
     }
   });
 
   // Get credentials by type (service)
-  app.get("/api/credentials/service/:type", requireAuth, async (req, res) => {
+  app.get('/api/credentials/service/:type', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
       const serviceType = req.params.type;
 
       // Ensure valid service type
       if (!Object.values(SERVICE_TYPES).includes(serviceType)) {
-        return res.status(400).json({ error: "Invalid service type" });
+        return res.status(400).json({ error: 'Invalid service type' });
       }
 
       const credentials = await credentialService.listCredentials(req.user.id, serviceType);
@@ -509,15 +522,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get expiring credentials
-  app.get("/api/credentials/expiring", requireAuth, async (req, res) => {
+  app.get('/api/credentials/expiring', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
-      const daysThreshold = req.query.days
-        ? parseInt(req.query.days.toString())
-        : 7;
+      const daysThreshold = req.query.days ? parseInt(req.query.days.toString()) : 7;
 
       const expiringCredentials = await credentialService.getExpiringCredentials(
         req.user.id,
@@ -526,26 +537,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(expiringCredentials);
     } catch (error) {
-      console.error("Error fetching expiring credentials:", error);
-      res.status(500).json({ error: "Failed to fetch expiring credentials" });
+      console.error('Error fetching expiring credentials:', error);
+      res.status(500).json({ error: 'Failed to fetch expiring credentials' });
     }
   });
 
-  app.get("/api/credentials/:id", requireAuth, async (req, res) => {
+  app.get('/api/credentials/:id', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
       const credential = await storage.getCredential(parseInt(req.params.id));
 
       if (!credential) {
-        return res.status(404).json({ error: "Credential not found" });
+        return res.status(404).json({ error: 'Credential not found' });
       }
 
       // Check ownership
       if (credential.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       try {
@@ -557,9 +568,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           parsedData = JSON.parse(decryptedData);
         } catch (parseError) {
-          console.error("Error parsing credential data:", parseError);
+          console.error('Error parsing credential data:', parseError);
           return res.status(500).json({
-            error: "Credential data is corrupted or invalid"
+            error: 'Credential data is corrupted or invalid',
           });
         }
 
@@ -569,28 +580,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           data: parsedData,
         });
       } catch (decryptError) {
-        console.error("Error decrypting credential:", decryptError);
+        console.error('Error decrypting credential:', decryptError);
         return res.status(500).json({
-          error: "Failed to decrypt credential data"
+          error: 'Failed to decrypt credential data',
         });
       }
     } catch (error) {
-      console.error("Error retrieving credential:", error);
-      res.status(500).json({ error: "Failed to retrieve credential" });
+      console.error('Error retrieving credential:', error);
+      res.status(500).json({ error: 'Failed to retrieve credential' });
     }
   });
 
-  app.post("/api/credentials", requireAuth, async (req, res) => {
+  app.post('/api/credentials', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "User not authenticated" });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
       // Validate request structure
       if (!req.body.data || !req.body.name || !req.body.type) {
         return res.status(400).json({
-          error: "Validation failed",
-          details: "Missing required fields (name, type, and data)",
+          error: 'Validation failed',
+          details: 'Missing required fields (name, type, and data)',
         });
       }
 
@@ -608,7 +619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (!validatedData.success) {
           return res.status(400).json({
-            error: "Validation failed",
+            error: 'Validation failed',
             details: validatedData.error.format(),
           });
         }
@@ -618,9 +629,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Log the creation for audit
         await storage.createUserActivity({
           userId: req.user.id,
-          activityType: "credential_created",
+          activityType: 'credential_created',
           resourceId: credential.id,
-          resourceType: "credential",
+          resourceType: 'credential',
           metadata: { name: credential.name, type: credential.type },
         });
 
@@ -628,33 +639,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { data, ...credentialWithoutData } = credential;
         res.status(201).json(credentialWithoutData);
       } catch (encryptError) {
-        console.error("Error encrypting credential data:", encryptError);
+        console.error('Error encrypting credential data:', encryptError);
         return res.status(500).json({
-          error: "Failed to secure credential data"
+          error: 'Failed to secure credential data',
         });
       }
     } catch (error) {
-      console.error("Error creating credential:", error);
-      res.status(500).json({ error: "Failed to create credential" });
+      console.error('Error creating credential:', error);
+      res.status(500).json({ error: 'Failed to create credential' });
     }
   });
 
-  app.patch("/api/credentials/:id", requireAuth, async (req, res) => {
+  app.patch('/api/credentials/:id', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const credentialId = parseInt(req.params.id);
       const credential = await storage.getCredential(credentialId);
 
       if (!credential) {
-        return res.status(404).json({ error: "Credential not found" });
+        return res.status(404).json({ error: 'Credential not found' });
       }
 
       // Check ownership
       if (credential.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       try {
@@ -668,23 +679,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updates.data = encrypt(JSON.stringify(req.body.data));
         }
 
-        const updatedCredential = await storage.updateCredential(
-          credentialId,
-          updates,
-        );
+        const updatedCredential = await storage.updateCredential(credentialId, updates);
 
         // Check if update was successful before proceeding
         if (!updatedCredential) {
           // This case might indicate the credential was deleted concurrently
-          return res.status(404).json({ error: "Credential not found after update attempt" });
+          return res.status(404).json({ error: 'Credential not found after update attempt' });
         }
 
         // Log the update for audit
         await storage.createUserActivity({
           userId: req.user.id,
-          activityType: "credential_updated",
+          activityType: 'credential_updated',
           resourceId: credentialId,
-          resourceType: "credential",
+          resourceType: 'credential',
           metadata: { name: updatedCredential.name, type: updatedCredential.type },
         });
 
@@ -692,33 +700,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { data, ...credentialWithoutData } = updatedCredential;
         res.json(credentialWithoutData);
       } catch (encryptError) {
-        console.error("Error encrypting credential data:", encryptError);
+        console.error('Error encrypting credential data:', encryptError);
         return res.status(500).json({
-          error: "Failed to secure credential data"
+          error: 'Failed to secure credential data',
         });
       }
     } catch (error) {
-      console.error("Error updating credential:", error);
-      res.status(500).json({ error: "Failed to update credential" });
+      console.error('Error updating credential:', error);
+      res.status(500).json({ error: 'Failed to update credential' });
     }
   });
 
-  app.delete("/api/credentials/:id", requireAuth, async (req, res) => {
+  app.delete('/api/credentials/:id', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const credentialId = parseInt(req.params.id);
       const credential = await storage.getCredential(credentialId);
 
       if (!credential) {
-        return res.status(404).json({ error: "Credential not found" });
+        return res.status(404).json({ error: 'Credential not found' });
       }
 
       // Check ownership
       if (credential.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       // Delete credential
@@ -727,45 +735,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log the deletion for audit
       await storage.createUserActivity({
         userId: req.user.id,
-        activityType: "credential_deleted",
+        activityType: 'credential_deleted',
         resourceId: credentialId,
-        resourceType: "credential",
+        resourceType: 'credential',
         metadata: { name: credential.name, type: credential.type },
       });
 
       res.sendStatus(204);
     } catch (error) {
-      console.error("Error deleting credential:", error);
-      res.status(500).json({ error: "Failed to delete credential" });
+      console.error('Error deleting credential:', error);
+      res.status(500).json({ error: 'Failed to delete credential' });
     }
   });
 
   // Gmail service-specific routes
-  app.post("/api/services/gmail/credentials", requireAuth, async (req, res) => {
+  app.post('/api/services/gmail/credentials', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const { name, email, app_password, access_token, refresh_token, expiresInDays } = req.body;
 
       if (!name) {
-        return res.status(400).json({ error: "Credential name is required" });
+        return res.status(400).json({ error: 'Credential name is required' });
       }
 
       // Validate that we have at least one auth method
       if (!app_password && !(access_token && refresh_token)) {
         return res.status(400).json({
-          error: "Either app_password or both access_token and refresh_token are required"
+          error: 'Either app_password or both access_token and refresh_token are required',
         });
       }
 
       const data = {
-        email: email || "",
+        email: email || '',
         app_password: app_password || undefined,
         access_token: access_token || undefined,
         refresh_token: refresh_token || undefined,
-        expires_at: access_token ? Date.now() + 3600 * 1000 : undefined // Default to 1 hour for OAuth tokens
+        expires_at: access_token ? Date.now() + 3600 * 1000 : undefined, // Default to 1 hour for OAuth tokens
       };
 
       const credential = await gmailService.saveGmailCredentials(
@@ -778,12 +786,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log the creation
       await storage.createUserActivity({
         userId: req.user.id,
-        activityType: "gmail_credential_created",
+        activityType: 'gmail_credential_created',
         resourceId: credential.id,
-        resourceType: "credential",
+        resourceType: 'credential',
         metadata: {
           name: credential.name,
-          email: email
+          email: email,
         },
       });
 
@@ -791,91 +799,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { data: _, ...credentialWithoutData } = credential;
       res.status(201).json(credentialWithoutData);
     } catch (error) {
-      console.error("Error creating Gmail credentials:", error);
-      res.status(500).json({ error: "Failed to create Gmail credentials" });
+      console.error('Error creating Gmail credentials:', error);
+      res.status(500).json({ error: 'Failed to create Gmail credentials' });
     }
   });
 
-  app.get("/api/services/gmail/credentials", requireAuth, async (req, res) => {
+  app.get('/api/services/gmail/credentials', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const credentials = await gmailService.listGmailCredentials(req.user.id);
       res.json(credentials);
     } catch (error) {
-      console.error("Error listing Gmail credentials:", error);
+      console.error('Error listing Gmail credentials:', error);
       res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
-  app.post("/api/services/gmail/send-email", requireAuth, async (req, res) => {
+  app.post('/api/services/gmail/send-email', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const { credentialId, to, subject, body, attachments } = req.body;
 
       if (!credentialId || !to || !subject || !body) {
         return res.status(400).json({
-          error: "Missing required fields: credentialId, to, subject, body"
+          error: 'Missing required fields: credentialId, to, subject, body',
         });
       }
 
       // Convert credentialId to number if it's a string
-      const credentialIdNum = typeof credentialId === 'string'
-        ? parseInt(credentialId)
-        : credentialId;
+      const credentialIdNum =
+        typeof credentialId === 'string' ? parseInt(credentialId) : credentialId;
 
       // Validate ownership of credential
       const cred = await storage.getCredential(credentialIdNum);
       if (!cred || cred.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized to use this credential" });
+        return res.status(403).json({ error: 'Not authorized to use this credential' });
       }
 
       // Send email
-      const result = await gmailService.sendEmail(
-        req.user.id,
-        credentialIdNum,
-        {
-          to,
-          subject,
-          body,
-          attachments: attachments || []
-        }
-      );
+      const result = await gmailService.sendEmail(req.user.id, credentialIdNum, {
+        to,
+        subject,
+        body,
+        attachments: attachments || [],
+      });
 
       // Log the email sending
       await storage.createUserActivity({
         userId: req.user.id,
-        activityType: "email_sent",
+        activityType: 'email_sent',
         resourceId: credentialIdNum,
-        resourceType: "credential",
+        resourceType: 'credential',
         metadata: {
           subject,
-          to: typeof to === 'string' ? to : to.join(',')
+          to: typeof to === 'string' ? to : to.join(','),
         },
       });
 
       res.json(result);
     } catch (error) {
-      console.error("Error sending email:", error);
-      res.status(500).json({ error: "Failed to send email" });
+      console.error('Error sending email:', error);
+      res.status(500).json({ error: 'Failed to send email' });
     }
   });
 
-  app.get("/api/services/gmail/messages", requireAuth, async (req, res) => {
+  app.get('/api/services/gmail/messages', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const { credentialId, maxResults, includeAttachments, labelIds, query } = req.query;
 
       if (!credentialId) {
-        return res.status(400).json({ error: "credentialId is required" });
+        return res.status(400).json({ error: 'credentialId is required' });
       }
 
       // Convert credentialId to number
@@ -884,7 +887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate ownership of credential
       const cred = await storage.getCredential(credentialIdNum);
       if (!cred || cred.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized to use this credential" });
+        return res.status(403).json({ error: 'Not authorized to use this credential' });
       }
 
       // Parse options
@@ -899,9 +902,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (labelIds) {
-        options.labelIds = typeof labelIds === 'string'
-          ? [labelIds]
-          : Array.isArray(labelIds) ? labelIds : undefined;
+        options.labelIds =
+          typeof labelIds === 'string'
+            ? [labelIds]
+            : Array.isArray(labelIds)
+              ? labelIds
+              : undefined;
       }
 
       if (query) {
@@ -909,63 +915,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get messages
-      const messages = await gmailService.getMessages(
-        req.user.id,
-        credentialIdNum,
-        options
-      );
+      const messages = await gmailService.getMessages(req.user.id, credentialIdNum, options);
 
       res.json(messages);
     } catch (error) {
-      console.error("Error fetching Gmail messages:", error);
-      res.status(500).json({ error: "Failed to fetch Gmail messages" });
+      console.error('Error fetching Gmail messages:', error);
+      res.status(500).json({ error: 'Failed to fetch Gmail messages' });
     }
   });
 
   // Endpoint to refresh OAuth tokens
-  app.post("/api/services/gmail/refresh-token", requireAuth, async (req, res) => {
+  app.post('/api/services/gmail/refresh-token', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const { credentialId } = req.body;
 
       if (!credentialId) {
-        return res.status(400).json({ error: "credentialId is required" });
+        return res.status(400).json({ error: 'credentialId is required' });
       }
 
       // Convert credentialId to number if it's a string
-      const credentialIdNum = typeof credentialId === 'string'
-        ? parseInt(credentialId)
-        : credentialId;
+      const credentialIdNum =
+        typeof credentialId === 'string' ? parseInt(credentialId) : credentialId;
 
       // Validate ownership of credential
       const cred = await storage.getCredential(credentialIdNum);
       if (!cred || cred.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized to use this credential" });
+        return res.status(403).json({ error: 'Not authorized to use this credential' });
       }
 
       // Refresh token
       const success = await gmailService.refreshOAuthToken(req.user.id, credentialIdNum);
 
       if (success) {
-        res.json({ success: true, message: "Token refreshed successfully" });
+        res.json({ success: true, message: 'Token refreshed successfully' });
       } else {
-        res.status(400).json({ success: false, error: "Failed to refresh token" });
+        res.status(400).json({ success: false, error: 'Failed to refresh token' });
       }
     } catch (error) {
-      console.error("Error refreshing Gmail OAuth token:", error);
-      res.status(500).json({ error: "Failed to refresh OAuth token" });
+      console.error('Error refreshing Gmail OAuth token:', error);
+      res.status(500).json({ error: 'Failed to refresh OAuth token' });
     }
   });
 
   // File/Template routes
-  app.get("/api/files", requireAuth, async (req, res) => {
+  app.get('/api/files', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const files = await storage.getFilesByUserId(req.user.id);
       res.json(files);
@@ -975,11 +976,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Recent files endpoint for dashboard
-  app.get("/api/files/recent", requireAuth, async (req, res) => {
+  app.get('/api/files/recent', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const limit = req.query.limit ? parseInt(req.query.limit.toString()) : 5;
       const files = await storage.getFilesByUserId(req.user.id);
@@ -989,11 +990,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/templates", requireAuth, async (req, res) => {
+  app.get('/api/templates', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const templates = await storage.getTemplatesByUserId(req.user.id);
       res.json(templates);
@@ -1002,21 +1003,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/files/:id", requireAuth, async (req, res) => {
+  app.get('/api/files/:id', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const file = await storage.getFile(parseInt(req.params.id));
 
       if (!file) {
-        return res.status(404).json({ error: "File not found" });
+        return res.status(404).json({ error: 'File not found' });
       }
 
       // Check ownership
       if (file.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       res.json(file);
@@ -1027,11 +1028,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Note: File upload would typically be handled with multipart/form-data and a library like multer
   // For simplicity in this prototype, we're just storing file metadata
-  app.post("/api/files", requireAuth, async (req, res) => {
+  app.post('/api/files', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       // Validate and create file record
       const validatedData = insertFileSchema.safeParse({
@@ -1041,7 +1042,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!validatedData.success) {
         return res.status(400).json({
-          error: "Validation failed",
+          error: 'Validation failed',
           details: validatedData.error.format(),
         });
       }
@@ -1053,22 +1054,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/files/:id", requireAuth, async (req, res) => {
+  app.delete('/api/files/:id', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const fileId = parseInt(req.params.id);
       const file = await storage.getFile(fileId);
 
       if (!file) {
-        return res.status(404).json({ error: "File not found" });
+        return res.status(404).json({ error: 'File not found' });
       }
 
       // Check ownership
       if (file.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       // Delete file
@@ -1080,15 +1081,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task routes
-  app.get("/api/tasks", requireAuth, async (req, res) => {
+  app.get('/api/tasks', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
-      const limit = req.query.limit
-        ? parseInt(req.query.limit as string)
-        : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       const tasks = await storage.getTasksByUserId(req.user.id, limit);
       res.json(tasks);
     } catch (error) {
@@ -1097,113 +1096,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API endpoint to register AI agent tools
-  app.post("/api/admin/register-tools", requireAdmin, async (req, res) => {
+  app.post('/api/admin/register-tools', requireAdmin, async (req, res) => {
     try {
       const tools = [
         {
-          name: "OpenAI Chat",
+          name: 'OpenAI Chat',
           description: "Connect with OpenAI's GPT models for natural language tasks",
-          category: "ai",
-          type: "ai", // Added type
-          icon: "sparkles",
+          category: 'ai',
+          type: 'ai', // Added type
+          icon: 'sparkles',
           isActive: true,
           isSystem: true,
           config: {
-            provider: "openai",
-            models: ["gpt-4o", "gpt-4-turbo", "gpt-4o-mini"],
-            capabilities: ["text generation", "instruction following", "creative writing", "summarization", "code generation"]
-          }
+            provider: 'openai',
+            models: ['gpt-4o', 'gpt-4-turbo', 'gpt-4o-mini'],
+            capabilities: [
+              'text generation',
+              'instruction following',
+              'creative writing',
+              'summarization',
+              'code generation',
+            ],
+          },
         },
         {
-          name: "Anthropic Claude",
+          name: 'Anthropic Claude',
           description: "Use Anthropic's Claude models for nuanced and safe outputs",
-          category: "ai",
-          type: "ai", // Added type
-          icon: "brain",
+          category: 'ai',
+          type: 'ai', // Added type
+          icon: 'brain',
           isActive: true,
           isSystem: true,
           config: {
-            provider: "anthropic",
-            models: ["claude-3-7-sonnet-20250219", "claude-3-5-sonnet", "claude-3-haiku"],
-            capabilities: ["text generation", "instruction following", "creative writing", "document analysis", "nuanced reasoning"]
-          }
+            provider: 'anthropic',
+            models: ['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet', 'claude-3-haiku'],
+            capabilities: [
+              'text generation',
+              'instruction following',
+              'creative writing',
+              'document analysis',
+              'nuanced reasoning',
+            ],
+          },
         },
         {
-          name: "Perplexity AI",
-          description: "Leverage Perplexity for real-time research and information gathering",
-          category: "research",
-          type: "research", // Added type
-          icon: "search",
+          name: 'Perplexity AI',
+          description: 'Leverage Perplexity for real-time research and information gathering',
+          category: 'research',
+          type: 'research', // Added type
+          icon: 'search',
           isActive: true,
           isSystem: true,
           config: {
-            provider: "perplexity",
-            models: ["llama-3.1-sonar-small-128k-online", "llama-3.1-sonar-large-128k-online"],
-            capabilities: ["online search", "fact verification", "current information", "research synthesis", "citation"]
-          }
+            provider: 'perplexity',
+            models: ['llama-3.1-sonar-small-128k-online', 'llama-3.1-sonar-large-128k-online'],
+            capabilities: [
+              'online search',
+              'fact verification',
+              'current information',
+              'research synthesis',
+              'citation',
+            ],
+          },
         },
         {
-          name: "Grok by xAI",
-          description: "Utilize Grok for analytical and technical tasks",
-          category: "ai",
-          type: "ai", // Added type
-          icon: "zap",
+          name: 'Grok by xAI',
+          description: 'Utilize Grok for analytical and technical tasks',
+          category: 'ai',
+          type: 'ai', // Added type
+          icon: 'zap',
           isActive: true,
           isSystem: true,
           config: {
-            provider: "xai",
-            models: ["grok-2-1212", "grok-2-vision-1212"],
-            capabilities: ["analytical reasoning", "technical explanations", "real-time data analysis", "image understanding"]
-          }
+            provider: 'xai',
+            models: ['grok-2-1212', 'grok-2-vision-1212'],
+            capabilities: [
+              'analytical reasoning',
+              'technical explanations',
+              'real-time data analysis',
+              'image understanding',
+            ],
+          },
         },
         {
-          name: "Code Generator",
-          description: "Generate code in various programming languages",
-          category: "code",
-          type: "code", // Added type
-          icon: "code",
+          name: 'Code Generator',
+          description: 'Generate code in various programming languages',
+          category: 'code',
+          type: 'code', // Added type
+          icon: 'code',
           isActive: true,
           isSystem: true, // Added isSystem flag
           config: {
-            provider: "openai",
-            models: ["gpt-4o"],
-            capabilities: ["code generation", "debugging", "optimization", "documentation"]
-          }
+            provider: 'openai',
+            models: ['gpt-4o'],
+            capabilities: ['code generation', 'debugging', 'optimization', 'documentation'],
+          },
         },
         {
-          name: "Data Analyzer",
-          description: "Analyze datasets and provide insights",
-          category: "data",
-          type: "data", // Added type
-          icon: "barChart",
+          name: 'Data Analyzer',
+          description: 'Analyze datasets and provide insights',
+          category: 'data',
+          type: 'data', // Added type
+          icon: 'barChart',
           isActive: true,
           isSystem: true,
           config: {
-            provider: "openai",
-            supportedProviders: ["openai", "xai", "perplexity"],
-            models: ["gpt-4o", "grok-2-1212"],
-            capabilities: ["data analysis", "visualization recommendations", "statistical inference", "trend identification"]
-          }
+            provider: 'openai',
+            supportedProviders: ['openai', 'xai', 'perplexity'],
+            models: ['gpt-4o', 'grok-2-1212'],
+            capabilities: [
+              'data analysis',
+              'visualization recommendations',
+              'statistical inference',
+              'trend identification',
+            ],
+          },
         },
         {
-          name: "Content Optimizer",
-          description: "Improve and optimize existing content",
-          category: "content",
-          type: "content", // Added type
-          icon: "fileText",
+          name: 'Content Optimizer',
+          description: 'Improve and optimize existing content',
+          category: 'content',
+          type: 'content', // Added type
+          icon: 'fileText',
           isActive: true,
           isSystem: true,
           config: {
-            provider: "openai",
-            supportedProviders: ["openai", "anthropic"],
-            models: ["gpt-4o", "claude-3-7-sonnet-20250219"],
-            capabilities: ["content improvement", "tone adjustment", "SEO optimization", "readability enhancement"]
-          }
-        }
+            provider: 'openai',
+            supportedProviders: ['openai', 'anthropic'],
+            models: ['gpt-4o', 'claude-3-7-sonnet-20250219'],
+            capabilities: [
+              'content improvement',
+              'tone adjustment',
+              'SEO optimization',
+              'readability enhancement',
+            ],
+          },
+        },
       ];
 
       const existingTools = await db.select().from(agentTools);
-      const existingToolNames = existingTools.map(tool => tool.name);
+      const existingToolNames = existingTools.map((tool) => tool.name);
 
       let added = 0;
       let updated = 0;
@@ -1222,13 +1254,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...tool,
             isSystem: true,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           };
 
           await db.insert(agentTools).values(newTool);
           added++;
         } else {
-          const existingTool = existingTools.find(t => t.name === tool.name);
+          const existingTool = existingTools.find((t) => t.name === tool.name);
           if (existingTool) {
             // Ensure 'type' is included in the update set
             const updateSet: Partial<typeof agentTools.$inferSelect> = {
@@ -1239,12 +1271,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               isSystem: true,
               config: tool.config,
               updatedAt: new Date(),
-              type: tool.type // Ensure type is present
+              type: tool.type, // Ensure type is present
             };
-            await db
-              .update(agentTools)
-              .set(updateSet)
-              .where(eq(agentTools.id, existingTool.id));
+            await db.update(agentTools).set(updateSet).where(eq(agentTools.id, existingTool.id));
             updated++;
           }
         }
@@ -1252,30 +1281,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: `Successfully registered tools: ${added} added, ${updated} updated`
+        message: `Successfully registered tools: ${added} added, ${updated} updated`,
       });
     } catch (error) {
-      console.error("Error registering tools:", error);
-      res.status(500).json({ error: "Failed to register tools" });
+      console.error('Error registering tools:', error);
+      res.status(500).json({ error: 'Failed to register tools' });
     }
   });
 
-  app.get("/api/agents/:agentId/tasks", requireAuth, async (req, res) => {
+  app.get('/api/agents/:agentId/tasks', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const agentId = parseInt(req.params.agentId);
       const agent = await storage.getAgent(agentId);
 
       if (!agent) {
-        return res.status(404).json({ error: "Agent not found" });
+        return res.status(404).json({ error: 'Agent not found' });
       }
 
       // Check ownership
       if (agent.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       const tasks = await storage.getTasksByAgentId(agentId);
@@ -1285,21 +1314,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/tasks/:id", requireAuth, async (req, res) => {
+  app.get('/api/tasks/:id', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const task = await storage.getTask(parseInt(req.params.id));
 
       if (!task) {
-        return res.status(404).json({ error: "Task not found" });
+        return res.status(404).json({ error: 'Task not found' });
       }
 
       // Check ownership
       if (task.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       res.json(task);
@@ -1308,18 +1337,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tasks", requireAuth, async (req, res) => {
+  app.post('/api/tasks', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       // Validate agent ownership
       const agent = await storage.getAgent(req.body.agentId);
       if (!agent || agent.userId !== req.user.id) {
-        return res
-          .status(403)
-          .json({ error: "Not authorized to use this agent" });
+        return res.status(403).json({ error: 'Not authorized to use this agent' });
       }
 
       // Validate and create task
@@ -1330,7 +1357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!validatedData.success) {
         return res.status(400).json({
-          error: "Validation failed",
+          error: 'Validation failed',
           details: validatedData.error.format(),
         });
       }
@@ -1340,9 +1367,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log task creation activity (Pass single object argument)
       await storage.createUserActivity({
         userId: req.user.id,
-        activityType: "task_created",
+        activityType: 'task_created',
         resourceId: task.id,
-        resourceType: "task",
+        resourceType: 'task',
         metadata: { agentId: task.agentId, status: task.status },
       });
 
@@ -1352,22 +1379,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/tasks/:id", requireAuth, async (req, res) => {
+  app.patch('/api/tasks/:id', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const taskId = parseInt(req.params.id);
       const task = await storage.getTask(taskId);
 
       if (!task) {
-        return res.status(404).json({ error: "Task not found" });
+        return res.status(404).json({ error: 'Task not found' });
       }
 
       // Check ownership
       if (task.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       // Update task
@@ -1379,22 +1406,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Message routes
-  app.get("/api/tasks/:taskId/messages", requireAuth, async (req, res) => {
+  app.get('/api/tasks/:taskId/messages', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const taskId = parseInt(req.params.taskId);
       const task = await storage.getTask(taskId);
 
       if (!task) {
-        return res.status(404).json({ error: "Task not found" });
+        return res.status(404).json({ error: 'Task not found' });
       }
 
       // Check ownership
       if (task.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       const messages = await storage.getMessagesByTaskId(taskId);
@@ -1404,22 +1431,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/tasks/:taskId/messages", requireAuth, async (req, res) => {
+  app.post('/api/tasks/:taskId/messages', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const taskId = parseInt(req.params.taskId);
       const task = await storage.getTask(taskId);
 
       if (!task) {
-        return res.status(404).json({ error: "Task not found" });
+        return res.status(404).json({ error: 'Task not found' });
       }
 
       // Check ownership - req.user is guaranteed here by the initial check
       if (task.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       // Validate and create message
@@ -1430,7 +1457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!validatedData.success) {
         return res.status(400).json({
-          error: "Validation failed",
+          error: 'Validation failed',
           details: validatedData.error.format(),
         });
       }
@@ -1441,7 +1468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (validatedData.data.role === 'user') {
         // Update task status to pending if it was completed or failed
         if (task.status === 'completed' || task.status === 'failed') {
-          await storage.updateTask(taskId, { status: "pending" });
+          await storage.updateTask(taskId, { status: 'pending' });
         }
 
         // Process the task in the background
@@ -1452,16 +1479,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error('Error processing agent task:', handleError(error)); // Use handleError
             // Update task status to failed if there was an error
             await storage.updateTask(taskId, {
-              status: "failed",
-              result: JSON.stringify({ error: handleError(error) }) // Use handleError
+              status: 'failed',
+              result: JSON.stringify({ error: handleError(error) }), // Use handleError
             });
           }
         }, 0);
 
         res.status(201).json({
           message,
-          taskStatus: "pending",
-          processing: true
+          taskStatus: 'pending',
+          processing: true,
         });
       } else {
         res.status(201).json(message);
@@ -1472,26 +1499,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Endpoint to explicitly execute a task with an agent
-  app.post("/api/tasks/:taskId/execute", requireAuth, async (req, res) => {
+  app.post('/api/tasks/:taskId/execute', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const taskId = parseInt(req.params.taskId);
       const task = await storage.getTask(taskId);
 
       if (!task) {
-        return res.status(404).json({ error: "Task not found" });
+        return res.status(404).json({ error: 'Task not found' });
       }
 
       // Check ownership - req.user is guaranteed here
       if (task.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       // Update task status to pending
-      await storage.updateTask(taskId, { status: "pending" });
+      await storage.updateTask(taskId, { status: 'pending' });
 
       // Process in the background
       setTimeout(async () => {
@@ -1500,18 +1527,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (error) {
           console.error('Error executing agent task:', handleError(error)); // Use handleError
           await storage.updateTask(taskId, {
-            status: "failed",
-            result: JSON.stringify({ error: handleError(error) }) // Use handleError
+            status: 'failed',
+            result: JSON.stringify({ error: handleError(error) }), // Use handleError
           });
         }
       }, 0);
 
       res.json({
-        message: "Task execution initiated",
+        message: 'Task execution initiated',
         task: {
           id: task.id,
-          status: "pending"
-        }
+          status: 'pending',
+        },
       });
     } catch (error) {
       res.status(500).json({ error: handleError(error) }); // Use handleError
@@ -1519,22 +1546,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task-File relationship routes
-  app.get("/api/tasks/:taskId/files", requireAuth, async (req, res) => {
+  app.get('/api/tasks/:taskId/files', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const taskId = parseInt(req.params.taskId);
       const task = await storage.getTask(taskId);
 
       if (!task) {
-        return res.status(404).json({ error: "Task not found" });
+        return res.status(404).json({ error: 'Task not found' });
       }
 
       // Check ownership
       if (task.userId !== req.user.id) {
-        return res.status(403).json({ error: "Not authorized" });
+        return res.status(403).json({ error: 'Not authorized' });
       }
 
       const files = await storage.getFilesByTaskId(taskId);
@@ -1545,100 +1572,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Link a file to a task
-  app.post(
-    "/api/tasks/:taskId/files/:fileId",
-    requireAuth,
-    async (req, res) => {
-      try {
-        // Middleware ensures req.user exists, but TS needs explicit check
-        if (!req.user) {
-          return res.status(401).json({ error: "Not authenticated" });
-        }
-        const taskId = parseInt(req.params.taskId);
-        const fileId = parseInt(req.params.fileId);
-
-        // Verify task exists and user owns it
-        const task = await storage.getTask(taskId);
-        if (!task) {
-          return res.status(404).json({ error: "Task not found" });
-        }
-
-        if (task.userId !== req.user.id) {
-          return res
-            .status(403)
-            .json({ error: "Not authorized to access this task" });
-        }
-
-        // Verify file exists and user owns it
-        const file = await storage.getFile(fileId);
-        if (!file) {
-          return res.status(404).json({ error: "File not found" });
-        }
-
-        if (file.userId !== req.user.id) {
-          return res
-            .status(403)
-            .json({ error: "Not authorized to access this file" });
-        }
-
-        // Link file to task
-        const taskFile = await storage.linkFileToTask(taskId, fileId);
-        res.status(201).json({ success: true, taskFile });
-      } catch (error) {
-        res.status(500).json({ error: handleError(error) }); // Use handleError
+  app.post('/api/tasks/:taskId/files/:fileId', requireAuth, async (req, res) => {
+    try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
       }
-    },
-  );
+      const taskId = parseInt(req.params.taskId);
+      const fileId = parseInt(req.params.fileId);
+
+      // Verify task exists and user owns it
+      const task = await storage.getTask(taskId);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+
+      if (task.userId !== req.user.id) {
+        return res.status(403).json({ error: 'Not authorized to access this task' });
+      }
+
+      // Verify file exists and user owns it
+      const file = await storage.getFile(fileId);
+      if (!file) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+
+      if (file.userId !== req.user.id) {
+        return res.status(403).json({ error: 'Not authorized to access this file' });
+      }
+
+      // Link file to task
+      const taskFile = await storage.linkFileToTask(taskId, fileId);
+      res.status(201).json({ success: true, taskFile });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) }); // Use handleError
+    }
+  });
 
   // Unlink a file from a task
-  app.delete(
-    "/api/tasks/:taskId/files/:fileId",
-    requireAuth,
-    async (req, res) => {
-      try {
-        // Middleware ensures req.user exists, but TS needs explicit check
-        if (!req.user) {
-          return res.status(401).json({ error: "Not authenticated" });
-        }
-        const taskId = parseInt(req.params.taskId);
-        const fileId = parseInt(req.params.fileId);
-
-        // Verify task exists and user owns it
-        const task = await storage.getTask(taskId);
-        if (!task) {
-          return res.status(404).json({ error: "Task not found" });
-        }
-
-        if (task.userId !== req.user.id) {
-          return res
-            .status(403)
-            .json({ error: "Not authorized to access this task" });
-        }
-
-        // Unlink file from task
-        const success = await storage.unlinkFileFromTask(taskId, fileId);
-
-        if (!success) {
-          return res.status(404).json({ error: "File not linked to task" });
-        }
-
-        res.json({ success: true });
-      } catch (error) {
-        res.status(500).json({ error: handleError(error) }); // Use handleError
+  app.delete('/api/tasks/:taskId/files/:fileId', requireAuth, async (req, res) => {
+    try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
       }
-    },
-  );
+      const taskId = parseInt(req.params.taskId);
+      const fileId = parseInt(req.params.fileId);
+
+      // Verify task exists and user owns it
+      const task = await storage.getTask(taskId);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+
+      if (task.userId !== req.user.id) {
+        return res.status(403).json({ error: 'Not authorized to access this task' });
+      }
+
+      // Unlink file from task
+      const success = await storage.unlinkFileFromTask(taskId, fileId);
+
+      if (!success) {
+        return res.status(404).json({ error: 'File not linked to task' });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) }); // Use handleError
+    }
+  });
 
   // Admin routes
 
   // Site Settings Admin Route
-  app.patch("/api/admin/site-settings", requireAdmin, async (req, res) => {
+  app.patch('/api/admin/site-settings', requireAdmin, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
-      console.log("Updating site settings with payload:", req.body);
+      console.log('Updating site settings with payload:', req.body);
       const updates = req.body;
 
       // Add the user ID who made the update if available
@@ -1649,7 +1662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let settings = await storage.getSiteSettings();
 
       if (!settings) {
-        console.log("No site settings found for admin update, creating default first");
+        console.log('No site settings found for admin update, creating default first');
         settings = await storage.createDefaultSiteSettings();
       }
 
@@ -1657,19 +1670,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedSettings = await storage.updateSiteSettings(updates);
 
       if (!updatedSettings) {
-        return res.status(500).json({ error: "Failed to update site settings" });
+        return res.status(500).json({ error: 'Failed to update site settings' });
       }
 
-      console.log("Site settings updated successfully");
+      console.log('Site settings updated successfully');
       res.json(updatedSettings);
     } catch (error) {
-      console.error("Error updating site settings:", error);
+      console.error('Error updating site settings:', error);
       res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // Agent Tools Routes
-  app.get("/api/admin/agent-tools", requireAdmin, async (req, res) => {
+  app.get('/api/admin/agent-tools', requireAdmin, async (req, res) => {
     try {
       const tools = await storage.getAllAgentTools();
       res.json(tools);
@@ -1678,13 +1691,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/agent-tools/:id", requireAdmin, async (req, res) => {
+  app.get('/api/admin/agent-tools/:id', requireAdmin, async (req, res) => {
     try {
       const toolId = parseInt(req.params.id);
       const tool = await storage.getAgentTool(toolId);
 
       if (!tool) {
-        return res.status(404).json({ error: "Agent Tool not found" });
+        return res.status(404).json({ error: 'Agent Tool not found' });
       }
 
       res.json(tool);
@@ -1693,14 +1706,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/agent-tools", requireAdmin, async (req, res) => {
+  app.post('/api/admin/agent-tools', requireAdmin, async (req, res) => {
     try {
       // Validate and create tool
       const validatedData = insertAgentToolSchema.safeParse(req.body);
 
       if (!validatedData.success) {
         return res.status(400).json({
-          error: "Validation failed",
+          error: 'Validation failed',
           details: validatedData.error.format(),
         });
       }
@@ -1712,13 +1725,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/agent-tools/:id", requireAdmin, async (req, res) => {
+  app.patch('/api/admin/agent-tools/:id', requireAdmin, async (req, res) => {
     try {
       const toolId = parseInt(req.params.id);
       const tool = await storage.getAgentTool(toolId);
 
       if (!tool) {
-        return res.status(404).json({ error: "Agent Tool not found" });
+        return res.status(404).json({ error: 'Agent Tool not found' });
       }
 
       // Update tool
@@ -1729,18 +1742,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/agent-tools/:id", requireAdmin, async (req, res) => {
+  app.delete('/api/admin/agent-tools/:id', requireAdmin, async (req, res) => {
     try {
       const toolId = parseInt(req.params.id);
       const tool = await storage.getAgentTool(toolId);
 
       if (!tool) {
-        return res.status(404).json({ error: "Agent Tool not found" });
+        return res.status(404).json({ error: 'Agent Tool not found' });
       }
 
       // Can't delete system tools
       if (tool.isSystem) {
-        return res.status(403).json({ error: "Cannot delete system tools" });
+        return res.status(403).json({ error: 'Cannot delete system tools' });
       }
 
       // Delete tool
@@ -1752,7 +1765,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User accessible agent tools (for agent task execution)
-  app.get("/api/agent-tools", requireAuth, async (req, res) => {
+  app.get('/api/agent-tools', requireAuth, async (req, res) => {
     try {
       // Only return active tools for regular users
       const tools = await storage.getAllAgentTools();
@@ -1763,24 +1776,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get(
-    "/api/agent-tools/category/:category",
-    requireAuth,
-    async (req, res) => {
-      try {
-        const category = req.params.category;
-        // Only return active tools for regular users
-        const tools = await storage.getAgentToolsByCategory(category);
-        const activeTools = tools.filter((tool) => tool.isActive);
-        res.json(activeTools);
-      } catch (error) {
-        res.status(500).json({ error: handleError(error) }); // Use handleError
-      }
-    },
-  );
+  app.get('/api/agent-tools/category/:category', requireAuth, async (req, res) => {
+    try {
+      const category = req.params.category;
+      // Only return active tools for regular users
+      const tools = await storage.getAgentToolsByCategory(category);
+      const activeTools = tools.filter((tool) => tool.isActive);
+      res.json(activeTools);
+    } catch (error) {
+      res.status(500).json({ error: handleError(error) }); // Use handleError
+    }
+  });
 
   // Plans
-  app.get("/api/plans", async (req, res) => {
+  app.get('/api/plans', async (req, res) => {
     try {
       const plans = await storage.getActivePlans();
       res.json(plans);
@@ -1789,7 +1798,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/plans", requireAdmin, async (req, res) => {
+  app.get('/api/admin/plans', requireAdmin, async (req, res) => {
     try {
       const plans = await storage.getAllPlans();
       res.json(plans);
@@ -1798,7 +1807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/plans", requireAdmin, async (req, res) => {
+  app.post('/api/admin/plans', requireAdmin, async (req, res) => {
     try {
       const plan = await storage.createPlan(req.body);
       res.status(201).json(plan);
@@ -1807,13 +1816,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/plans/:id", requireAdmin, async (req, res) => {
+  app.patch('/api/admin/plans/:id', requireAdmin, async (req, res) => {
     try {
       const planId = parseInt(req.params.id);
       const updatedPlan = await storage.updatePlan(planId, req.body);
 
       if (!updatedPlan) {
-        return res.status(404).json({ error: "Plan not found" });
+        return res.status(404).json({ error: 'Plan not found' });
       }
 
       res.json(updatedPlan);
@@ -1823,60 +1832,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Providers Status Endpoint for dashboard
-  app.get("/api/ai-providers/status", async (req, res) => {
+  app.get('/api/ai-providers/status', async (req, res) => {
     try {
       // Get active providers
       const activeProviders = await storage.getActiveAiProviders();
 
       // Transform data for the widget display
-      const providerStatus = activeProviders.map(provider => ({
+      const providerStatus = activeProviders.map((provider) => ({
         id: provider.provider,
         name: provider.name,
         status: provider.isActive ? 'active' : 'inactive',
         quotaUsed: 0, // This would be populated from usage data in a real implementation
         quotaLimit: 100, // This would be based on the user's plan
-        quotaUnit: 'USD'
+        quotaUnit: 'USD',
       }));
 
       res.json(providerStatus);
     } catch (error) {
-      console.error("Error fetching AI provider status:", error);
+      console.error('Error fetching AI provider status:', error);
       res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // AI Providers Admin Endpoints
-  app.get("/api/admin/ai-providers", requireAdmin, async (req, res) => {
+  app.get('/api/admin/ai-providers', requireAdmin, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const providers = await storage.getAllAiProviders();
 
       // Enhance each provider with API key availability
-      const enhancedProviders = await Promise.all(providers.map(async provider => {
-        // Check env var first
-        let hasApiKey = checkRequiredApiKey(provider.provider);
+      const enhancedProviders = await Promise.all(
+        providers.map(async (provider) => {
+          // Check env var first
+          let hasApiKey = checkRequiredApiKey(provider.provider);
 
-        // If not in env vars, check credentials table if user is authenticated
-        if (!hasApiKey && req.user) {
-          try {
-            const credential = await credentialService.getCredentialByService(
-              req.user.id,
-              provider.provider
-            );
-            hasApiKey = !!credential;
-          } catch (credError) {
-            console.error("Error checking credential:", credError);
+          // If not in env vars, check credentials table if user is authenticated
+          if (!hasApiKey && req.user) {
+            try {
+              const credential = await credentialService.getCredentialByService(
+                req.user.id,
+                provider.provider
+              );
+              hasApiKey = !!credential;
+            } catch (credError) {
+              console.error('Error checking credential:', credError);
+            }
           }
-        }
 
-        return {
-          ...provider,
-          hasApiKey
-        };
-      }));
+          return {
+            ...provider,
+            hasApiKey,
+          };
+        })
+      );
 
       res.json(enhancedProviders);
     } catch (error) {
@@ -1885,11 +1896,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check if API key is available for provider
-  app.get("/api/admin/ai-providers/check-key/:provider", requireAdmin, async (req, res) => {
+  app.get('/api/admin/ai-providers/check-key/:provider', requireAdmin, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const { provider } = req.params;
 
@@ -1899,13 +1910,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If not in env vars, check credentials table if user is authenticated
       if (!hasApiKey && req.user) {
         try {
-          const credential = await credentialService.getCredentialByService(
-            req.user.id,
-            provider
-          );
+          const credential = await credentialService.getCredentialByService(req.user.id, provider);
           hasApiKey = !!credential;
         } catch (credError) {
-          console.error("Error checking credential:", credError);
+          console.error('Error checking credential:', credError);
         }
       }
 
@@ -1915,11 +1923,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/ai-providers", requireAdmin, async (req, res) => {
+  app.post('/api/admin/ai-providers', requireAdmin, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       // Extract apiKey from the request if present
       const { apiKey, ...providerData } = req.body;
@@ -1936,7 +1944,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: 'api_key',
           authMethod: 'apiKey',
           data: encrypt(apiKey), // Encrypt the API key
-          service: provider.provider // Associate with the provider
+          service: provider.provider, // Associate with the provider
         });
       }
 
@@ -1947,18 +1955,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json({
         ...provider,
-        hasApiKey
+        hasApiKey,
       });
     } catch (error) {
       res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
-  app.patch("/api/admin/ai-providers/:id", requireAdmin, async (req, res) => {
+  app.patch('/api/admin/ai-providers/:id', requireAdmin, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const providerId = parseInt(req.params.id);
 
@@ -1966,13 +1974,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { apiKey, ...providerData } = req.body;
 
       // Update provider in database
-      const updatedProvider = await storage.updateAiProvider(
-        providerId,
-        providerData,
-      );
+      const updatedProvider = await storage.updateAiProvider(providerId, providerData);
 
       if (!updatedProvider) {
-        return res.status(404).json({ error: "AI Provider not found" });
+        return res.status(404).json({ error: 'AI Provider not found' });
       }
 
       // If API key was provided, update or create a credential record
@@ -1986,7 +1991,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existingCredential) {
           // Update existing credential
           await credentialService.updateCredential(existingCredential.id, {
-            data: encrypt(apiKey)
+            data: encrypt(apiKey),
           });
         } else {
           // Create new credential
@@ -1996,7 +2001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             type: 'api_key',
             authMethod: 'apiKey',
             data: encrypt(apiKey),
-            service: updatedProvider.provider
+            service: updatedProvider.provider,
           });
         }
       }
@@ -2008,7 +2013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         ...updatedProvider,
-        hasApiKey
+        hasApiKey,
       });
     } catch (error) {
       res.status(500).json({ error: handleError(error) }); // Use handleError
@@ -2016,7 +2021,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Models Admin Routes
-  app.get("/api/admin/ai-models", requireAdmin, async (req, res) => {
+  app.get('/api/admin/ai-models', requireAdmin, async (req, res) => {
     try {
       const models = await storage.getAllAiModels();
       res.json(models);
@@ -2026,38 +2031,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get OpenRouter models endpoint
-  app.get("/api/admin/openrouter/models", requireAdmin, async (req, res) => {
+  app.get('/api/admin/openrouter/models', requireAdmin, async (req, res) => {
     try {
       if (!process.env.OPENROUTER_API_KEY) {
         return res.status(400).json({
-          error: "OpenRouter not configured",
-          details: "OpenRouter API key is missing",
+          error: 'OpenRouter not configured',
+          details: 'OpenRouter API key is missing',
         });
       }
 
       // Import when needed to avoid startup errors if OpenRouter isn't configured
-      const { default: openrouterService } = await import("./services/openrouter-service");
+      const { default: openrouterService } = await import('./services/openrouter-service');
 
       // Get detailed model information
       const modelData = await openrouterService.getDetailedModels();
 
       return res.json(modelData);
     } catch (error: any) {
-      console.error("Error fetching OpenRouter models:", error);
+      console.error('Error fetching OpenRouter models:', error);
       return res.status(500).json({
-        error: "Failed to fetch OpenRouter models",
+        error: 'Failed to fetch OpenRouter models',
         details: handleError(error), // Use handleError
       });
     }
   });
 
-  app.get("/api/admin/ai-models/:id", requireAdmin, async (req, res) => {
+  app.get('/api/admin/ai-models/:id', requireAdmin, async (req, res) => {
     try {
       const modelId = parseInt(req.params.id);
       const model = await storage.getAiModel(modelId);
 
       if (!model) {
-        return res.status(404).json({ error: "AI Model not found" });
+        return res.status(404).json({ error: 'AI Model not found' });
       }
 
       res.json(model);
@@ -2066,12 +2071,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/ai-models", requireAdmin, async (req, res) => {
+  app.post('/api/admin/ai-models', requireAdmin, async (req, res) => {
     try {
       // Verify the provider exists
       const provider = await storage.getAiProvider(req.body.providerId);
       if (!provider) {
-        return res.status(400).json({ error: "AI Provider not found" });
+        return res.status(400).json({ error: 'AI Provider not found' });
       }
 
       // Validate and create model
@@ -2079,7 +2084,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!validatedData.success) {
         return res.status(400).json({
-          error: "Validation failed",
+          error: 'Validation failed',
           details: validatedData.error.format(),
         });
       }
@@ -2092,20 +2097,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/ai-models/:id", requireAdmin, async (req, res) => {
+  app.patch('/api/admin/ai-models/:id', requireAdmin, async (req, res) => {
     try {
       const modelId = parseInt(req.params.id);
       const model = await storage.getAiModel(modelId);
 
       if (!model) {
-        return res.status(404).json({ error: "AI Model not found" });
+        return res.status(404).json({ error: 'AI Model not found' });
       }
 
       // If provider is being updated, verify it exists
       if (req.body.providerId) {
         const provider = await storage.getAiProvider(req.body.providerId);
         if (!provider) {
-          return res.status(400).json({ error: "AI Provider not found" });
+          return res.status(400).json({ error: 'AI Provider not found' });
         }
       }
 
@@ -2117,7 +2122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/ai-models/:id", requireAdmin, async (req, res) => {
+  app.delete('/api/admin/ai-models/:id', requireAdmin, async (req, res) => {
     try {
       const modelId = parseInt(req.params.id);
 
@@ -2126,7 +2131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (prompts.length > 0) {
         return res.status(400).json({
-          error: "Cannot delete model while prompts are using it",
+          error: 'Cannot delete model while prompts are using it',
         });
       }
 
@@ -2136,7 +2141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (success) {
         res.sendStatus(204);
       } else {
-        res.status(404).json({ error: "AI Model not found" });
+        res.status(404).json({ error: 'AI Model not found' });
       }
     } catch (error) {
       res.status(500).json({ error: handleError(error) }); // Use handleError
@@ -2145,55 +2150,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Payment Routes
   // Create a payment session for a subscription
-  app.post("/api/payments/create-session", requireAuth, async (req, res) => {
+  app.post('/api/payments/create-session', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const { planId } = req.body;
 
       if (!planId) {
-        return res.status(400).json({ error: "Plan ID is required" });
+        return res.status(400).json({ error: 'Plan ID is required' });
       }
 
       // Verify the plan exists
       const plan = await storage.getPlan(parseInt(planId));
       if (!plan) {
-        return res.status(404).json({ error: "Plan not found" });
+        return res.status(404).json({ error: 'Plan not found' });
       }
 
       // Create payment session using MyFatoorah
       const paymentSession = await paymentService.createPaymentSession(
         req.user.id,
-        parseInt(planId),
+        parseInt(planId)
       );
 
       res.json(paymentSession);
     } catch (error: any) {
-      console.error("Payment session creation error:", error);
-      res
-        .status(500)
-        .json({ error: handleError(error) }); // Use handleError
+      console.error('Payment session creation error:', error);
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // Payment verification callback endpoint
-  app.get("/api/payments/callback", async (req, res) => {
+  app.get('/api/payments/callback', async (req, res) => {
     try {
       const paymentId = req.query.paymentId;
 
       if (!paymentId) {
-        return res.redirect("/payment-failed?reason=no-payment-id");
+        return res.redirect('/payment-failed?reason=no-payment-id');
       }
 
       // Verify the payment with MyFatoorah
-      const verification = await paymentService.verifyPayment(
-        paymentId.toString(),
-      );
+      const verification = await paymentService.verifyPayment(paymentId.toString());
 
       if (!verification.isValid) {
-        return res.redirect("/payment-failed?reason=verification-failed");
+        return res.redirect('/payment-failed?reason=verification-failed');
       }
 
       // At this point, payment is verified
@@ -2201,44 +2202,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For simplicity, we'll redirect to a success page
       // The actual subscription update would be handled by a webhook or background process
 
-      res.redirect("/payment-success");
+      res.redirect('/payment-success');
     } catch (error: any) {
-      console.error("Payment callback error:", error);
+      console.error('Payment callback error:', error);
       res.redirect(
-        `/payment-failed?reason=${encodeURIComponent(handleError(error))}`, // Use handleError
+        `/payment-failed?reason=${encodeURIComponent(handleError(error))}` // Use handleError
       );
     }
   });
 
   // Payment error callback endpoint
-  app.get("/api/payments/error", (req, res) => {
-    res.redirect("/payment-failed?reason=gateway-error");
+  app.get('/api/payments/error', (req, res) => {
+    res.redirect('/payment-failed?reason=gateway-error');
   });
 
   // Webhook for payment notifications (would be configured in MyFatoorah dashboard)
-  app.post("/api/payments/webhook", async (req, res) => {
+  app.post('/api/payments/webhook', async (req, res) => {
     try {
       // Log the webhook payload for debugging
-      console.log("Received payment webhook:", req.body);
+      console.log('Received payment webhook:', req.body);
 
       // MyFatoorah webhook contains InvoiceId and PaymentId
       const { InvoiceId, PaymentId } = req.body;
 
       if (!PaymentId) {
-        return res.status(400).json({ error: "Missing payment ID" });
+        return res.status(400).json({ error: 'Missing payment ID' });
       }
 
       // Verify the payment with MyFatoorah
-      const verification = await paymentService.verifyPayment(
-        PaymentId.toString(),
-      );
+      const verification = await paymentService.verifyPayment(PaymentId.toString());
 
       if (!verification.isValid) {
-        console.error("Payment verification failed in webhook", {
+        console.error('Payment verification failed in webhook', {
           PaymentId,
           InvoiceId,
         });
-        return res.status(400).json({ error: "Payment verification failed" });
+        return res.status(400).json({ error: 'Payment verification failed' });
       }
 
       // In a real system, we would store the payment session information including
@@ -2266,36 +2265,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       */
 
       // Respond with success to the webhook call
-      res.status(200).json({ status: "success" });
+      res.status(200).json({ status: 'success' });
     } catch (error: any) {
-      console.error("Payment webhook error:", error);
-      res
-        .status(500)
-        .json({ error: handleError(error) }); // Use handleError
+      console.error('Payment webhook error:', error);
+      res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // Check subscription status
-  app.get("/api/subscription", requireAuth, async (req, res) => {
+  app.get('/api/subscription', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const user = await storage.getUser(req.user.id);
 
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({ error: 'User not found' });
       }
 
       // Get the plan details if the user has one
       let planDetails = null;
-      if (user.planId) { // Check planId instead of user.plan
+      if (user.planId) {
+        // Check planId instead of user.plan
         planDetails = await storage.getPlan(user.planId); // Fetch plan by ID
       }
 
       // Determine plan name based on details or default to 'free'
-      const planName = planDetails ? planDetails.name : "free";
+      const planName = planDetails ? planDetails.name : 'free';
 
       res.json({
         plan: planName, // Use derived plan name
@@ -2310,7 +2308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User Admin Routes
-  app.get("/api/admin/users", requireAdmin, async (req, res) => {
+  app.get('/api/admin/users', requireAdmin, async (req, res) => {
     try {
       // Get all users (only admin can access)
       const users = await storage.getAllUsers();
@@ -2327,13 +2325,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/users/:id", requireAdmin, async (req, res) => {
+  app.get('/api/admin/users/:id', requireAdmin, async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
       const user = await storage.getUser(userId);
 
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({ error: 'User not found' });
       }
 
       // Remove sensitive data
@@ -2344,27 +2342,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/users", requireAdmin, async (req, res) => {
+  app.post('/api/admin/users', requireAdmin, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       // Validate required fields
       const { username, email, password, fullName } = req.body;
       if (!username || !email || !password || !fullName) {
-        return res.status(400).json({ error: "Missing required fields" });
+        return res.status(400).json({ error: 'Missing required fields' });
       }
 
       // Check if username or email already exists
       const existingUserByUsername = await storage.getUserByUsername(username);
       if (existingUserByUsername) {
-        return res.status(400).json({ error: "Username already exists" });
+        return res.status(400).json({ error: 'Username already exists' });
       }
 
       const existingUserByEmail = await storage.getUserByEmail(email);
       if (existingUserByEmail) {
-        return res.status(400).json({ error: "Email already exists" });
+        return res.status(400).json({ error: 'Email already exists' });
       }
 
       // Hash the password
@@ -2376,7 +2374,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email,
         password: hashedPassword,
         fullName,
-        role: req.body.role || "user",
+        role: req.body.role || 'user',
         isActive: req.body.isActive !== undefined ? req.body.isActive : true,
         planId: req.body.planId || undefined,
       };
@@ -2387,9 +2385,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log user update activity (Corrected argument count)
       await storage.createUserActivity({
         userId: req.user.id,
-        activityType: "user_created",
+        activityType: 'user_created',
         resourceId: createdUser.id,
-        resourceType: "user",
+        resourceType: 'user',
         metadata: {
           username: createdUser.username,
           role: createdUser.role,
@@ -2401,24 +2399,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json(userWithoutPassword);
     } catch (error: any) {
-      console.error("Error creating user:", error);
+      console.error('Error creating user:', error);
       res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
-
-
-  app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
+  app.patch('/api/admin/users/:id', requireAdmin, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const userId = parseInt(req.params.id);
       const user = await storage.getUser(userId);
 
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({ error: 'User not found' });
       }
 
       // Process updates
@@ -2432,8 +2428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body.isActive !== undefined) updates.isActive = req.body.isActive;
       // Removed user.plan update as it doesn't exist on the type
       if (req.body.planId) updates.planId = req.body.planId;
-      if (req.body.planExpiresAt)
-        updates.planExpiresAt = new Date(req.body.planExpiresAt);
+      if (req.body.planExpiresAt) updates.planExpiresAt = new Date(req.body.planExpiresAt);
 
       // If password is being updated, hash it
       if (req.body.password) {
@@ -2443,15 +2438,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedUser = await storage.updateUser(userId, updates);
 
       if (!updatedUser) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({ error: 'User not found' });
       }
 
       // Log user update activity (Corrected argument count)
       await storage.createUserActivity({
         userId: req.user.id,
-        activityType: "user_updated",
+        activityType: 'user_updated',
         resourceId: userId,
-        resourceType: "user",
+        resourceType: 'user',
         metadata: {
           fields: Object.keys(updates),
         },
@@ -2465,49 +2460,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/users/:id", requireAdmin, async (req, res) => {
+  app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const userId = parseInt(req.params.id);
 
       // Don't allow deletion of the current user
       if (req.user.id === userId) {
-        return res.status(400).json({ error: "Cannot delete your own account" });
+        return res.status(400).json({ error: 'Cannot delete your own account' });
       }
 
       const user = await storage.getUser(userId);
 
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({ error: 'User not found' });
       }
 
       // Delete the user
       const result = await storage.deleteUser(userId);
 
       if (!result) {
-        return res.status(500).json({ error: "Failed to delete user" });
+        return res.status(500).json({ error: 'Failed to delete user' });
       }
 
       // Log user deletion activity (Pass single object argument)
       await storage.createUserActivity({
         userId: req.user.id,
-        activityType: "user_deleted",
+        activityType: 'user_deleted',
         resourceId: userId,
-        resourceType: "user",
+        resourceType: 'user',
         metadata: {
           username: user.username,
         },
       });
 
-      res.json({ success: true, message: "User deleted successfully" });
+      res.json({ success: true, message: 'User deleted successfully' });
     } catch (error: any) {
-      console.error("Error deleting user:", error);
+      console.error('Error deleting user:', error);
 
       // Handle the specific error for last admin user
-      if (error instanceof Error && error.message === "Cannot delete the last admin user") {
+      if (error instanceof Error && error.message === 'Cannot delete the last admin user') {
         return res.status(400).json({ error: error.message });
       }
 
@@ -2516,102 +2511,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Translation Routes
-  app.post("/api/ai/translate", requireAuth, async (req, res) => {
+  app.post('/api/ai/translate', requireAuth, async (req, res) => {
     try {
       const { text, sourceLanguage, targetLanguage } = req.body;
 
       if (!text || !sourceLanguage || !targetLanguage) {
         return res.status(400).json({
-          error: "Missing required fields",
-          details: "Text, source language, and target language are required",
+          error: 'Missing required fields',
+          details: 'Text, source language, and target language are required',
         });
       }
 
-      const translatedText = await aiService.translateText(
-        text,
-        sourceLanguage,
-        targetLanguage,
-      );
+      const translatedText = await aiService.translateText(text, sourceLanguage, targetLanguage);
       return res.json({ translatedText });
     } catch (error: any) {
-      console.error("Translation error:", error);
+      console.error('Translation error:', error);
       return res.status(500).json({
-        error: "Translation failed",
+        error: 'Translation failed',
         details: handleError(error), // Use handleError
       });
     }
   });
 
   // Bulk translate translations (admin only)
-  app.post("/api/ai/translate-bulk", requireAdmin, async (req, res) => {
+  app.post('/api/ai/translate-bulk', requireAdmin, async (req, res) => {
     try {
       const { translations, sourceLanguage, targetLanguage } = req.body;
 
       if (!translations || !sourceLanguage || !targetLanguage) {
         return res.status(400).json({
-          error: "Missing required fields",
-          details:
-            "Translations object, source language, and target language are required",
+          error: 'Missing required fields',
+          details: 'Translations object, source language, and target language are required',
         });
       }
 
       const translatedTranslationsObj = await aiService.translateTranslations(
         translations,
         sourceLanguage,
-        targetLanguage,
+        targetLanguage
       );
 
       return res.json({ translations: translatedTranslationsObj });
     } catch (error: any) {
-      console.error("Bulk translation error:", error);
+      console.error('Bulk translation error:', error);
       return res.status(500).json({
-        error: "Bulk translation failed",
+        error: 'Bulk translation failed',
         details: handleError(error), // Use handleError
       });
     }
   });
 
   // AI Content Generation Routes
-  app.post("/api/ai/generate-content", requireAuth, async (req, res) => {
+  app.post('/api/ai/generate-content', requireAuth, async (req, res) => {
     try {
       const { prompt, contentType, tone } = req.body;
 
       if (!prompt || !contentType || !tone) {
         return res.status(400).json({
-          error: "Missing required fields",
-          details: "Prompt, content type, and tone are required",
+          error: 'Missing required fields',
+          details: 'Prompt, content type, and tone are required',
         });
       }
 
       const generatedContent = await aiService.generateContent(prompt, contentType, tone);
       return res.json({ content: generatedContent });
     } catch (error: any) {
-      console.error("Content generation error:", error);
+      console.error('Content generation error:', error);
       return res.status(500).json({
-        error: "Content generation failed",
+        error: 'Content generation failed',
         details: handleError(error), // Use handleError
       });
     }
   });
 
   // Analyze content
-  app.post("/api/ai/analyze-content", requireAuth, async (req, res) => {
+  app.post('/api/ai/analyze-content', requireAuth, async (req, res) => {
     try {
       const { text } = req.body;
 
       if (!text) {
         return res.status(400).json({
-          error: "Missing required field",
-          details: "Text to analyze is required",
+          error: 'Missing required field',
+          details: 'Text to analyze is required',
         });
       }
 
       const analysis = await aiService.analyzeContent(text);
       return res.json(analysis);
     } catch (error: any) {
-      console.error("Content analysis error:", error);
+      console.error('Content analysis error:', error);
       return res.status(500).json({
-        error: "Content analysis failed",
+        error: 'Content analysis failed',
         details: handleError(error), // Use handleError
       });
     }
@@ -2620,22 +2610,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Activity & Dashboard Routes
 
   // Get user activity feed
-  app.get("/api/user/activity", requireAuth, async (req, res) => {
+  app.get('/api/user/activity', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const { limit } = req.query;
 
       const activities = await storage.getUserActivitiesByUserId(
         req.user.id,
-        limit ? parseInt(limit.toString()) : 10,
+        limit ? parseInt(limit.toString()) : 10
       );
 
       res.json(activities);
     } catch (error: any) {
-      console.error("Error retrieving user activities:", error);
+      console.error('Error retrieving user activities:', error);
       res.status(500).json({
         error: handleError(error), // Use handleError
       });
@@ -2643,16 +2633,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user analytics summary
-  app.get("/api/user/analytics", requireAuth, async (req, res) => {
+  app.get('/api/user/analytics', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
-      const analytics = await storage.getUserAnalytics(req.user.id, "all");
-      res.json(analytics || { message: "No analytics data available yet" });
+      const analytics = await storage.getUserAnalytics(req.user.id, 'all');
+      res.json(analytics || { message: 'No analytics data available yet' });
     } catch (error: any) {
-      console.error("Error retrieving user analytics:", error);
+      console.error('Error retrieving user analytics:', error);
       res.status(500).json({
         error: handleError(error), // Use handleError
       });
@@ -2660,11 +2650,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user dashboard preferences
-  app.get("/api/user/dashboard/preferences", requireAuth, async (req, res) => {
+  app.get('/api/user/dashboard/preferences', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const preferences = await storage.getDashboardPreference(req.user.id);
 
@@ -2680,37 +2670,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           favoriteAgents: [],
           recentTasks: [],
           widgets: [
-            { id: "activity", position: 0, enabled: true },
-            { id: "stats", position: 1, enabled: true },
-            { id: "quickActions", position: 2, enabled: true },
-            { id: "recentFiles", position: 3, enabled: true },
-            { id: "agentStatus", position: 4, enabled: true },
+            { id: 'activity', position: 0, enabled: true },
+            { id: 'stats', position: 1, enabled: true },
+            { id: 'quickActions', position: 2, enabled: true },
+            { id: 'recentFiles', position: 3, enabled: true },
+            { id: 'agentStatus', position: 4, enabled: true },
           ],
-          theme: "system",
+          theme: 'system',
           updatedAt: new Date(),
         };
 
-        const newPreferences =
-          await storage.createDashboardPreference(defaultPreferences);
+        const newPreferences = await storage.createDashboardPreference(defaultPreferences);
         return res.json(newPreferences);
       }
 
       res.json(preferences);
     } catch (error: any) {
-      console.error("Error retrieving dashboard preferences:", error);
+      console.error('Error retrieving dashboard preferences:', error);
       res.status(500).json({
-        error: "Failed to retrieve dashboard preferences",
+        error: 'Failed to retrieve dashboard preferences',
         details: handleError(error), // Use handleError
       });
     }
   });
 
   // Update dashboard preferences
-  app.put("/api/user/dashboard/preferences", requireAuth, async (req, res) => {
+  app.put('/api/user/dashboard/preferences', requireAuth, async (req, res) => {
     try {
       // Middleware ensures req.user exists, but TS needs explicit check
       if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: 'Not authenticated' });
       }
       const { layout, widgets, theme, favoriteAgents, recentTasks } = req.body;
 
@@ -2729,18 +2718,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           favoriteAgents: favoriteAgents || [],
           recentTasks: recentTasks || [],
           widgets: [
-            { id: "activity", position: 0, enabled: true },
-            { id: "stats", position: 1, enabled: true },
-            { id: "quickActions", position: 2, enabled: true },
-            { id: "recentFiles", position: 3, enabled: true },
-            { id: "agentStatus", position: 4, enabled: true },
+            { id: 'activity', position: 0, enabled: true },
+            { id: 'stats', position: 1, enabled: true },
+            { id: 'quickActions', position: 2, enabled: true },
+            { id: 'recentFiles', position: 3, enabled: true },
+            { id: 'agentStatus', position: 4, enabled: true },
           ],
-          theme: "system",
+          theme: 'system',
           updatedAt: new Date(),
         };
 
-        const newPreferences =
-          await storage.createDashboardPreference(defaultPreferences);
+        const newPreferences = await storage.createDashboardPreference(defaultPreferences);
         return res.json(newPreferences);
       }
 
@@ -2755,183 +2743,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (favoriteAgents) updates.favoriteAgents = favoriteAgents;
       if (recentTasks) updates.recentTasks = recentTasks;
 
-      const updatedPreferences = await storage.updateDashboardPreference(
-        preferences.id,
-        updates,
-      );
+      const updatedPreferences = await storage.updateDashboardPreference(preferences.id, updates);
 
       res.json(updatedPreferences);
     } catch (error: any) {
-      console.error("Error updating dashboard preferences:", error);
+      console.error('Error updating dashboard preferences:', error);
       res.status(500).json({
-        error: "Failed to update dashboard preferences",
+        error: 'Failed to update dashboard preferences',
         details: handleError(error), // Use handleError
       });
     }
   });
 
   // Add agent to favorites
-  app.post(
-    "/api/user/dashboard/favorites/agent/:agentId",
-    requireAuth,
-    async (req, res) => {
-      try {
-        // Middleware ensures req.user exists, but TS needs explicit check
-        if (!req.user) {
-          return res.status(401).json({ error: "Not authenticated" });
-        }
-        const { agentId } = req.params;
+  app.post('/api/user/dashboard/favorites/agent/:agentId', requireAuth, async (req, res) => {
+    try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      const { agentId } = req.params;
 
-        if (!agentId) {
-          return res.status(400).json({ error: "Agent ID is required" });
-        }
+      if (!agentId) {
+        return res.status(400).json({ error: 'Agent ID is required' });
+      }
 
-        // Verify agent exists and belongs to user
-        const agent = await storage.getAgent(parseInt(agentId));
+      // Verify agent exists and belongs to user
+      const agent = await storage.getAgent(parseInt(agentId));
 
-        if (!agent) {
-          return res.status(404).json({ error: "Agent not found" });
-        }
+      if (!agent) {
+        return res.status(404).json({ error: 'Agent not found' });
+      }
 
-        if (agent.userId !== req.user.id) {
-          return res
-            .status(403)
-            .json({ error: "You don't have access to this agent" });
-        }
+      if (agent.userId !== req.user.id) {
+        return res.status(403).json({ error: "You don't have access to this agent" });
+      }
 
-        // Get preferences
-        let preferences = await storage.getDashboardPreference(req.user.id);
+      // Get preferences
+      let preferences = await storage.getDashboardPreference(req.user.id);
 
-        if (!preferences) {
-          // Create preferences if they don't exist
-          const defaultPreferences = {
-            userId: req.user.id,
-            layout: {
-              columns: 2,
-              showWelcome: true,
-              compactView: false,
-            },
-            favoriteAgents: [parseInt(agentId)],
-            recentTasks: [],
-            widgets: [
-              { id: "activity", position: 0, enabled: true },
-              { id: "stats", position: 1, enabled: true },
-              { id: "quickActions", position: 2, enabled: true },
-              { id: "recentFiles", position: 3, enabled: true },
-              { id: "agentStatus", position: 4, enabled: true },
-            ],
-            theme: "system",
-            updatedAt: new Date(),
-          };
-
-          const newPreferences =
-            await storage.createDashboardPreference(defaultPreferences);
-          return res.json({
-            success: true,
-            favorites: newPreferences.favoriteAgents,
-          });
-        }
-
-        // Update favorites (maximum of 5 favorites)
-        const currentFavorites = (preferences.favoriteAgents as any[]) || [];
-        const agentIdNum = parseInt(agentId);
-
-        // If already in favorites, do nothing
-        if (currentFavorites.includes(agentIdNum)) {
-          return res.json({ success: true, favorites: currentFavorites });
-        }
-
-        // Add to favorites (maintain max 5)
-        const updatedFavorites = [...currentFavorites, agentIdNum].slice(-5);
-
-        await storage.updateDashboardPreference(preferences.id, {
-          favoriteAgents: updatedFavorites,
+      if (!preferences) {
+        // Create preferences if they don't exist
+        const defaultPreferences = {
+          userId: req.user.id,
+          layout: {
+            columns: 2,
+            showWelcome: true,
+            compactView: false,
+          },
+          favoriteAgents: [parseInt(agentId)],
+          recentTasks: [],
+          widgets: [
+            { id: 'activity', position: 0, enabled: true },
+            { id: 'stats', position: 1, enabled: true },
+            { id: 'quickActions', position: 2, enabled: true },
+            { id: 'recentFiles', position: 3, enabled: true },
+            { id: 'agentStatus', position: 4, enabled: true },
+          ],
+          theme: 'system',
           updatedAt: new Date(),
-        });
+        };
 
-        res.json({ success: true, favorites: updatedFavorites });
-      } catch (error: any) {
-        console.error("Error adding agent to favorites:", error);
-        res.status(500).json({
-          error: "Failed to add agent to favorites",
-          details: handleError(error), // Use handleError
+        const newPreferences = await storage.createDashboardPreference(defaultPreferences);
+        return res.json({
+          success: true,
+          favorites: newPreferences.favoriteAgents,
         });
       }
-    },
-  );
+
+      // Update favorites (maximum of 5 favorites)
+      const currentFavorites = (preferences.favoriteAgents as any[]) || [];
+      const agentIdNum = parseInt(agentId);
+
+      // If already in favorites, do nothing
+      if (currentFavorites.includes(agentIdNum)) {
+        return res.json({ success: true, favorites: currentFavorites });
+      }
+
+      // Add to favorites (maintain max 5)
+      const updatedFavorites = [...currentFavorites, agentIdNum].slice(-5);
+
+      await storage.updateDashboardPreference(preferences.id, {
+        favoriteAgents: updatedFavorites,
+        updatedAt: new Date(),
+      });
+
+      res.json({ success: true, favorites: updatedFavorites });
+    } catch (error: any) {
+      console.error('Error adding agent to favorites:', error);
+      res.status(500).json({
+        error: 'Failed to add agent to favorites',
+        details: handleError(error), // Use handleError
+      });
+    }
+  });
 
   // Remove agent from favorites
-  app.delete(
-    "/api/user/dashboard/favorites/agent/:agentId",
-    requireAuth,
-    async (req, res) => {
-      try {
-        // Middleware ensures req.user exists, but TS needs explicit check
-        if (!req.user) {
-          return res.status(401).json({ error: "Not authenticated" });
-        }
-        const { agentId } = req.params;
-
-        if (!agentId) {
-          return res.status(400).json({ error: "Agent ID is required" });
-        }
-
-        // Get preferences
-        const preferences = await storage.getDashboardPreference(req.user.id);
-
-        if (!preferences) {
-          return res
-            .status(404)
-            .json({ error: "Dashboard preferences not found" });
-        }
-
-        // Remove from favorites
-        const currentFavorites = (preferences.favoriteAgents as any[]) || [];
-        const agentIdNum = parseInt(agentId);
-        const updatedFavorites = currentFavorites.filter(
-          (id) => id !== agentIdNum,
-        );
-
-        await storage.updateDashboardPreference(preferences.id, {
-          favoriteAgents: updatedFavorites,
-          updatedAt: new Date(),
-        });
-
-        res.json({ success: true, favorites: updatedFavorites });
-      } catch (error: any) {
-        console.error("Error removing agent from favorites:", error);
-        res.status(500).json({
-          error: "Failed to remove agent from favorites",
-          details: handleError(error), // Use handleError
-        });
+  app.delete('/api/user/dashboard/favorites/agent/:agentId', requireAuth, async (req, res) => {
+    try {
+      // Middleware ensures req.user exists, but TS needs explicit check
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
       }
-    },
-  );
+      const { agentId } = req.params;
+
+      if (!agentId) {
+        return res.status(400).json({ error: 'Agent ID is required' });
+      }
+
+      // Get preferences
+      const preferences = await storage.getDashboardPreference(req.user.id);
+
+      if (!preferences) {
+        return res.status(404).json({ error: 'Dashboard preferences not found' });
+      }
+
+      // Remove from favorites
+      const currentFavorites = (preferences.favoriteAgents as any[]) || [];
+      const agentIdNum = parseInt(agentId);
+      const updatedFavorites = currentFavorites.filter((id) => id !== agentIdNum);
+
+      await storage.updateDashboardPreference(preferences.id, {
+        favoriteAgents: updatedFavorites,
+        updatedAt: new Date(),
+      });
+
+      res.json({ success: true, favorites: updatedFavorites });
+    } catch (error: any) {
+      console.error('Error removing agent from favorites:', error);
+      res.status(500).json({
+        error: 'Failed to remove agent from favorites',
+        details: handleError(error), // Use handleError
+      });
+    }
+  });
 
   // Chatbot routes
   // Chatbot message history
-  app.get("/api/chatbot/history", async (req, res) => {
+  app.get('/api/chatbot/history', async (req, res) => {
     try {
       const userId = req.isAuthenticated() ? req.user!.id : null;
       const sessionId = req.query.sessionId as string;
 
       if (!sessionId) {
-        return res.status(400).json({ error: "Session ID is required" });
+        return res.status(400).json({ error: 'Session ID is required' });
       }
 
       const history = await getChatHistory(userId, sessionId);
       res.json(history);
     } catch (error) {
-      console.error("Error fetching chat history:", error);
+      console.error('Error fetching chat history:', error);
       res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // Send message to chatbot
-  app.post("/api/chatbot/message", async (req, res) => {
+  app.post('/api/chatbot/message', async (req, res) => {
     try {
       if (!req.body.content) {
-        return res.status(400).json({ error: "Message content is required" });
+        return res.status(400).json({ error: 'Message content is required' });
       }
 
       const content = req.body.content;
@@ -2950,7 +2920,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId,
         content,
         isBot: false,
-        timestamp
+        timestamp,
       });
 
       // Get or create game progress
@@ -2981,7 +2951,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: responseContent,
         isBot: true,
         metadata: botResponse.metadata,
-        timestamp
+        timestamp,
       });
 
       // Check for challenge completion based on message content
@@ -3021,33 +2991,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pointsEarned: 1, // Basic points earned from sending a message
           streakIncremented,
           newStreak: streakIncremented ? gameInfo.streak + 1 : gameInfo.streak,
-          timestamp: timestamp.toISOString()
-        }
+          timestamp: timestamp.toISOString(),
+        },
       });
     } catch (error) {
-      console.error("Error processing chatbot message:", error);
-      res.status(500).json({ error: "Failed to process message" });
+      console.error('Error processing chatbot message:', error);
+      res.status(500).json({ error: 'Failed to process message' });
     }
   });
 
   // Get available challenges
-  app.get("/api/chatbot/challenges", async (req, res) => {
+  app.get('/api/chatbot/challenges', async (req, res) => {
     try {
       const difficulty = req.query.difficulty as string | undefined;
       // Correct: getAvailableChallenges only takes optional difficulty
       const challenges = await getAvailableChallenges(difficulty);
       res.json(challenges);
     } catch (error) {
-      console.error("Error fetching challenges:", error);
+      console.error('Error fetching challenges:', error);
       res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // Complete a challenge
-  app.post("/api/chatbot/complete-challenge", async (req, res) => {
+  app.post('/api/chatbot/complete-challenge', async (req, res) => {
     try {
       if (!req.body.challengeId || !req.body.sessionId) {
-        return res.status(400).json({ error: "Challenge ID and Session ID are required" });
+        return res.status(400).json({ error: 'Challenge ID and Session ID are required' });
       }
 
       const challengeId = parseInt(req.body.challengeId);
@@ -3061,45 +3031,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        gameInfo: updatedGameInfo
+        gameInfo: updatedGameInfo,
       });
     } catch (error) {
-      console.error("Error completing challenge:", error);
+      console.error('Error completing challenge:', error);
       res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // Get user game progress
-  app.get("/api/chatbot/game-progress", async (req, res) => {
+  app.get('/api/chatbot/game-progress', async (req, res) => {
     try {
       const userId = req.isAuthenticated() ? req.user!.id : null;
       const sessionId = req.query.sessionId as string;
 
       if (!sessionId) {
-        return res.status(400).json({ error: "Session ID is required" });
+        return res.status(400).json({ error: 'Session ID is required' });
       }
 
       const gameInfo = await getOrCreateGameProgress(userId, sessionId);
       res.json(gameInfo);
     } catch (error) {
-      console.error("Error fetching game progress:", error);
+      console.error('Error fetching game progress:', error);
       res.status(500).json({ error: handleError(error) }); // Use handleError
     }
   });
 
   // Register browser observer routes
-  import("./routes/browser-observer-routes").then(({ browserObserverRouter }) => {
-    app.use("/api/browser-observer", browserObserverRouter);
+  import('./routes/browser-observer-routes').then(({ browserObserverRouter }) => {
+    app.use('/api/browser-observer', browserObserverRouter);
   });
 
   // Import browser automation routes
-  import("./routes/browser-automation-routes").then(({ browserAutomationRouter }) => {
-    app.use("/api/browser-automation", browserAutomationRouter);
+  import('./routes/browser-automation-routes').then(({ browserAutomationRouter }) => {
+    app.use('/api/browser-automation', browserAutomationRouter);
   });
 
   // Import workflow progress routes
-  import("./routes/workflow-progress-routes").then(({ workflowProgressRouter }) => {
-    app.use("/api/workflow-progress", workflowProgressRouter);
+  import('./routes/workflow-progress-routes').then(({ workflowProgressRouter }) => {
+    app.use('/api/workflow-progress', workflowProgressRouter);
   });
 
   const httpServer = createServer(app);

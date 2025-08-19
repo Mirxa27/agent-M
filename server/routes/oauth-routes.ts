@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
-import { beginOAuthFlow, completeOAuthFlow, isOAuthSupported } from '../services/credential-service';
+import {
+  beginOAuthFlow,
+  completeOAuthFlow,
+  isOAuthSupported,
+} from '../services/credential-service';
 import { storage } from '../storage';
 
 const router = Router();
@@ -23,9 +27,18 @@ router.post('/begin', requireAuth, async (req, res) => {
     }
 
     if (!isOAuthSupported(service)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: `OAuth not supported for service: ${service}`,
-        supportedServices: ['google', 'gmail', 'google_drive', 'google_calendar', 'microsoft', 'outlook', 'onedrive', 'dropbox']
+        supportedServices: [
+          'google',
+          'gmail',
+          'google_drive',
+          'google_calendar',
+          'microsoft',
+          'outlook',
+          'onedrive',
+          'dropbox',
+        ],
       });
     }
 
@@ -35,14 +48,13 @@ router.post('/begin', requireAuth, async (req, res) => {
       success: true,
       authUrl,
       state,
-      message: `Redirect user to the authUrl to complete ${service} OAuth flow`
+      message: `Redirect user to the authUrl to complete ${service} OAuth flow`,
     });
-
   } catch (error: any) {
     console.error('OAuth begin error:', error);
     res.status(500).json({
       error: 'Failed to begin OAuth flow',
-      details: error.message
+      details: error.message,
     });
   }
 });
@@ -59,13 +71,13 @@ router.get('/callback/:service', async (req, res) => {
     if (oauthError) {
       return res.status(400).json({
         error: 'OAuth authorization denied',
-        details: oauthError
+        details: oauthError,
       });
     }
 
     if (!code || !state) {
       return res.status(400).json({
-        error: 'Missing required OAuth parameters (code and state)'
+        error: 'Missing required OAuth parameters (code and state)',
       });
     }
 
@@ -74,10 +86,9 @@ router.get('/callback/:service', async (req, res) => {
     // Redirect to success page with credential info
     const successUrl = `/dashboard?oauth=success&service=${service}&credentialId=${credential.id}`;
     res.redirect(successUrl);
-
   } catch (error: any) {
     console.error('OAuth callback error:', error);
-    
+
     // Redirect to error page
     const errorUrl = `/dashboard?oauth=error&message=${encodeURIComponent(error.message)}`;
     res.redirect(errorUrl);
@@ -101,14 +112,13 @@ router.get('/status/:service', requireAuth, async (req, res) => {
       service,
       supported: isOAuthSupported(service),
       configured: true, // You might want to check if OAuth credentials are configured
-      scopes: getDefaultScopes(service)
+      scopes: getDefaultScopes(service),
     });
-
   } catch (error: any) {
     console.error('OAuth status error:', error);
     res.status(500).json({
       error: 'Failed to get OAuth status',
-      details: error.message
+      details: error.message,
     });
   }
 });
@@ -125,34 +135,33 @@ router.get('/services', requireAuth, async (req, res) => {
         name: 'Google',
         description: 'Access Gmail, Google Drive, and Google Calendar',
         supported: isOAuthSupported('google'),
-        scopes: ['gmail', 'drive', 'calendar']
+        scopes: ['gmail', 'drive', 'calendar'],
       },
       {
         id: 'microsoft',
         name: 'Microsoft',
         description: 'Access Outlook, OneDrive, and Microsoft services',
         supported: isOAuthSupported('microsoft'),
-        scopes: ['mail', 'files', 'calendar']
+        scopes: ['mail', 'files', 'calendar'],
       },
       {
         id: 'dropbox',
         name: 'Dropbox',
         description: 'Access Dropbox files and folders',
         supported: isOAuthSupported('dropbox'),
-        scopes: ['files']
-      }
+        scopes: ['files'],
+      },
     ];
 
     res.json({
       success: true,
-      services: services.filter(s => s.supported)
+      services: services.filter((s) => s.supported),
     });
-
   } catch (error: any) {
     console.error('OAuth services error:', error);
     res.status(500).json({
       error: 'Failed to get OAuth services',
-      details: error.message
+      details: error.message,
     });
   }
 });
@@ -172,7 +181,7 @@ router.post('/refresh/:credentialId', requireAuth, async (req, res) => {
 
     // Get credential from database
     const credential = await storage.getCredentialById(parseInt(credentialId));
-    
+
     if (!credential) {
       return res.status(404).json({ error: 'Credential not found' });
     }
@@ -191,14 +200,13 @@ router.post('/refresh/:credentialId', requireAuth, async (req, res) => {
     res.json({
       success: true,
       message: 'OAuth tokens refreshed successfully',
-      expiresAt: newTokens.expiresAt
+      expiresAt: newTokens.expiresAt,
     });
-
   } catch (error: any) {
     console.error('OAuth refresh error:', error);
     res.status(500).json({
       error: 'Failed to refresh OAuth tokens',
-      details: error.message
+      details: error.message,
     });
   }
 });

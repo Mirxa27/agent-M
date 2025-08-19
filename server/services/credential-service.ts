@@ -1,30 +1,30 @@
-import { storage } from "../storage";
-import { encrypt, decrypt } from "../../shared/crypto";
-import { Credential, InsertCredential } from "@shared/schema";
+import { storage } from '../storage';
+import { encrypt, decrypt } from '../../shared/crypto';
+import { Credential, InsertCredential } from '@shared/schema';
 
 // List of supported service types with their specific properties
 export const SERVICE_TYPES = {
-  GMAIL: "gmail",
-  GOOGLE_CALENDAR: "google_calendar",
-  GOOGLE_DRIVE: "google_drive",
-  MICROSOFT_OUTLOOK: "outlook",
-  MICROSOFT_ONEDRIVE: "onedrive",
-  DROPBOX: "dropbox",
-  SLACK: "slack",
-  ZOOM: "zoom",
-  GITHUB: "github",
-  JIRA: "jira",
-  TRELLO: "trello",
-  ASANA: "asana",
-  CUSTOM: "custom",
+  GMAIL: 'gmail',
+  GOOGLE_CALENDAR: 'google_calendar',
+  GOOGLE_DRIVE: 'google_drive',
+  MICROSOFT_OUTLOOK: 'outlook',
+  MICROSOFT_ONEDRIVE: 'onedrive',
+  DROPBOX: 'dropbox',
+  SLACK: 'slack',
+  ZOOM: 'zoom',
+  GITHUB: 'github',
+  JIRA: 'jira',
+  TRELLO: 'trello',
+  ASANA: 'asana',
+  CUSTOM: 'custom',
 };
 
 // Auth methods
 export const AUTH_METHODS = {
-  API_KEY: "api_key",
-  OAUTH: "oauth",
-  DIRECT_LOGIN: "direct_login",
-  APP_PASSWORD: "app_password", // For services like Gmail that offer app passwords
+  API_KEY: 'api_key',
+  OAUTH: 'oauth',
+  DIRECT_LOGIN: 'direct_login',
+  APP_PASSWORD: 'app_password', // For services like Gmail that offer app passwords
 };
 
 interface CredentialOptions {
@@ -69,7 +69,7 @@ export class CredentialService {
 
       return credential;
     } catch (error) {
-      console.error("Error creating credential:", error);
+      console.error('Error creating credential:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to create credential: ${errorMessage}`);
     }
@@ -91,13 +91,13 @@ export class CredentialService {
 
       // Check if credential is expired
       if (credential.expiresAt && new Date(credential.expiresAt) < new Date()) {
-        throw new Error("Credential has expired");
+        throw new Error('Credential has expired');
       }
 
       // Decrypt the data
       const decryptedString = decrypt(credential.data);
       if (!decryptedString) {
-        throw new Error("Failed to decrypt credential data");
+        throw new Error('Failed to decrypt credential data');
       }
 
       const decryptedData = JSON.parse(decryptedString);
@@ -107,7 +107,7 @@ export class CredentialService {
         data: decryptedData,
       };
     } catch (error) {
-      console.error("Error getting credential:", error);
+      console.error('Error getting credential:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to get credential: ${errorMessage}`);
     }
@@ -160,14 +160,11 @@ export class CredentialService {
       }
 
       // Update the credential
-      const updatedCredential = await storage.updateCredential(
-        id,
-        credentialUpdates
-      );
+      const updatedCredential = await storage.updateCredential(id, credentialUpdates);
 
       return updatedCredential || null;
     } catch (error) {
-      console.error("Error updating credential:", error);
+      console.error('Error updating credential:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to update credential: ${errorMessage}`);
     }
@@ -189,9 +186,7 @@ export class CredentialService {
       }
 
       // Calculate new expiration date
-      const expiresAt = new Date(
-        Date.now() + expiresInDays * 24 * 60 * 60 * 1000
-      );
+      const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
 
       // Update the credential
       const updatedCredential = await storage.updateCredential(id, {
@@ -201,7 +196,7 @@ export class CredentialService {
 
       return updatedCredential || null;
     } catch (error) {
-      console.error("Error refreshing credential:", error);
+      console.error('Error refreshing credential:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to refresh credential: ${errorMessage}`);
     }
@@ -210,10 +205,7 @@ export class CredentialService {
   /**
    * Lists all credentials for a user, optionally filtered by type
    */
-  async listCredentials(
-    userId: number,
-    type?: string
-  ): Promise<Omit<Credential, "data">[]> {
+  async listCredentials(userId: number, type?: string): Promise<Omit<Credential, 'data'>[]> {
     try {
       let credentials = await storage.getCredentialsByUserId(userId);
 
@@ -225,7 +217,7 @@ export class CredentialService {
       // Don't include sensitive data in the response
       return credentials.map(({ data, ...rest }) => rest);
     } catch (error) {
-      console.error("Error listing credentials:", error);
+      console.error('Error listing credentials:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to list credentials: ${errorMessage}`);
     }
@@ -237,13 +229,11 @@ export class CredentialService {
   async getExpiringCredentials(
     userId: number,
     daysThreshold: number = 7
-  ): Promise<Omit<Credential, "data">[]> {
+  ): Promise<Omit<Credential, 'data'>[]> {
     try {
       const credentials = await storage.getCredentialsByUserId(userId);
       const now = new Date();
-      const thresholdDate = new Date(
-        now.getTime() + daysThreshold * 24 * 60 * 60 * 1000
-      );
+      const thresholdDate = new Date(now.getTime() + daysThreshold * 24 * 60 * 60 * 1000);
 
       const expiringCredentials = credentials.filter((cred) => {
         if (!cred.expiresAt) return false;
@@ -254,7 +244,7 @@ export class CredentialService {
       // Don't include sensitive data in the response
       return expiringCredentials.map(({ data, ...rest }) => rest);
     } catch (error) {
-      console.error("Error getting expiring credentials:", error);
+      console.error('Error getting expiring credentials:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to get expiring credentials: ${errorMessage}`);
     }
@@ -273,7 +263,7 @@ export class CredentialService {
 
       return await storage.deleteCredential(id);
     } catch (error) {
-      console.error("Error deleting credential:", error);
+      console.error('Error deleting credential:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to delete credential: ${errorMessage}`);
     }
@@ -282,27 +272,24 @@ export class CredentialService {
   /**
    * Get a credential by service name or type
    */
-  async getCredentialByService(
-    userId: number,
-    serviceName: string
-  ): Promise<Credential | null> {
+  async getCredentialByService(userId: number, serviceName: string): Promise<Credential | null> {
     try {
       const credentials = await storage.getCredentialsByUserId(userId);
-      
+
       // Find credentials for this service
       const credential = credentials.find(
-        (cred) => cred.type === serviceName || 
-                  (cred.service !== null && cred.service === serviceName)
+        (cred) =>
+          cred.type === serviceName || (cred.service !== null && cred.service === serviceName)
       );
-      
+
       return credential || null;
     } catch (error) {
-      console.error("Error getting credential by service:", error);
+      console.error('Error getting credential by service:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to get credential by service: ${errorMessage}`);
     }
   }
-  
+
   /**
    * Create a new credential from a simple object
    */
@@ -318,9 +305,9 @@ export class CredentialService {
   }): Promise<Credential> {
     try {
       // Encrypt data if it's not already encrypted
-      let encryptedData = typeof data.data === 'string' ? 
-        data.data : encrypt(JSON.stringify(data.data));
-        
+      let encryptedData =
+        typeof data.data === 'string' ? data.data : encrypt(JSON.stringify(data.data));
+
       // Create credential record
       const credential = await storage.createCredential({
         userId: data.userId,
@@ -330,17 +317,17 @@ export class CredentialService {
         authMethod: data.authMethod || AUTH_METHODS.API_KEY,
         expiresAt: data.expiresAt || null,
         lastRefreshedAt: data.lastRefreshedAt || new Date(),
-        service: data.service
+        service: data.service,
       });
-      
+
       return credential;
     } catch (error) {
-      console.error("Error creating credential:", error);
+      console.error('Error creating credential:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to create credential: ${errorMessage}`);
     }
   }
-  
+
   /**
    * Update a credential by ID
    */
@@ -350,12 +337,12 @@ export class CredentialService {
       if (updates.data && typeof updates.data !== 'string') {
         updates.data = encrypt(JSON.stringify(updates.data));
       }
-      
+
       // Update the credential
       const updatedCredential = await storage.updateCredential(id, updates);
       return updatedCredential || null;
     } catch (error) {
-      console.error("Error updating credential:", error);
+      console.error('Error updating credential:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to update credential: ${errorMessage}`);
     }
