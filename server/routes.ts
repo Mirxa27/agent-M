@@ -88,6 +88,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount basic routes (health, site settings, etc.)
   app.use(basicRoutes);
 
+  // Mount OAuth routes
+  app.use("/api/oauth", oauthRoutes);
+
   // Health check endpoint - no auth required, useful for deployment monitoring
   app.get("/api/health", async (req, res) => {
     try {
