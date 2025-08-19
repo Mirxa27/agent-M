@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { beginOAuthFlow, completeOAuthFlow, isOAuthSupported } from '../services/credential-service';
+import { storage } from '../storage';
 
 const router = Router();
 
