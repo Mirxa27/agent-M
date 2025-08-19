@@ -2,6 +2,7 @@ import { promises as fsPromises } from "fs";
 import path from "path";
 import { File as FileModel } from "@shared/schema";
 import { storage } from "../storage";
+import { processDocument, isSupportedDocumentType } from "./document-processor";
 
 const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 
